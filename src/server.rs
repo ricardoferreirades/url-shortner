@@ -1,10 +1,12 @@
 use axum::{
-    routing::get,
+    routing::{get, post},
     Router,
     response::Html,
 };
 use tower_http::cors::{Any, CorsLayer};
 use tracing::info;
+
+use crate::shortener;
 
 pub async fn start_server() -> Result<(), Box<dyn std::error::Error>> {
     // Initialize tracing
@@ -19,6 +21,7 @@ pub async fn start_server() -> Result<(), Box<dyn std::error::Error>> {
     // Create router with routes
     let app = Router::new()
         .route("/", get(welcome_handler))
+        .route("/shorten", post(shortener::shorten_url_handler))
         .layer(cors);
     
     // Create socket address
@@ -26,6 +29,7 @@ pub async fn start_server() -> Result<(), Box<dyn std::error::Error>> {
     
     info!("Starting server on {}", addr);
     info!("Welcome to your app! Visit http://localhost:8000");
+    info!("URL shortening endpoint: POST http://localhost:8000/shorten");
     
     // Start the server
     let listener = tokio::net::TcpListener::bind(&addr).await?;
@@ -39,7 +43,7 @@ async fn welcome_handler() -> Html<&'static str> {
         <!DOCTYPE html>
         <html>
         <head>
-            <title>Welcome to Your App</title>
+            <title>URL Shortener</title>
             <style>
                 body {
                     font-family: Arial, sans-serif;
@@ -65,18 +69,26 @@ async fn welcome_handler() -> Html<&'static str> {
                     line-height: 1.6;
                 }
                 .highlight {
-                    background-color: #e8f4fd;
+                    background-color: #e8f8fd;
                     padding: 20px;
                     border-radius: 5px;
                     border-left: 4px solid #2196F3;
                     margin: 20px 0;
                 }
+                .endpoint {
+                    background-color: #f0f8ff;
+                    padding: 15px;
+                    border-radius: 5px;
+                    border: 1px solid #ddd;
+                    font-family: monospace;
+                    margin: 10px 0;
+                }
             </style>
         </head>
         <body>
             <div class="container">
-                <h1>🚀 Welcome to Your App!</h1>
-                <p>Congratulations! Your Axum server is running successfully.</p>
+                <h1>🔗 URL Shortener</h1>
+                <p>Welcome to your URL shortener application!</p>
                 
                 <div class="highlight">
                     <p><strong>Server Status:</strong> ✅ Running</p>
@@ -84,7 +96,14 @@ async fn welcome_handler() -> Html<&'static str> {
                     <p><strong>Framework:</strong> Axum (Rust)</p>
                 </div>
                 
-                <p>You can now start building your URL shortener application!</p>
+                <h3>API Endpoints:</h3>
+                <div class="endpoint">
+                    <strong>POST /shorten</strong><br>
+                    Send JSON: {"url": "https://example.com/very/long/url"}<br>
+                    Returns: {"short_url": "http://localhost:8000/abc123", "original_url": "..."}
+                </div>
+                
+                <p>Test it with curl or any HTTP client!</p>
             </div>
         </body>
         </html>
