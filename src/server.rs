@@ -5,12 +5,25 @@ use axum::{
 };
 use tower_http::cors::{Any, CorsLayer};
 use tracing::info;
+use std::env;
 
 use crate::shortener;
+use crate::database::Database;
 
 pub async fn start_server() -> Result<(), Box<dyn std::error::Error>> {
+    // Load environment variables from .env file
+    dotenv::dotenv().ok();
+    
     // Initialize tracing
     tracing_subscriber::fmt::init();
+    
+    // Get database URL from environment variable
+    let database_url = env::var("DATABASE_URL")
+        .expect("DATABASE_URL must be set in environment variables");
+    
+    // Connect to database
+    let db = Database::new(&database_url).await?;
+    info!("Connected to PostgreSQL database");
     
     // Configure CORS
     let cors = CorsLayer::new()
@@ -22,14 +35,24 @@ pub async fn start_server() -> Result<(), Box<dyn std::error::Error>> {
     let app = Router::new()
         .route("/", get(welcome_handler))
         .route("/shorten", post(shortener::shorten_url_handler))
+        .route("/:short_code", get(shortener::redirect_handler))
+        .with_state(db)
         .layer(cors);
     
+    // Get server configuration from environment variables
+    let host = env::var("HOST").unwrap_or_else(|_| "127.0.0.1".to_string());
+    let port = env::var("PORT")
+        .unwrap_or_else(|_| "8000".to_string())
+        .parse::<u16>()
+        .expect("PORT must be a valid number");
+    
     // Create socket address
-    let addr = std::net::SocketAddr::from(([127, 0, 0, 1], 8000));
+    let addr: std::net::SocketAddr = format!("{}:{}", host, port).parse()?;
     
     info!("Starting server on {}", addr);
-    info!("Welcome to your app! Visit http://localhost:8000");
-    info!("URL shortening endpoint: POST http://localhost:8000/shorten");
+    info!("Welcome to your app! Visit http://{}:{}", host, port);
+    info!("URL shortening endpoint: POST http://{}:{}/shorten", host, port);
+    info!("Redirect endpoint: GET http://{}:{}/{{short_code}}", host, port);
     
     // Start the server
     let listener = tokio::net::TcpListener::bind(&addr).await?;
@@ -101,6 +124,11 @@ async fn welcome_handler() -> Html<&'static str> {
                     <strong>POST /shorten</strong><br>
                     Send JSON: {"url": "https://example.com/very/long/url"}<br>
                     Returns: {"short_url": "http://localhost:8000/abc123", "original_url": "..."}
+                </div>
+                <div class="endpoint">
+                    <strong>GET /{short_code}</strong><br>
+                    Redirects to the original URL<br>
+                    Example: http://localhost:8000/abc123
                 </div>
                 
                 <p>Test it with curl or any HTTP client!</p>
