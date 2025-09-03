@@ -37,3 +37,5 @@ The server will start on the host and port specified in your `.env` file (defaul
 - **Tower HTTP** - HTTP middleware and utilities
 - **dotenv** - Environment variable management
 - **Tracing** - Structured logging and diagnostics
+- **Docker** - Containerization platform for consistent development environments
+- **Make** - Build automation tool for common development tasks
