@@ -5,21 +5,31 @@ use axum::{
     http::StatusCode,
 };
 use serde::{Deserialize, Serialize};
+use utoipa::ToSchema;
 use seahash;
 use tracing::info;
 use crate::database::Database;
 
-#[derive(Deserialize)]
+#[derive(Deserialize, ToSchema)]
 pub struct ShortenUrlRequest {
     pub url: String,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, ToSchema)]
 pub struct ShortenUrlResponse {
     pub short_url: String,
     pub original_url: String,
 }
 
+#[utoipa::path(
+    post,
+    path = "/shorten",
+    request_body = ShortenUrlRequest,
+    responses(
+        (status = 200, description = "Shortened URL created", body = ShortenUrlResponse),
+        (status = 500, description = "Internal server error")
+    )
+)]
 pub async fn shorten_url_handler(
     State(db): State<Database>,
     Json(payload): Json<ShortenUrlRequest>,
@@ -45,6 +55,18 @@ pub async fn shorten_url_handler(
     }
 }
 
+#[utoipa::path(
+    get,
+    path = "/{short_code}",
+    params(
+        ("short_code" = String, Path, description = "Short code to redirect"),
+    ),
+    responses(
+        (status = 308, description = "Permanent redirect to original URL"),
+        (status = 404, description = "Short code not found"),
+        (status = 500, description = "Internal server error")
+    )
+)]
 pub async fn redirect_handler(
     State(db): State<Database>,
     axum::extract::Path(short_code): axum::extract::Path<String>,

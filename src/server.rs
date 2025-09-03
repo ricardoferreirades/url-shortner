@@ -6,6 +6,8 @@ use axum::{
 use tower_http::cors::{Any, CorsLayer};
 use tracing::info;
 use std::env;
+use utoipa::OpenApi;
+use utoipa_swagger_ui::SwaggerUi;
 
 use crate::shortener;
 use crate::database::Database;
@@ -31,11 +33,37 @@ pub async fn start_server() -> Result<(), Box<dyn std::error::Error>> {
         .allow_methods(Any)
         .allow_headers(Any);
     
-    // Create router with routes
-    let app = Router::new()
+    // OpenAPI doc
+    #[derive(OpenApi)]
+    #[openapi(
+        paths(
+            shortener::shorten_url_handler,
+            shortener::redirect_handler,
+        ),
+        components(
+            schemas(
+                shortener::ShortenUrlRequest,
+                shortener::ShortenUrlResponse,
+            )
+        ),
+        tags(
+            (name = "url-shortener", description = "URL Shortener API")
+        )
+    )]
+    struct ApiDoc;
+
+    let openapi = ApiDoc::openapi();
+
+    // Create router with routes and docs
+    let api_router = Router::new()
         .route("/", get(welcome_handler))
         .route("/shorten", post(shortener::shorten_url_handler))
-        .route("/:short_code", get(shortener::redirect_handler))
+        .route("/:short_code", get(shortener::redirect_handler));
+
+    let app = api_router
+        .merge(
+            SwaggerUi::new("/docs").url("/api-docs/openapi.json", openapi)
+        )
         .with_state(db)
         .layer(cors);
     
