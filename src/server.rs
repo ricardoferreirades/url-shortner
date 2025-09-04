@@ -89,7 +89,7 @@ pub async fn start_server() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-async fn welcome_handler() -> Html<&'static str> {
+pub async fn welcome_handler() -> Html<&'static str> {
     Html(r#"
         <!DOCTYPE html>
         <html>
@@ -165,3 +165,4 @@ async fn welcome_handler() -> Html<&'static str> {
         </html>
     "#)
 }
+
