@@ -2543,6 +2543,7 @@ dependencies = [
  "tower-http 0.5.2",
  "tracing",
  "tracing-subscriber",
+ "url",
  "utoipa 4.2.3",
  "utoipa-axum",
  "utoipa-swagger-ui",

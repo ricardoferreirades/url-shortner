@@ -18,3 +18,4 @@ dotenv = "0.15"
 utoipa = { version = "4", features = ["axum_extras"] }
 utoipa-swagger-ui = { version = "7", features = ["axum"] }
 utoipa-axum = "0.1"
+url = "2.5"
