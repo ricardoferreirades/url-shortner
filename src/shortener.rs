@@ -10,12 +10,12 @@ use seahash;
 use tracing::info;
 use crate::database::Database;
 
-#[derive(Deserialize, ToSchema)]
+#[derive(Deserialize, Serialize, ToSchema)]
 pub struct ShortenUrlRequest {
     pub url: String,
 }
 
-#[derive(Serialize, ToSchema)]
+#[derive(Serialize, Deserialize, ToSchema)]
 pub struct ShortenUrlResponse {
     pub short_url: String,
     pub original_url: String,
@@ -90,3 +90,4 @@ pub fn generate_short_code(url: &str) -> String {
     // Format the hash as hexadecimal and take the first 8 characters as the short code
     format!("{:x}", hash)[..8].to_string()
 }
+
