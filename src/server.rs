@@ -2,12 +2,14 @@ use axum::{
     routing::{get, post},
     Router,
     response::Html,
+    Json,
 };
 use tower_http::cors::{Any, CorsLayer};
 use tracing::info;
 use std::env;
 use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
+use serde_json::json;
 
 use crate::shortener;
 use crate::database::Database;
@@ -39,6 +41,7 @@ pub async fn start_server() -> Result<(), Box<dyn std::error::Error>> {
         paths(
             shortener::shorten_url_handler,
             shortener::redirect_handler,
+            health_check,
         ),
         components(
             schemas(
@@ -57,6 +60,7 @@ pub async fn start_server() -> Result<(), Box<dyn std::error::Error>> {
     // Create router with routes and docs
     let api_router = Router::new()
         .route("/", get(welcome_handler))
+        .route("/health", get(health_check))
         .route("/shorten", post(shortener::shorten_url_handler))
         .route("/:short_code", get(shortener::redirect_handler));
 
@@ -79,8 +83,10 @@ pub async fn start_server() -> Result<(), Box<dyn std::error::Error>> {
     
     info!("Starting server on {}", addr);
     info!("Welcome to your app! Visit http://{}:{}", host, port);
+    info!("Health check endpoint: GET http://{}:{}/health", host, port);
     info!("URL shortening endpoint: POST http://{}:{}/shorten", host, port);
     info!("Redirect endpoint: GET http://{}:{}/{{short_code}}", host, port);
+    info!("API documentation: http://{}:{}/docs", host, port);
     
     // Start the server
     let listener = tokio::net::TcpListener::bind(&addr).await?;
@@ -164,5 +170,25 @@ pub async fn welcome_handler() -> Html<&'static str> {
         </body>
         </html>
     "#)
+}
+
+#[utoipa::path(
+    get,
+    path = "/health",
+    responses(
+        (status = 200, description = "Health check successful", body = serde_json::Value)
+    )
+)]
+pub async fn health_check() -> Json<serde_json::Value> {
+    let health_status = json!({
+        "status": "healthy",
+        "timestamp": chrono::Utc::now().to_rfc3339(),
+        "service": "url-shortener",
+        "version": env!("CARGO_PKG_VERSION"),
+        "uptime": "running"
+    });
+    
+    info!("Health check requested - service is healthy");
+    Json(health_status)
 }
 
