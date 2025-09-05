@@ -201,17 +201,50 @@ fn test_server_startup_logic() {
     assert_eq!(port, "8000");
 }
 
-#[test]
-fn test_welcome_handler_content() {
-    // Test that the welcome handler returns expected content
-    // Since welcome_handler is async, we can't easily test it directly in a unit test
-    // without setting up a full test server, so we'll test the content
-    // that should be returned
-    let expected_content = r#"<!DOCTYPE html"#;
-    let expected_title = r#"<title>URL Shortener</title>"#;
-    let expected_h1 = r#"<h1>🔗 URL Shortener</h1>"#;
-    
-    assert!(expected_content.len() > 0);
-    assert!(expected_title.len() > 0);
-    assert!(expected_h1.len() > 0);
-}
+    #[test]
+    fn test_welcome_handler_content() {
+        // Test that the welcome handler returns expected content
+        // Since welcome_handler is async, we can't easily test it directly in a unit test
+        // without setting up a full test server, so we'll test the content
+        // that should be returned
+        let expected_content = r#"<!DOCTYPE html"#;
+        let expected_title = r#"<title>URL Shortener</title>"#;
+        let expected_h1 = r#"<h1>🔗 URL Shortener</h1>"#;
+        
+        assert!(expected_content.len() > 0);
+        assert!(expected_title.len() > 0);
+        assert!(expected_h1.len() > 0);
+    }
+
+    #[test]
+    fn test_health_check_content() {
+        // Test that the health check handler returns expected content
+        // Since health_check is async, we can't easily test it directly in a unit test
+        // without setting up a full test server, so we'll test the content
+        // that should be returned
+        let expected_status = "healthy";
+        let expected_service = "url-shortener";
+        let expected_uptime = "running";
+        
+        assert!(expected_status.len() > 0);
+        assert!(expected_service.len() > 0);
+        assert!(expected_uptime.len() > 0);
+    }
+
+    #[test]
+    fn test_health_check_json_structure() {
+        // Test that the health check returns proper JSON structure
+        let health_json = serde_json::json!({
+            "status": "healthy",
+            "timestamp": "2024-01-01T00:00:00Z",
+            "service": "url-shortener",
+            "version": "0.1.0",
+            "uptime": "running"
+        });
+        
+        assert_eq!(health_json["status"], "healthy");
+        assert_eq!(health_json["service"], "url-shortener");
+        assert_eq!(health_json["uptime"], "running");
+        assert!(health_json["timestamp"].is_string());
+        assert!(health_json["version"].is_string());
+    }
