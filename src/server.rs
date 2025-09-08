@@ -47,6 +47,7 @@ pub async fn start_server() -> Result<(), Box<dyn std::error::Error>> {
             schemas(
                 shortener::ShortenUrlRequest,
                 shortener::ShortenUrlResponse,
+                shortener::ErrorResponse,
             )
         ),
         tags(
