@@ -19,3 +19,5 @@ utoipa = { version = "4", features = ["axum_extras"] }
 utoipa-swagger-ui = { version = "7", features = ["axum"] }
 utoipa-axum = "0.1"
 url = "2.5"
+validator = { version = "0.18", features = ["derive"] }
+thiserror = "1.0"
