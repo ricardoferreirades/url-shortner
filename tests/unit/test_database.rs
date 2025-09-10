@@ -1,5 +1,5 @@
-use url_shortner::database::UrlRecord;
 use chrono::Utc;
+use url_shortner::database::UrlRecord;
 
 #[test]
 fn test_url_record_creation() {
@@ -86,7 +86,10 @@ fn test_url_record_with_special_characters() {
         created_at: now,
     };
 
-    assert_eq!(url_record.original_url, "https://example.com/path?query=value&other=123#fragment");
+    assert_eq!(
+        url_record.original_url,
+        "https://example.com/path?query=value&other=123#fragment"
+    );
 }
 
 #[test]
@@ -99,7 +102,10 @@ fn test_url_record_with_unicode() {
         created_at: now,
     };
 
-    assert_eq!(url_record.original_url, "https://example.com/path/with/ünicode/🚀");
+    assert_eq!(
+        url_record.original_url,
+        "https://example.com/path/with/ünicode/🚀"
+    );
 }
 
 #[test]
@@ -178,10 +184,10 @@ fn test_url_record_serialization_roundtrip() {
 
     // Serialize to JSON
     let json = serde_json::to_string(&original).unwrap();
-    
+
     // Deserialize back
     let deserialized: UrlRecord = serde_json::from_str(&json).unwrap();
-    
+
     // Should be identical
     assert_eq!(original.id, deserialized.id);
     assert_eq!(original.short_code, deserialized.short_code);
