@@ -1,6 +1,6 @@
-use sqlx::{PgPool, Row};
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
+use sqlx::{PgPool, Row};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct UrlRecord {
@@ -21,7 +21,11 @@ impl Database {
         Ok(Database { pool })
     }
 
-    pub async fn create_url(&self, short_code: &str, original_url: &str) -> Result<UrlRecord, sqlx::Error> {
+    pub async fn create_url(
+        &self,
+        short_code: &str,
+        original_url: &str,
+    ) -> Result<UrlRecord, sqlx::Error> {
         let row = sqlx::query(
             "INSERT INTO urls (short_code, original_url) VALUES ($1, $2) RETURNING id, short_code, original_url, created_at"
         )
@@ -38,9 +42,12 @@ impl Database {
         })
     }
 
-    pub async fn get_url_by_short_code(&self, short_code: &str) -> Result<Option<UrlRecord>, sqlx::Error> {
+    pub async fn get_url_by_short_code(
+        &self,
+        short_code: &str,
+    ) -> Result<Option<UrlRecord>, sqlx::Error> {
         let row = sqlx::query(
-            "SELECT id, short_code, original_url, created_at FROM urls WHERE short_code = $1"
+            "SELECT id, short_code, original_url, created_at FROM urls WHERE short_code = $1",
         )
         .bind(short_code)
         .fetch_optional(&self.pool)
@@ -57,4 +64,3 @@ impl Database {
         }
     }
 }
-

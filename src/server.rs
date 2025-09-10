@@ -1,40 +1,39 @@
 use axum::{
-    routing::{get, post},
-    Router,
     response::Html,
-    Json,
+    routing::{get, post},
+    Json, Router,
 };
+use serde_json::json;
+use std::env;
 use tower_http::cors::{Any, CorsLayer};
 use tracing::info;
-use std::env;
 use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
-use serde_json::json;
 
-use crate::shortener;
 use crate::database::Database;
+use crate::shortener;
 
 pub async fn start_server() -> Result<(), Box<dyn std::error::Error>> {
     // Load environment variables from .env file
     dotenv::dotenv().ok();
-    
+
     // Initialize tracing
     tracing_subscriber::fmt::init();
-    
+
     // Get database URL from environment variable
-    let database_url = env::var("DATABASE_URL")
-        .expect("DATABASE_URL must be set in environment variables");
-    
+    let database_url =
+        env::var("DATABASE_URL").expect("DATABASE_URL must be set in environment variables");
+
     // Connect to database
     let db = Database::new(&database_url).await?;
     info!("Connected to PostgreSQL database");
-    
+
     // Configure CORS
     let cors = CorsLayer::new()
         .allow_origin(Any)
         .allow_methods(Any)
         .allow_headers(Any);
-    
+
     // OpenAPI doc
     #[derive(OpenApi)]
     #[openapi(
@@ -66,38 +65,43 @@ pub async fn start_server() -> Result<(), Box<dyn std::error::Error>> {
         .route("/:short_code", get(shortener::redirect_handler));
 
     let app = api_router
-        .merge(
-            SwaggerUi::new("/docs").url("/api-docs/openapi.json", openapi)
-        )
+        .merge(SwaggerUi::new("/docs").url("/api-docs/openapi.json", openapi))
         .with_state(db)
         .layer(cors);
-    
+
     // Get server configuration from environment variables
     let host = env::var("HOST").unwrap_or_else(|_| "127.0.0.1".to_string());
     let port = env::var("PORT")
         .unwrap_or_else(|_| "8000".to_string())
         .parse::<u16>()
         .expect("PORT must be a valid number");
-    
+
     // Create socket address
     let addr: std::net::SocketAddr = format!("{}:{}", host, port).parse()?;
-    
+
     info!("Starting server on {}", addr);
     info!("Welcome to your app! Visit http://{}:{}", host, port);
     info!("Health check endpoint: GET http://{}:{}/health", host, port);
-    info!("URL shortening endpoint: POST http://{}:{}/shorten", host, port);
-    info!("Redirect endpoint: GET http://{}:{}/{{short_code}}", host, port);
+    info!(
+        "URL shortening endpoint: POST http://{}:{}/shorten",
+        host, port
+    );
+    info!(
+        "Redirect endpoint: GET http://{}:{}/{{short_code}}",
+        host, port
+    );
     info!("API documentation: http://{}:{}/docs", host, port);
-    
+
     // Start the server
     let listener = tokio::net::TcpListener::bind(&addr).await?;
     axum::serve(listener, app).await?;
-    
+
     Ok(())
 }
 
 pub async fn welcome_handler() -> Html<&'static str> {
-    Html(r#"
+    Html(
+        r#"
         <!DOCTYPE html>
         <html>
         <head>
@@ -170,7 +174,8 @@ pub async fn welcome_handler() -> Html<&'static str> {
             </div>
         </body>
         </html>
-    "#)
+    "#,
+    )
 }
 
 #[utoipa::path(
@@ -188,8 +193,7 @@ pub async fn health_check() -> Json<serde_json::Value> {
         "version": env!("CARGO_PKG_VERSION"),
         "uptime": "running"
     });
-    
+
     info!("Health check requested - service is healthy");
     Json(health_status)
 }
-
