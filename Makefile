@@ -1,4 +1,4 @@
-.PHONY: up down logs db-shell test
+.PHONY: up down logs db-shell test fmt lint check
 
 # Start the database
 up:
@@ -23,3 +23,18 @@ run:
 # Test the application
 test:
 	curl -X POST http://localhost:8000/shorten -H "Content-Type: application/json" -d '{"url": "https://example.com/test"}'
+
+# Format code (like Prettier)
+fmt:
+	cargo fmt
+
+# Lint code (like ESLint)
+lint:
+	cargo clippy
+
+# Check code without building (faster)
+check:
+	cargo check
+
+# Run all code quality checks
+quality: fmt lint check
