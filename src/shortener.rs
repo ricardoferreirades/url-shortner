@@ -1,15 +1,9 @@
-use axum::{
-    Json,
-    extract::State,
-    response::Redirect,
-    http::StatusCode,
-};
-use serde::{Deserialize, Serialize};
-use utoipa::ToSchema;
-use seahash;
-use tracing::{info, warn};
 use crate::database::Database;
-use crate::validation::{validate_url, validate_short_code, ValidationConfig};
+use crate::validation::{validate_short_code, validate_url, ValidationConfig};
+use axum::{extract::State, http::StatusCode, response::Redirect, Json};
+use serde::{Deserialize, Serialize};
+use tracing::{info, warn};
+use utoipa::ToSchema;
 
 #[derive(Deserialize, Serialize, ToSchema)]
 pub struct ShortenUrlRequest {
@@ -55,20 +49,20 @@ pub async fn shorten_url_handler(
                     error: "validation_error".to_string(),
                     message: validation_error.to_string(),
                     status_code: 400,
-                })
+                }),
             ));
         }
     };
 
     // Generate a short hash from the validated URL
     let hash = generate_short_code(&validated_url);
-    
+
     // Try to save to database
     match db.create_url(&hash, &validated_url).await {
         Ok(_) => {
             let short_url = format!("http://localhost:8000/{}", hash);
             info!("Shortened URL: {} -> {}", validated_url, short_url);
-            
+
             Ok(Json(ShortenUrlResponse {
                 short_url,
                 original_url: validated_url,
@@ -82,7 +76,7 @@ pub async fn shorten_url_handler(
                     error: "database_error".to_string(),
                     message: "Failed to save URL to database".to_string(),
                     status_code: 500,
-                })
+                }),
             ))
         }
     }
@@ -116,14 +110,17 @@ pub async fn redirect_handler(
                     error: "validation_error".to_string(),
                     message: validation_error.to_string(),
                     status_code: 400,
-                })
+                }),
             ));
         }
     };
 
     match db.get_url_by_short_code(&validated_short_code).await {
         Ok(Some(url_record)) => {
-            info!("Redirecting {} to {}", validated_short_code, url_record.original_url);
+            info!(
+                "Redirecting {} to {}",
+                validated_short_code, url_record.original_url
+            );
             Ok(Redirect::permanent(&url_record.original_url))
         }
         Ok(None) => Err((
@@ -132,7 +129,7 @@ pub async fn redirect_handler(
                 error: "not_found".to_string(),
                 message: format!("Short code '{}' not found", validated_short_code),
                 status_code: 404,
-            })
+            }),
         )),
         Err(e) => {
             tracing::error!("Database error: {}", e);
@@ -142,7 +139,7 @@ pub async fn redirect_handler(
                     error: "database_error".to_string(),
                     message: "Database error occurred".to_string(),
                     status_code: 500,
-                })
+                }),
             ))
         }
     }
@@ -154,4 +151,3 @@ pub fn generate_short_code(url: &str) -> String {
     // Format the hash as hexadecimal and take the first 8 characters as the short code
     format!("{:x}", hash)[..8].to_string()
 }
-
