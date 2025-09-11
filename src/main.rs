@@ -2,6 +2,7 @@ mod database;
 mod server;
 mod shortener;
 mod validation;
+mod rate_limiting;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
