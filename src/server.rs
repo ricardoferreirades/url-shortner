@@ -1,4 +1,5 @@
 use axum::{
+    middleware,
     response::Html,
     routing::{get, post},
     Json, Router,
@@ -12,6 +13,10 @@ use utoipa_swagger_ui::SwaggerUi;
 
 use crate::database::Database;
 use crate::shortener;
+use crate::rate_limiting::{
+    create_request_size_layer, create_tracing_layer_simple, create_compression_layer_simple,
+    security_headers_middleware, rate_limit_middleware, RateLimitConfig,
+};
 
 pub async fn start_server() -> Result<(), Box<dyn std::error::Error>> {
     // Load environment variables from .env file
@@ -27,6 +32,29 @@ pub async fn start_server() -> Result<(), Box<dyn std::error::Error>> {
     // Connect to database
     let db = Database::new(&database_url).await?;
     info!("Connected to PostgreSQL database");
+
+    // Configure rate limiting
+    let rate_limit_config = RateLimitConfig {
+        requests_per_minute: env::var("RATE_LIMIT_REQUESTS_PER_MINUTE")
+            .unwrap_or_else(|_| "60".to_string())
+            .parse()
+            .unwrap_or(60),
+        burst_size: env::var("RATE_LIMIT_BURST_SIZE")
+            .unwrap_or_else(|_| "10".to_string())
+            .parse()
+            .unwrap_or(10),
+        max_request_size: env::var("MAX_REQUEST_SIZE")
+            .unwrap_or_else(|_| "1048576".to_string()) // 1MB
+            .parse()
+            .unwrap_or(1024 * 1024),
+    };
+
+    info!(
+        "Rate limiting configured: {} req/min, burst: {}, max size: {} bytes",
+        rate_limit_config.requests_per_minute,
+        rate_limit_config.burst_size,
+        rate_limit_config.max_request_size
+    );
 
     // Configure CORS
     let cors = CorsLayer::new()
@@ -47,6 +75,7 @@ pub async fn start_server() -> Result<(), Box<dyn std::error::Error>> {
                 shortener::ShortenUrlRequest,
                 shortener::ShortenUrlResponse,
                 shortener::ErrorResponse,
+                crate::rate_limiting::RateLimitError,
             )
         ),
         tags(
@@ -67,7 +96,12 @@ pub async fn start_server() -> Result<(), Box<dyn std::error::Error>> {
     let app = api_router
         .merge(SwaggerUi::new("/docs").url("/api-docs/openapi.json", openapi))
         .with_state(db)
-        .layer(cors);
+        .layer(cors)
+        .layer(middleware::from_fn(security_headers_middleware))
+        .layer(middleware::from_fn(rate_limit_middleware))
+        .layer(create_request_size_layer(&rate_limit_config))
+        .layer(create_tracing_layer_simple())
+        .layer(create_compression_layer_simple());
 
     // Get server configuration from environment variables
     let host = env::var("HOST").unwrap_or_else(|_| "127.0.0.1".to_string());
@@ -91,6 +125,7 @@ pub async fn start_server() -> Result<(), Box<dyn std::error::Error>> {
         host, port
     );
     info!("API documentation: http://{}:{}/docs", host, port);
+    info!("Security features enabled: rate limiting, security headers, compression");
 
     // Start the server
     let listener = tokio::net::TcpListener::bind(&addr).await?;
