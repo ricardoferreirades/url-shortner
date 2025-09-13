@@ -1,3 +1,10 @@
+// Clean Architecture Layers
+mod domain;
+mod application;
+mod infrastructure;
+mod presentation;
+
+// Legacy modules (to be refactored)
 mod database;
 mod server;
 mod shortener;

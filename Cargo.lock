@@ -2859,6 +2859,7 @@ dependencies = [
 name = "url-shortner"
 version = "0.1.0"
 dependencies = [
+ "async-trait",
  "axum",
  "chrono",
  "dotenv",
