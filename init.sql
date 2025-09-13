@@ -1,7 +1,7 @@
 -- Create the urls table
 CREATE TABLE IF NOT EXISTS urls (
     id SERIAL PRIMARY KEY,
-    short_code VARCHAR(8) UNIQUE NOT NULL,
+    short_code VARCHAR(6) UNIQUE NOT NULL,
     original_url TEXT NOT NULL,
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
