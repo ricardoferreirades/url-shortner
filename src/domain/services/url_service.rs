@@ -5,16 +5,17 @@ use std::hash::{Hash, Hasher};
 
 /// Domain service for URL operations
 /// Contains business logic that doesn't belong to a specific entity
+#[derive(Clone)]
 pub struct UrlService<R>
 where
-    R: UrlRepository,
+    R: UrlRepository + Clone,
 {
     repository: R,
 }
 
 impl<R> UrlService<R>
 where
-    R: UrlRepository,
+    R: UrlRepository + Clone,
 {
     pub fn new(repository: R) -> Self {
         Self { repository }
@@ -163,6 +164,7 @@ mod tests {
     use std::sync::{Arc, Mutex};
 
     // Mock repository for testing
+    #[derive(Clone)]
     struct MockUrlRepository {
         urls: Arc<Mutex<Vec<Url>>>,
     }

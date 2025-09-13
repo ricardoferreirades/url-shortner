@@ -1,20 +1,30 @@
 use crate::application::dto::{requests::ShortenUrlRequest, responses::ShortenUrlResponse, ErrorResponse};
-use crate::application::use_cases::ShortenUrlUseCase;
 use crate::domain::repositories::UrlRepository;
 use axum::{extract::State, http::StatusCode, response::Redirect, Json};
 use tracing::{info, warn};
+use super::app_state::AppState;
 
 /// Handler for shortening URLs
+#[utoipa::path(
+    post,
+    path = "/shorten",
+    request_body = ShortenUrlRequest,
+    responses(
+        (status = 201, description = "URL shortened successfully", body = ShortenUrlResponse),
+        (status = 400, description = "Bad request", body = ErrorResponse),
+    ),
+    tag = "url-shortener"
+)]
 pub async fn shorten_url_handler<R>(
-    State(use_case): State<ShortenUrlUseCase<R>>,
+    State(app_state): State<AppState<R>>,
     Json(request): Json<ShortenUrlRequest>,
 ) -> Result<(StatusCode, Json<ShortenUrlResponse>), (StatusCode, Json<ErrorResponse>)>
 where
-    R: UrlRepository + Send + Sync,
+    R: UrlRepository + Send + Sync + Clone,
 {
     info!("Received shorten URL request for: {}", request.url);
 
-    match use_case.execute(request, None).await {
+    match app_state.shorten_url_use_case.execute(request, None).await {
         Ok(response) => {
             info!("Successfully shortened URL: {} -> {}", response.original_url, response.short_url);
             Ok((StatusCode::CREATED, Json(response)))
@@ -32,12 +42,25 @@ where
 }
 
 /// Handler for redirecting to original URL
+#[utoipa::path(
+    get,
+    path = "/{short_code}",
+    params(
+        ("short_code" = String, Path, description = "Short code to redirect")
+    ),
+    responses(
+        (status = 301, description = "Redirect to original URL"),
+        (status = 400, description = "Bad request", body = ErrorResponse),
+        (status = 404, description = "Short code not found", body = ErrorResponse),
+    ),
+    tag = "url-shortener"
+)]
 pub async fn redirect_handler<R>(
-    State(repository): State<R>,
+    State(app_state): State<AppState<R>>,
     axum::extract::Path(short_code_str): axum::extract::Path<String>,
 ) -> Result<Redirect, (StatusCode, Json<ErrorResponse>)>
 where
-    R: UrlRepository + Send + Sync,
+    R: UrlRepository + Send + Sync + Clone,
 {
     info!("Received redirect request for short code: {}", short_code_str);
 
@@ -56,7 +79,7 @@ where
     };
 
     // Find the URL
-    match repository.find_by_short_code(&short_code).await {
+    match app_state.url_repository.find_by_short_code(&short_code).await {
         Ok(Some(url)) => {
             info!("Redirecting {} to {}", short_code.value(), url.original_url);
             Ok(Redirect::permanent(&url.original_url))

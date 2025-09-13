@@ -4,6 +4,7 @@ use async_trait::async_trait;
 use sqlx::{PgPool, Row};
 
 /// PostgreSQL implementation of the UrlRepository trait
+#[derive(Clone)]
 pub struct PostgresUrlRepository {
     pool: PgPool,
 }

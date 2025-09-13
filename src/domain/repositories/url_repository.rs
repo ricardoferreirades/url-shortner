@@ -62,11 +62,10 @@ pub enum RepositoryError {
     Internal(String),
 }
 
-#[cfg(test)]
-mod tests {
+#[cfg(any(test, feature = "test-utils"))]
+pub mod tests {
     use super::*;
     use crate::domain::entities::ShortCode;
-    use std::sync::Arc;
 
     // Mock repository for testing
     struct MockUrlRepository {

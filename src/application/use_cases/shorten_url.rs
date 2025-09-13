@@ -4,9 +4,10 @@ use crate::domain::services::{ServiceError, UrlService};
 use crate::domain::repositories::UrlRepository;
 
 /// Use case for shortening URLs
+#[derive(Clone)]
 pub struct ShortenUrlUseCase<R>
 where
-    R: UrlRepository,
+    R: UrlRepository + Clone,
 {
     url_service: UrlService<R>,
     base_url: String,
@@ -14,7 +15,7 @@ where
 
 impl<R> ShortenUrlUseCase<R>
 where
-    R: UrlRepository,
+    R: UrlRepository + Clone,
 {
     pub fn new(url_service: UrlService<R>, base_url: String) -> Self {
         Self {
@@ -98,6 +99,7 @@ mod tests {
     use std::sync::{Arc, Mutex};
 
     // Mock repository for testing
+    #[derive(Clone)]
     struct MockUrlRepository {
         urls: Arc<Mutex<Vec<crate::domain::entities::Url>>>,
     }
