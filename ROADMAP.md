@@ -27,22 +27,22 @@
 - [x] Request validation
 - [x] Security headers
 
-### 3. **URL Analytics & Metrics**
-- [ ] Click tracking
-- [ ] Analytics dashboard
-- [ ] Usage metrics
+### 3. **Authentication & User Management**
+- [ ] JWT-based authentication
+- [ ] User registration/login
+- [ ] User-specific URL management
 
 ### 4. **Custom Short Codes**
 - [ ] User-specified short codes
 - [ ] Custom code validation
 - [ ] Collision handling
 
-## 🏗️ **Advanced Features**
+### 5. **URL Analytics & Metrics**
+- [ ] Click tracking
+- [ ] Analytics dashboard
+- [ ] Usage metrics
 
-### 5. **Authentication & User Management**
-- [ ] JWT-based authentication
-- [ ] User registration/login
-- [ ] User-specific URL management
+## 🏗️ **Advanced Features**
 
 ### 6. **URL Expiration & Management**
 - [ ] URL expiration dates
@@ -84,7 +84,7 @@
 - [ ] Data retention policies
 
 ## 🎯 **Current Focus**
-**URL Analytics & Metrics** - Click tracking and usage analytics
+**Authentication & User Management** - JWT-based authentication and user system
 
 ## ✅ **Recently Completed**
 
