@@ -1,11 +1,19 @@
 use chrono::Utc;
-use url_shortner::database::UrlRecord;
-use url_shortner::shortener::{generate_short_code, ShortenUrlRequest, ShortenUrlResponse};
+use url_shortner::application::dto::{requests::ShortenUrlRequest, responses::ShortenUrlResponse};
+use url_shortner::domain::services::UrlService;
+use url_shortner::infrastructure::test_utils::MockUrlRepository;
+
+// Helper function to generate short codes using the new architecture
+async fn generate_short_code(url: &str) -> String {
+    let mock_repo = MockUrlRepository::new();
+    let url_service = UrlService::new(mock_repo);
+    url_service.generate_short_code(url).await.unwrap().value().to_string()
+}
 
 /// Integration test for the URL shortener feature
 /// This test verifies the complete flow of URL shortening functionality
-#[test]
-fn test_url_shortener_integration() {
+#[tokio::test]
+async fn test_url_shortener_integration() {
     // Test the complete URL shortening flow
 
     // 1. Test URL input validation and processing
@@ -20,44 +28,48 @@ fn test_url_shortener_integration() {
 
     for url in test_urls {
         // 2. Test short code generation
-        let short_code = generate_short_code(url);
+        let short_code = generate_short_code(url).await;
 
         // Verify short code properties
         assert_eq!(
             short_code.len(),
-            8,
-            "Short code should be exactly 8 characters"
+            6,
+            "Short code should be exactly 6 characters"
         );
         assert!(
-            short_code.chars().all(|c| c.is_ascii_hexdigit()),
-            "Short code should be hexadecimal"
+            short_code.chars().all(|c| c.is_ascii_alphanumeric()),
+            "Short code should be alphanumeric"
         );
 
         // 3. Test request creation
         let request = ShortenUrlRequest {
             url: url.to_string(),
+            custom_short_code: None,
         };
         assert_eq!(request.url, url);
 
         // 4. Test response creation
+        let now = Utc::now();
         let short_url = format!("http://localhost:8000/{}", short_code);
         let response = ShortenUrlResponse {
             short_url: short_url.clone(),
             original_url: url.to_string(),
+            short_code: short_code.clone(),
+            created_at: now.to_rfc3339(),
         };
         assert_eq!(response.short_url, short_url);
         assert_eq!(response.original_url, url);
 
-        // 5. Test database record creation
-        let now = Utc::now();
-        let url_record = UrlRecord {
-            id: 1,
-            short_code: short_code.clone(),
-            original_url: url.to_string(),
-            created_at: now,
-        };
-        assert_eq!(url_record.short_code, short_code);
-        assert_eq!(url_record.original_url, url);
+        // 5. Test URL entity creation
+        use url_shortner::domain::entities::Url;
+        let url_entity = Url::new_with_timestamp(
+            1,
+            short_code.clone(),
+            url.to_string(),
+            None,
+        );
+        assert_eq!(url_entity.short_code, short_code);
+        assert_eq!(url_entity.original_url, url);
 
         // 6. Test serialization/deserialization
         let request_json = serde_json::to_string(&request).unwrap();
@@ -70,22 +82,23 @@ fn test_url_shortener_integration() {
         assert_eq!(deserialized_response.short_url, short_url);
         assert_eq!(deserialized_response.original_url, url);
 
-        let record_json = serde_json::to_string(&url_record).unwrap();
-        let deserialized_record: UrlRecord = serde_json::from_str(&record_json).unwrap();
-        assert_eq!(deserialized_record.short_code, short_code);
-        assert_eq!(deserialized_record.original_url, url);
+        // Test entity serialization
+        let entity_json = serde_json::to_string(&url_entity).unwrap();
+        let deserialized_entity: Url = serde_json::from_str(&entity_json).unwrap();
+        assert_eq!(deserialized_entity.short_code, short_code);
+        assert_eq!(deserialized_entity.original_url, url);
     }
 }
 
-#[test]
-fn test_url_shortener_deterministic_behavior() {
+#[tokio::test]
+async fn test_url_shortener_deterministic_behavior() {
     // Test that the URL shortener behaves deterministically
     let test_url = "https://example.com/deterministic/test";
 
     // Generate the same short code multiple times
-    let short_code1 = generate_short_code(test_url);
-    let short_code2 = generate_short_code(test_url);
-    let short_code3 = generate_short_code(test_url);
+    let short_code1 = generate_short_code(test_url).await;
+    let short_code2 = generate_short_code(test_url).await;
+    let short_code3 = generate_short_code(test_url).await;
 
     // All should be identical
     assert_eq!(short_code1, short_code2);
@@ -94,12 +107,12 @@ fn test_url_shortener_deterministic_behavior() {
 
     // Test that different URLs generate different short codes
     let different_url = "https://example.com/different/test";
-    let different_short_code = generate_short_code(different_url);
+    let different_short_code = generate_short_code(different_url).await;
     assert_ne!(short_code1, different_short_code);
 }
 
-#[test]
-fn test_url_shortener_collision_resistance() {
+#[tokio::test]
+async fn test_url_shortener_collision_resistance() {
     // Test that the URL shortener is collision-resistant
     let base_url = "https://example.com";
     let mut short_codes = std::collections::HashSet::new();
@@ -107,7 +120,7 @@ fn test_url_shortener_collision_resistance() {
     // Generate 1000 short codes with slightly different URLs
     for i in 0..1000 {
         let url = format!("{}/path/{}", base_url, i);
-        let short_code = generate_short_code(&url);
+        let short_code = generate_short_code(&url).await;
         short_codes.insert(short_code);
     }
 
@@ -115,8 +128,8 @@ fn test_url_shortener_collision_resistance() {
     assert_eq!(short_codes.len(), 1000, "All short codes should be unique");
 }
 
-#[test]
-fn test_url_shortener_unicode_support() {
+#[tokio::test]
+async fn test_url_shortener_unicode_support() {
     // Test that the URL shortener handles Unicode correctly
     let unicode_urls = vec![
         "https://example.com/ünicode",
@@ -127,18 +140,18 @@ fn test_url_shortener_unicode_support() {
     ];
 
     for url in unicode_urls {
-        let short_code = generate_short_code(url);
-        assert_eq!(short_code.len(), 8);
-        assert!(short_code.chars().all(|c| c.is_ascii_hexdigit()));
+        let short_code = generate_short_code(url).await;
+        assert_eq!(short_code.len(), 6);
+        assert!(short_code.chars().all(|c| c.is_ascii_alphanumeric()));
 
         // Test that the same Unicode URL generates the same short code
-        let short_code2 = generate_short_code(url);
+        let short_code2 = generate_short_code(url).await;
         assert_eq!(short_code, short_code2);
     }
 }
 
-#[test]
-fn test_url_shortener_edge_cases() {
+#[tokio::test]
+async fn test_url_shortener_edge_cases() {
     // Test edge cases for the URL shortener
     let long_url = "https://example.com/".repeat(1000);
     let edge_cases = vec![
@@ -152,30 +165,33 @@ fn test_url_shortener_edge_cases() {
     ];
 
     for url in edge_cases {
-        let short_code = generate_short_code(url);
-        assert_eq!(short_code.len(), 8);
-        assert!(short_code.chars().all(|c| c.is_ascii_hexdigit()));
+        let short_code = generate_short_code(url).await;
+        assert_eq!(short_code.len(), 6);
+        assert!(short_code.chars().all(|c| c.is_ascii_alphanumeric()));
     }
 }
 
-#[test]
-fn test_url_shortener_api_contract() {
+#[tokio::test]
+async fn test_url_shortener_api_contract() {
     // Test that the API contract is maintained
     let test_url = "https://example.com/api/test";
 
     // Test request structure
     let request = ShortenUrlRequest {
         url: test_url.to_string(),
+        custom_short_code: None,
     };
     let request_json = serde_json::to_string(&request).unwrap();
     assert!(request_json.contains("url"));
     assert!(request_json.contains(test_url));
 
     // Test response structure
-    let short_code = generate_short_code(test_url);
+    let short_code = generate_short_code(test_url).await;
     let response = ShortenUrlResponse {
         short_url: format!("http://localhost:8000/{}", short_code),
         original_url: test_url.to_string(),
+        short_code: short_code.clone(),
+        created_at: Utc::now().to_rfc3339(),
     };
     let response_json = serde_json::to_string(&response).unwrap();
     assert!(response_json.contains("short_url"));
@@ -184,15 +200,15 @@ fn test_url_shortener_api_contract() {
     assert!(response_json.contains(test_url));
 }
 
-#[test]
-fn test_url_shortener_performance() {
+#[tokio::test]
+async fn test_url_shortener_performance() {
     // Test that the URL shortener performs well
     let start = std::time::Instant::now();
 
     // Generate 1000 short codes
     for i in 0..1000 {
         let url = format!("https://example.com/performance/test/{}", i);
-        let _short_code = generate_short_code(&url);
+        let _short_code = generate_short_code(&url).await;
     }
 
     let duration = start.elapsed();
@@ -201,38 +217,31 @@ fn test_url_shortener_performance() {
     assert!(duration.as_millis() < 1000, "URL shortening should be fast");
 }
 
-#[test]
-fn test_url_shortener_data_integrity() {
+#[tokio::test]
+async fn test_url_shortener_data_integrity() {
     // Test that data integrity is maintained throughout the process
     let original_url = "https://example.com/data/integrity/test";
 
     // Generate short code
-    let short_code = generate_short_code(original_url);
+    let short_code = generate_short_code(original_url).await;
 
     // Create request
     let request = ShortenUrlRequest {
         url: original_url.to_string(),
+        custom_short_code: None,
     };
 
     // Create response
     let response = ShortenUrlResponse {
         short_url: format!("http://localhost:8000/{}", short_code),
         original_url: original_url.to_string(),
-    };
-
-    // Create database record
-    let now = Utc::now();
-    let url_record = UrlRecord {
-        id: 1,
         short_code: short_code.clone(),
-        original_url: original_url.to_string(),
-        created_at: now,
+        created_at: Utc::now().to_rfc3339(),
     };
 
-    // Verify data integrity
+    // Test data integrity
     assert_eq!(request.url, original_url);
     assert_eq!(response.original_url, original_url);
-    assert_eq!(url_record.original_url, original_url);
-    assert_eq!(url_record.short_code, short_code);
+    assert_eq!(response.short_code, short_code);
     assert!(response.short_url.contains(&short_code));
 }
