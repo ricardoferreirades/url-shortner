@@ -31,7 +31,6 @@
 - [ ] JWT-based authentication
 - [ ] User registration/login
 - [ ] User-specific URL management
-- [ ] **Architectural Decision**: Consider removing user functionality if authentication is not needed
 
 ### 4. **Custom Short Codes**
 - [ ] User-specified short codes
@@ -86,8 +85,6 @@
 
 ## 🎯 **Current Focus**
 **Authentication & User Management** - JWT-based authentication and user system
-
-**Note**: The database schema now supports user functionality with the `user_id` column. The next step is to implement the authentication system to make use of this infrastructure.
 
 ## ✅ **Recently Completed**
 
