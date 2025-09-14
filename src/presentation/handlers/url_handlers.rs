@@ -1,5 +1,5 @@
 use crate::application::dto::{requests::ShortenUrlRequest, responses::ShortenUrlResponse, ErrorResponse};
-use crate::domain::repositories::UrlRepository;
+use crate::domain::{repositories::UrlRepository, entities::User};
 use axum::{extract::State, http::StatusCode, response::Redirect, Json};
 use tracing::{info, warn};
 use super::app_state::AppState;
@@ -15,16 +15,19 @@ use super::app_state::AppState;
     ),
     tag = "url-shortener"
 )]
-pub async fn shorten_url_handler<R>(
-    State(app_state): State<AppState<R>>,
+pub async fn shorten_url_handler<R, U>(
+    State(app_state): State<AppState<R, U>>,
     Json(request): Json<ShortenUrlRequest>,
 ) -> Result<(StatusCode, Json<ShortenUrlResponse>), (StatusCode, Json<ErrorResponse>)>
 where
     R: UrlRepository + Send + Sync + Clone,
+    U: crate::domain::repositories::UserRepository + Send + Sync + Clone,
 {
-    info!("Received shorten URL request for: {}", request.url);
+    // For now, we'll pass None for user_id since we don't have authentication middleware yet
+    let user_id = None;
+    info!("Received shorten URL request for: {} (user: {:?})", request.url, user_id);
 
-    match app_state.shorten_url_use_case.execute(request, None).await {
+    match app_state.shorten_url_use_case.execute(request, user_id).await {
         Ok(response) => {
             info!("Successfully shortened URL: {} -> {}", response.original_url, response.short_url);
             Ok((StatusCode::CREATED, Json(response)))
@@ -55,12 +58,13 @@ where
     ),
     tag = "url-shortener"
 )]
-pub async fn redirect_handler<R>(
-    State(app_state): State<AppState<R>>,
+pub async fn redirect_handler<R, U>(
+    State(app_state): State<AppState<R, U>>,
     axum::extract::Path(short_code_str): axum::extract::Path<String>,
 ) -> Result<Redirect, (StatusCode, Json<ErrorResponse>)>
 where
     R: UrlRepository + Send + Sync + Clone,
+    U: crate::domain::repositories::UserRepository + Send + Sync + Clone,
 {
     info!("Received redirect request for short code: {}", short_code_str);
 
