@@ -24,3 +24,5 @@ governor = "0.6"
 tower-http = { version = "0.5", features = ["cors", "limit", "trace", "compression-br", "compression-gzip", "compression-deflate"] }
 tower = { version = "0.4", features = ["full"] }
 async-trait = "0.1"
+jsonwebtoken = "9.2"
+bcrypt = "0.15"
