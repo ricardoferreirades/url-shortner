@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 use tracing::{info, warn};
 
 use crate::domain::repositories::user_repository::UserRepository;
-use crate::domain::services::auth_service::ServiceError as AuthServiceError;
+use crate::domain::services::AuthServiceError;
 use crate::presentation::handlers::app_state::AppState;
 
 /// Request DTO for user registration
