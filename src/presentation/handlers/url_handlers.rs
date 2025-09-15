@@ -1,5 +1,5 @@
 use crate::application::dto::{requests::ShortenUrlRequest, responses::ShortenUrlResponse, ErrorResponse};
-use crate::domain::{repositories::UrlRepository, entities::User};
+use crate::domain::repositories::UrlRepository;
 use axum::{extract::State, http::StatusCode, response::Redirect, Json};
 use tracing::{info, warn};
 use super::app_state::AppState;
