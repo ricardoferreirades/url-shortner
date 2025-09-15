@@ -16,12 +16,13 @@ pub struct AxumUrlController;
 
 impl AxumUrlController {
     /// Handle URL shortening requests
-    pub async fn shorten_url<R>(
-        State(app_state): State<AppState<R>>,
+    pub async fn shorten_url<R, U>(
+        State(app_state): State<AppState<R, U>>,
         Json(request): Json<ShortenUrlRequest>,
     ) -> Result<(StatusCode, Json<ShortenUrlResponse>), (StatusCode, Json<ErrorResponse>)>
     where
         R: UrlRepository + Send + Sync + Clone,
+        U: crate::domain::repositories::UserRepository + Send + Sync + Clone,
     {
         info!("Axum controller: Received shorten URL request for: {}", request.url);
 
@@ -42,12 +43,13 @@ impl AxumUrlController {
     }
 
     /// Handle URL redirects
-    pub async fn redirect<R>(
-        State(app_state): State<AppState<R>>,
+    pub async fn redirect<R, U>(
+        State(app_state): State<AppState<R, U>>,
         axum::extract::Path(short_code_str): axum::extract::Path<String>,
     ) -> Result<Redirect, (StatusCode, Json<ErrorResponse>)>
     where
         R: UrlRepository + Send + Sync + Clone,
+        U: crate::domain::repositories::UserRepository + Send + Sync + Clone,
     {
         info!("Axum controller: Received redirect request for short code: {}", short_code_str);
 
