@@ -14,9 +14,11 @@ use utoipa_swagger_ui::SwaggerUi;
 // Clean Architecture imports
 use crate::domain::UrlService;
 use crate::application::{ShortenUrlUseCase, ShortenUrlRequest};
-use crate::infrastructure::PostgresUrlRepository;
-use crate::presentation::{shorten_url_handler, redirect_handler, AppState};
+use crate::infrastructure::{PostgresUrlRepository, PostgresUserRepository};
+use crate::domain::services::AuthService;
+use crate::presentation::{shorten_url_handler, redirect_handler, register_handler, login_handler, AppState};
 use crate::presentation::handlers::url_handlers::{__path_shorten_url_handler, __path_redirect_handler};
+use crate::presentation::handlers::auth_handlers::{__path_register_handler, __path_login_handler};
 use crate::infrastructure::rate_limiting::{
     create_request_size_layer, create_tracing_layer_simple, create_compression_layer_simple,
     security_headers_middleware, rate_limit_middleware, RateLimitConfig,
@@ -35,7 +37,8 @@ pub async fn start_server() -> Result<(), Box<dyn std::error::Error>> {
 
     // Connect to database using new clean architecture
     let pool = sqlx::PgPool::connect(&database_url).await?;
-    let url_repository = PostgresUrlRepository::new(pool);
+    let url_repository = PostgresUrlRepository::new(pool.clone());
+    let user_repository = PostgresUserRepository::new(pool);
     info!("Connected to PostgreSQL database with clean architecture");
 
     // Configure rate limiting
@@ -72,13 +75,19 @@ pub async fn start_server() -> Result<(), Box<dyn std::error::Error>> {
     let base_url = env::var("BASE_URL").unwrap_or_else(|_| "http://localhost:8000".to_string());
     let shorten_url_use_case = ShortenUrlUseCase::new(url_service, base_url);
     
+    // Create auth service
+    let jwt_secret = env::var("JWT_SECRET").unwrap_or_else(|_| "your-secret-key".to_string());
+    let auth_service = AuthService::new(user_repository.clone(), jwt_secret);
+    
     // Create application state
-    let app_state = AppState::new(shorten_url_use_case, url_repository);
+    let app_state = AppState::new(shorten_url_use_case, url_repository, auth_service);
 
     // OpenAPI doc
     #[derive(OpenApi)]
     #[openapi(
         paths(
+            register_handler,
+            login_handler,
             shorten_url_handler,
             redirect_handler,
             health_check,
@@ -88,7 +97,11 @@ pub async fn start_server() -> Result<(), Box<dyn std::error::Error>> {
                 ShortenUrlRequest,
                 crate::application::ShortenUrlResponse,
                 crate::application::ErrorResponse,
-                            crate::infrastructure::rate_limiting::RateLimitError,
+                crate::infrastructure::rate_limiting::RateLimitError,
+                crate::presentation::handlers::auth_handlers::RegisterRequest,
+                crate::presentation::handlers::auth_handlers::LoginRequest,
+                crate::presentation::handlers::auth_handlers::AuthResponse,
+                crate::presentation::handlers::auth_handlers::UserResponse,
             )
         ),
         tags(
@@ -103,6 +116,8 @@ pub async fn start_server() -> Result<(), Box<dyn std::error::Error>> {
     let api_router = Router::new()
         .route("/", get(welcome_handler))
         .route("/health", get(health_check))
+        .route("/register", post(register_handler))
+        .route("/login", post(login_handler))
         .route("/shorten", post(shorten_url_handler))
         .route("/:short_code", get(redirect_handler));
 
