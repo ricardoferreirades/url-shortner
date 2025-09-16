@@ -1,6 +1,6 @@
 use crate::application::dto::{requests::ShortenUrlRequest, responses::ShortenUrlResponse, ErrorResponse};
 use crate::domain::repositories::UrlRepository;
-use axum::{extract::State, http::StatusCode, response::Redirect, Json};
+use axum::{extract::State, http::{StatusCode, header}, response::Redirect, Json, http::HeaderMap};
 use tracing::{info, warn};
 use super::app_state::AppState;
 
@@ -17,14 +17,42 @@ use super::app_state::AppState;
 )]
 pub async fn shorten_url_handler<R, U>(
     State(app_state): State<AppState<R, U>>,
+    headers: HeaderMap,
     Json(request): Json<ShortenUrlRequest>,
 ) -> Result<(StatusCode, Json<ShortenUrlResponse>), (StatusCode, Json<ErrorResponse>)>
 where
     R: UrlRepository + Send + Sync + Clone,
     U: crate::domain::repositories::UserRepository + Send + Sync + Clone,
 {
-    // For now, we'll pass None for user_id since we don't have authentication middleware yet
-    let user_id = None;
+    // Require Authorization: Bearer <token>
+    let auth_header = headers.get(header::AUTHORIZATION).and_then(|v| v.to_str().ok());
+    let token = match auth_header.and_then(|h| h.strip_prefix("Bearer ")) {
+        Some(t) if !t.is_empty() => t,
+        _ => {
+            let error_response = ErrorResponse {
+                error: "UNAUTHORIZED".to_string(),
+                message: "Missing or invalid Authorization header".to_string(),
+                status_code: StatusCode::UNAUTHORIZED.as_u16(),
+            };
+            return Err((StatusCode::UNAUTHORIZED, Json(error_response)));
+        }
+    };
+
+    // Verify token and get user
+    let user = match app_state.auth_service.verify_token(token).await {
+        Ok(u) => u,
+        Err(e) => {
+            warn!("Token verification failed: {}", e);
+            let error_response = ErrorResponse {
+                error: "INVALID_TOKEN".to_string(),
+                message: "Invalid or expired token".to_string(),
+                status_code: StatusCode::UNAUTHORIZED.as_u16(),
+            };
+            return Err((StatusCode::UNAUTHORIZED, Json(error_response)));
+        }
+    };
+
+    let user_id = Some(user.id);
     info!("Received shorten URL request for: {} (user: {:?})", request.url, user_id);
 
     match app_state.shorten_url_use_case.execute(request, user_id).await {
