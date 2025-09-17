@@ -31,17 +31,16 @@ pub async fn start_server() -> Result<(), Box<dyn std::error::Error>> {
     // Initialize tracing
     tracing_subscriber::fmt::init();
 
-    // Get database URL: prefer full DATABASE_URL, otherwise assemble from parts
-    let database_url = match env::var("DATABASE_URL") {
-        Ok(url) => url,
-        Err(_) => {
-            let host = env::var("DATABASE_HOST").expect("DATABASE_HOST must be set");
-            let port = env::var("DATABASE_PORT").expect("DATABASE_PORT must be set");
-            let name = env::var("DATABASE_NAME").expect("DATABASE_NAME must be set");
-            let user = env::var("DATABASE_USER").expect("DATABASE_USER must be set");
-            let password = env::var("DATABASE_PASSWORD").expect("DATABASE_PASSWORD must be set");
-            format!("postgresql://{}:{}@{}:{}/{}", user, password, host, port, name)
-        }
+    // Get database URL: prefer DATABASE_URL; otherwise, assemble from POSTGRES_* parts (shared with Docker)
+    let database_url = if let Ok(url) = env::var("DATABASE_URL") {
+        url
+    } else {
+        let host = env::var("POSTGRES_HOST").unwrap_or_else(|_| "localhost".to_string());
+        let port = env::var("POSTGRES_PORT").unwrap_or_else(|_| "5432".to_string());
+        let name = env::var("POSTGRES_DB").expect("POSTGRES_DB must be set (or provide DATABASE_URL)");
+        let user = env::var("POSTGRES_USER").expect("POSTGRES_USER must be set (or provide DATABASE_URL)");
+        let password = env::var("POSTGRES_PASSWORD").expect("POSTGRES_PASSWORD must be set (or provide DATABASE_URL)");
+        format!("postgresql://{}:{}@{}:{}/{}", user, password, host, port, name)
     };
 
     // Connect to database using new clean architecture
