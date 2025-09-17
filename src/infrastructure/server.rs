@@ -31,9 +31,18 @@ pub async fn start_server() -> Result<(), Box<dyn std::error::Error>> {
     // Initialize tracing
     tracing_subscriber::fmt::init();
 
-    // Get database URL from environment variable
-    let database_url =
-        env::var("DATABASE_URL").expect("DATABASE_URL must be set in environment variables");
+    // Get database URL: prefer full DATABASE_URL, otherwise assemble from parts
+    let database_url = match env::var("DATABASE_URL") {
+        Ok(url) => url,
+        Err(_) => {
+            let host = env::var("DATABASE_HOST").expect("DATABASE_HOST must be set");
+            let port = env::var("DATABASE_PORT").expect("DATABASE_PORT must be set");
+            let name = env::var("DATABASE_NAME").expect("DATABASE_NAME must be set");
+            let user = env::var("DATABASE_USER").expect("DATABASE_USER must be set");
+            let password = env::var("DATABASE_PASSWORD").expect("DATABASE_PASSWORD must be set");
+            format!("postgresql://{}:{}@{}:{}/{}", user, password, host, port, name)
+        }
+    };
 
     // Connect to database using new clean architecture
     let pool = sqlx::PgPool::connect(&database_url).await?;
