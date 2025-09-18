@@ -10,7 +10,7 @@ CREATE TABLE IF NOT EXISTS users (
 -- Create the urls table
 CREATE TABLE IF NOT EXISTS urls (
     id SERIAL PRIMARY KEY,
-    short_code VARCHAR(6) UNIQUE NOT NULL,
+    short_code VARCHAR(50) UNIQUE NOT NULL,
     original_url TEXT NOT NULL,
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     user_id INTEGER REFERENCES users(id)
