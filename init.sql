@@ -16,7 +16,24 @@ CREATE TABLE IF NOT EXISTS urls (
     user_id INTEGER REFERENCES users(id)
 );
 
+-- Create the clicks table for analytics tracking
+CREATE TABLE IF NOT EXISTS clicks (
+    id SERIAL PRIMARY KEY,
+    url_id INTEGER NOT NULL REFERENCES urls(id) ON DELETE CASCADE,
+    clicked_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    ip_address INET,
+    user_agent TEXT,
+    referer TEXT,
+    country_code VARCHAR(2),
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Create indexes for faster lookups
 CREATE INDEX IF NOT EXISTS idx_urls_short_code ON urls(short_code);
 CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+
+-- Create indexes for analytics performance
+CREATE INDEX IF NOT EXISTS idx_clicks_url_id ON clicks(url_id);
+CREATE INDEX IF NOT EXISTS idx_clicks_clicked_at ON clicks(clicked_at);
+CREATE INDEX IF NOT EXISTS idx_clicks_url_clicked_at ON clicks(url_id, clicked_at);
