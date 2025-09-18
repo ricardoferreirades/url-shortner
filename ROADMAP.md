@@ -33,9 +33,9 @@
 - [x] User-specific URL management
 
 ### 4. **Custom Short Codes**
-- [ ] User-specified short codes
-- [ ] Custom code validation
-- [ ] Collision handling
+- [x] User-specified short codes
+- [x] Custom code validation
+- [x] Collision handling
 
 ### 5. **URL Analytics & Metrics**
 - [ ] Click tracking
@@ -84,7 +84,7 @@
 - [ ] Data retention policies
 
 ## 🎯 **Current Focus**
-**Authentication & User Management** - Completed (JWT + register/login + user-specific shorten)
+**Custom Short Codes** - Completed (user-specified codes + validation + collision handling)
 
 ## ✅ **Recently Completed**
 
@@ -116,7 +116,15 @@
 - ✅ Short code validation
 - ✅ Comprehensive test coverage (6 validation tests)
 
+### **Custom Short Codes** - User-specified short codes with validation
+- ✅ User-specified custom short codes via API
+- ✅ Custom short code validation (3-50 characters, alphanumeric + hyphens/underscores)
+- ✅ Collision detection and error handling
+- ✅ Database schema updated to support longer codes (VARCHAR(50))
+- ✅ Backward compatibility with auto-generated codes
+- ✅ Comprehensive testing of custom code functionality
+
 ---
 
 *Last Updated: January 2025*
-*Status: Authentication & User Management Completed*
+*Status: Custom Short Codes Completed*
