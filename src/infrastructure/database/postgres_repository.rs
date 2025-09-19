@@ -21,13 +21,15 @@ impl UrlRepository for PostgresUrlRepository {
         &self,
         short_code: &ShortCode,
         original_url: &str,
+        expiration_date: Option<chrono::DateTime<chrono::Utc>>,
         user_id: Option<i32>,
     ) -> Result<Url, RepositoryError> {
         let row = sqlx::query(
-            "INSERT INTO urls (short_code, original_url, user_id) VALUES ($1, $2, $3) RETURNING id, short_code, original_url, created_at, user_id"
+            "INSERT INTO urls (short_code, original_url, expiration_date, user_id) VALUES ($1, $2, $3, $4) RETURNING id, short_code, original_url, created_at, expiration_date, user_id"
         )
         .bind(short_code.value())
         .bind(original_url)
+        .bind(expiration_date)
         .bind(user_id)
         .fetch_one(&self.pool)
         .await?;
@@ -37,13 +39,14 @@ impl UrlRepository for PostgresUrlRepository {
             short_code: row.get("short_code"),
             original_url: row.get("original_url"),
             created_at: row.get("created_at"),
+            expiration_date: row.get("expiration_date"),
             user_id: row.get("user_id"),
         })
     }
 
     async fn find_by_short_code(&self, short_code: &ShortCode) -> Result<Option<Url>, RepositoryError> {
         let row = sqlx::query(
-            "SELECT id, short_code, original_url, created_at, user_id FROM urls WHERE short_code = $1"
+            "SELECT id, short_code, original_url, created_at, expiration_date, user_id FROM urls WHERE short_code = $1"
         )
         .bind(short_code.value())
         .fetch_optional(&self.pool)
@@ -55,6 +58,7 @@ impl UrlRepository for PostgresUrlRepository {
                 short_code: row.get("short_code"),
                 original_url: row.get("original_url"),
                 created_at: row.get("created_at"),
+                expiration_date: row.get("expiration_date"),
                 user_id: row.get("user_id"),
             })),
             None => Ok(None),
@@ -63,7 +67,7 @@ impl UrlRepository for PostgresUrlRepository {
 
     async fn find_by_user_id(&self, user_id: i32) -> Result<Vec<Url>, RepositoryError> {
         let rows = sqlx::query(
-            "SELECT id, short_code, original_url, created_at, user_id FROM urls WHERE user_id = $1 ORDER BY created_at DESC"
+            "SELECT id, short_code, original_url, created_at, expiration_date, user_id FROM urls WHERE user_id = $1 ORDER BY created_at DESC"
         )
         .bind(user_id)
         .fetch_all(&self.pool)
@@ -76,6 +80,7 @@ impl UrlRepository for PostgresUrlRepository {
                 short_code: row.get("short_code"),
                 original_url: row.get("original_url"),
                 created_at: row.get("created_at"),
+                expiration_date: row.get("expiration_date"),
                 user_id: row.get("user_id"),
             })
             .collect();
@@ -110,10 +115,11 @@ impl UrlRepository for PostgresUrlRepository {
 
     async fn update_url(&self, url: &Url) -> Result<Url, RepositoryError> {
         let row = sqlx::query(
-            "UPDATE urls SET short_code = $1, original_url = $2 WHERE id = $3 RETURNING id, short_code, original_url, created_at, user_id"
+            "UPDATE urls SET short_code = $1, original_url = $2, expiration_date = $3 WHERE id = $4 RETURNING id, short_code, original_url, created_at, expiration_date, user_id"
         )
         .bind(&url.short_code)
         .bind(&url.original_url)
+        .bind(&url.expiration_date)
         .bind(url.id)
         .fetch_one(&self.pool)
         .await?;
@@ -123,6 +129,7 @@ impl UrlRepository for PostgresUrlRepository {
             short_code: row.get("short_code"),
             original_url: row.get("original_url"),
             created_at: row.get("created_at"),
+            expiration_date: row.get("expiration_date"),
             user_id: row.get("user_id"),
         })
     }
@@ -155,5 +162,79 @@ impl UrlRepository for PostgresUrlRepository {
             total_clicks,
             unique_short_codes,
         })
+    }
+
+    async fn find_urls_expiring_soon(&self, duration: chrono::Duration) -> Result<Vec<Url>, RepositoryError> {
+        let now = chrono::Utc::now();
+        let warning_time = now + duration;
+        
+        let rows = sqlx::query(
+            "SELECT id, short_code, original_url, created_at, expiration_date, user_id 
+             FROM urls 
+             WHERE expiration_date IS NOT NULL 
+             AND expiration_date > $1 
+             AND expiration_date <= $2 
+             ORDER BY expiration_date ASC"
+        )
+        .bind(now)
+        .bind(warning_time)
+        .fetch_all(&self.pool)
+        .await?;
+
+        let urls = rows
+            .into_iter()
+            .map(|row| Url {
+                id: row.get("id"),
+                short_code: row.get("short_code"),
+                original_url: row.get("original_url"),
+                created_at: row.get("created_at"),
+                expiration_date: row.get("expiration_date"),
+                user_id: row.get("user_id"),
+            })
+            .collect();
+
+        Ok(urls)
+    }
+
+    async fn find_expired_urls(&self) -> Result<Vec<Url>, RepositoryError> {
+        let now = chrono::Utc::now();
+        
+        let rows = sqlx::query(
+            "SELECT id, short_code, original_url, created_at, expiration_date, user_id 
+             FROM urls 
+             WHERE expiration_date IS NOT NULL 
+             AND expiration_date <= $1 
+             ORDER BY expiration_date ASC"
+        )
+        .bind(now)
+        .fetch_all(&self.pool)
+        .await?;
+
+        let urls = rows
+            .into_iter()
+            .map(|row| Url {
+                id: row.get("id"),
+                short_code: row.get("short_code"),
+                original_url: row.get("original_url"),
+                created_at: row.get("created_at"),
+                expiration_date: row.get("expiration_date"),
+                user_id: row.get("user_id"),
+            })
+            .collect();
+
+        Ok(urls)
+    }
+
+    async fn delete_expired_urls(&self) -> Result<u64, RepositoryError> {
+        let now = chrono::Utc::now();
+        
+        let result = sqlx::query(
+            "DELETE FROM urls WHERE expiration_date IS NOT NULL AND expiration_date <= $1"
+        )
+        .bind(now)
+        .execute(&self.pool)
+        .await?;
+
+        Ok(result.rows_affected())
     }
 }
