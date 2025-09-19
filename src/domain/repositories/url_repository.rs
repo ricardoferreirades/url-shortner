@@ -10,6 +10,7 @@ pub trait UrlRepository: Send + Sync {
         &self,
         short_code: &ShortCode,
         original_url: &str,
+        expiration_date: Option<chrono::DateTime<chrono::Utc>>,
         user_id: Option<i32>,
     ) -> Result<Url, RepositoryError>;
 
@@ -30,6 +31,15 @@ pub trait UrlRepository: Send + Sync {
 
     /// Get URL statistics
     async fn get_stats(&self, user_id: Option<i32>) -> Result<UrlStats, RepositoryError>;
+
+    /// Find URLs that are expiring soon
+    async fn find_urls_expiring_soon(&self, duration: chrono::Duration) -> Result<Vec<Url>, RepositoryError>;
+
+    /// Find expired URLs
+    async fn find_expired_urls(&self) -> Result<Vec<Url>, RepositoryError>;
+
+    /// Delete expired URLs
+    async fn delete_expired_urls(&self) -> Result<u64, RepositoryError>;
 }
 
 /// Statistics about URLs
@@ -62,7 +72,7 @@ pub enum RepositoryError {
     Internal(String),
 }
 
-#[cfg(any(test, feature = "test-utils"))]
+#[cfg(test)]
 pub mod tests {
     use super::*;
     use crate::domain::entities::ShortCode;
@@ -86,6 +96,7 @@ pub mod tests {
             &self,
             short_code: &ShortCode,
             original_url: &str,
+            expiration_date: Option<chrono::DateTime<chrono::Utc>>,
             user_id: Option<i32>,
         ) -> Result<Url, RepositoryError> {
             let mut urls = self.urls.lock().unwrap();
@@ -94,6 +105,7 @@ pub mod tests {
                 id,
                 short_code.value().to_string(),
                 original_url.to_string(),
+                expiration_date,
                 user_id,
             );
             urls.push(url.clone());
@@ -149,6 +161,46 @@ pub mod tests {
                 unique_short_codes: filtered_urls.len() as i64,
             })
         }
+
+        async fn find_urls_expiring_soon(&self, duration: chrono::Duration) -> Result<Vec<Url>, RepositoryError> {
+            let urls = self.urls.lock().unwrap();
+            let now = chrono::Utc::now();
+            let warning_time = now + duration;
+            
+            let expiring_soon: Vec<Url> = urls.iter()
+                .filter(|url| {
+                    if let Some(expiration) = url.expiration_date {
+                        now < expiration && expiration <= warning_time
+                    } else {
+                        false
+                    }
+                })
+                .cloned()
+                .collect();
+            
+            Ok(expiring_soon)
+        }
+
+        async fn find_expired_urls(&self) -> Result<Vec<Url>, RepositoryError> {
+            let urls = self.urls.lock().unwrap();
+            
+            let expired: Vec<Url> = urls.iter()
+                .filter(|url| url.is_expired())
+                .cloned()
+                .collect();
+            
+            Ok(expired)
+        }
+
+        async fn delete_expired_urls(&self) -> Result<u64, RepositoryError> {
+            let mut urls = self.urls.lock().unwrap();
+            let initial_count = urls.len();
+            
+            urls.retain(|url| !url.is_expired());
+            
+            let deleted_count = initial_count - urls.len();
+            Ok(deleted_count as u64)
+        }
     }
 
     #[tokio::test]
@@ -156,7 +208,7 @@ pub mod tests {
         let repo = MockUrlRepository::new();
         let short_code = ShortCode::new("abc123".to_string()).unwrap();
         
-        let url = repo.create_url(&short_code, "https://example.com", None).await.unwrap();
+        let url = repo.create_url(&short_code, "https://example.com", None, None).await.unwrap();
         assert_eq!(url.short_code, "abc123");
         assert_eq!(url.original_url, "https://example.com");
         
@@ -172,7 +224,7 @@ pub mod tests {
         
         assert!(!repo.exists_by_short_code(&short_code).await.unwrap());
         
-        repo.create_url(&short_code, "https://example.com", None).await.unwrap();
+        repo.create_url(&short_code, "https://example.com", None, None).await.unwrap();
         
         assert!(repo.exists_by_short_code(&short_code).await.unwrap());
     }
