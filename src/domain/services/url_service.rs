@@ -89,6 +89,7 @@ where
         &self,
         original_url: &str,
         custom_short_code: Option<ShortCode>,
+        expiration_date: Option<chrono::DateTime<chrono::Utc>>,
         user_id: Option<i32>,
     ) -> Result<Url, ServiceError> {
         let short_code = match custom_short_code {
@@ -102,7 +103,7 @@ where
             None => self.generate_short_code(original_url).await?,
         };
 
-        self.repository.create_url(&short_code, original_url, user_id).await
+        self.repository.create_url(&short_code, original_url, expiration_date, user_id).await
             .map_err(ServiceError::from)
     }
 
@@ -127,6 +128,40 @@ where
     /// Update a URL (with ownership check)
     pub async fn update_url(&self, url: &Url) -> Result<Url, ServiceError> {
         self.repository.update_url(url).await
+            .map_err(ServiceError::from)
+    }
+
+    /// Get URL by short code with expiration validation
+    pub async fn get_url_by_short_code_with_validation(&self, short_code: &ShortCode) -> Result<Option<Url>, ServiceError> {
+        match self.repository.find_by_short_code(short_code).await? {
+            Some(url) => {
+                if url.is_expired() {
+                    // Optionally delete expired URL or just return None
+                    self.repository.delete_by_id(url.id, url.user_id).await?;
+                    Ok(None)
+                } else {
+                    Ok(Some(url))
+                }
+            }
+            None => Ok(None),
+        }
+    }
+
+    /// Get URLs that are expiring soon
+    pub async fn get_urls_expiring_soon(&self, duration: chrono::Duration) -> Result<Vec<Url>, ServiceError> {
+        self.repository.find_urls_expiring_soon(duration).await
+            .map_err(ServiceError::from)
+    }
+
+    /// Get expired URLs
+    pub async fn get_expired_urls(&self) -> Result<Vec<Url>, ServiceError> {
+        self.repository.find_expired_urls().await
+            .map_err(ServiceError::from)
+    }
+
+    /// Clean up expired URLs
+    pub async fn cleanup_expired_urls(&self) -> Result<u64, ServiceError> {
+        self.repository.delete_expired_urls().await
             .map_err(ServiceError::from)
     }
 }
@@ -183,6 +218,7 @@ mod tests {
             &self,
             short_code: &ShortCode,
             original_url: &str,
+            expiration_date: Option<chrono::DateTime<chrono::Utc>>,
             user_id: Option<i32>,
         ) -> Result<Url, RepositoryError> {
             let mut urls = self.urls.lock().unwrap();
@@ -191,6 +227,7 @@ mod tests {
                 id,
                 short_code.value().to_string(),
                 original_url.to_string(),
+                expiration_date,
                 user_id,
             );
             urls.push(url.clone());
@@ -246,6 +283,18 @@ mod tests {
                 unique_short_codes: filtered_urls.len() as i64,
             })
         }
+
+        async fn find_urls_expiring_soon(&self, _duration: chrono::Duration) -> Result<Vec<Url>, RepositoryError> {
+            Ok(vec![])
+        }
+
+        async fn find_expired_urls(&self) -> Result<Vec<Url>, RepositoryError> {
+            Ok(vec![])
+        }
+
+        async fn delete_expired_urls(&self) -> Result<u64, RepositoryError> {
+            Ok(0)
+        }
     }
 
     #[tokio::test]
@@ -263,7 +312,7 @@ mod tests {
         let repo = MockUrlRepository::new();
         let service = UrlService::new(repo);
         
-        let url = service.create_url("https://example.com", None, None).await.unwrap();
+        let url = service.create_url("https://example.com", None, None, None).await.unwrap();
         assert_eq!(url.original_url, "https://example.com");
         assert!(!url.short_code.is_empty());
     }
@@ -274,7 +323,7 @@ mod tests {
         let service = UrlService::new(repo);
         let custom_code = ShortCode::new("mycode".to_string()).unwrap();
         
-        let url = service.create_url("https://example.com", Some(custom_code.clone()), None).await.unwrap();
+        let url = service.create_url("https://example.com", Some(custom_code.clone()), None, None).await.unwrap();
         assert_eq!(url.short_code, custom_code.value());
         assert_eq!(url.original_url, "https://example.com");
     }
