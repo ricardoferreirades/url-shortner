@@ -45,6 +45,7 @@ async fn test_url_shortener_integration() {
         let request = ShortenUrlRequest {
             url: url.to_string(),
             custom_short_code: None,
+            expiration_date: None,
         };
         assert_eq!(request.url, url);
 
@@ -56,6 +57,7 @@ async fn test_url_shortener_integration() {
             original_url: url.to_string(),
             short_code: short_code.clone(),
             created_at: now.to_rfc3339(),
+            expiration_date: None,
         };
         assert_eq!(response.short_url, short_url);
         assert_eq!(response.original_url, url);
@@ -66,6 +68,7 @@ async fn test_url_shortener_integration() {
             1,
             short_code.clone(),
             url.to_string(),
+            None,
             None,
         );
         assert_eq!(url_entity.short_code, short_code);
@@ -180,6 +183,7 @@ async fn test_url_shortener_api_contract() {
     let request = ShortenUrlRequest {
         url: test_url.to_string(),
         custom_short_code: None,
+        expiration_date: None,
     };
     let request_json = serde_json::to_string(&request).unwrap();
     assert!(request_json.contains("url"));
@@ -192,6 +196,7 @@ async fn test_url_shortener_api_contract() {
         original_url: test_url.to_string(),
         short_code: short_code.clone(),
         created_at: Utc::now().to_rfc3339(),
+        expiration_date: None,
     };
     let response_json = serde_json::to_string(&response).unwrap();
     assert!(response_json.contains("short_url"));
@@ -229,6 +234,7 @@ async fn test_url_shortener_data_integrity() {
     let request = ShortenUrlRequest {
         url: original_url.to_string(),
         custom_short_code: None,
+        expiration_date: None,
     };
 
     // Create response
@@ -237,6 +243,7 @@ async fn test_url_shortener_data_integrity() {
         original_url: original_url.to_string(),
         short_code: short_code.clone(),
         created_at: Utc::now().to_rfc3339(),
+        expiration_date: None,
     };
 
     // Test data integrity

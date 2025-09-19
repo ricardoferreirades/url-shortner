@@ -20,11 +20,12 @@ impl MockUrlRepository {
 
 #[async_trait]
 impl UrlRepository for MockUrlRepository {
-    async fn create_url(&self, short_code: &ShortCode, original_url: &str, user_id: Option<i32>) -> Result<Url, RepositoryError> {
+    async fn create_url(&self, short_code: &ShortCode, original_url: &str, expiration_date: Option<chrono::DateTime<chrono::Utc>>, user_id: Option<i32>) -> Result<Url, RepositoryError> {
         let url = Url::new_with_timestamp(
             (self.urls.lock().unwrap().len() + 1) as i32,
             short_code.value().to_string(),
             original_url.to_string(),
+            expiration_date,
             user_id,
         );
         let mut urls = self.urls.lock().unwrap();
@@ -61,5 +62,17 @@ impl UrlRepository for MockUrlRepository {
             total_clicks: 0,
             unique_short_codes: 0,
         })
+    }
+
+    async fn find_urls_expiring_soon(&self, _duration: chrono::Duration) -> Result<Vec<Url>, RepositoryError> {
+        Ok(vec![])
+    }
+
+    async fn find_expired_urls(&self) -> Result<Vec<Url>, RepositoryError> {
+        Ok(vec![])
+    }
+
+    async fn delete_expired_urls(&self) -> Result<u64, RepositoryError> {
+        Ok(0)
     }
 }
