@@ -4,11 +4,11 @@
 **Goal**: Complete URL lifecycle management with advanced features
 
 ### 1.1.1 URL Expiration & Management
-- [ ] Add expiration date field to URL entity
-- [ ] Implement expiration validation in URL service
-- [ ] Add scheduled cleanup for expired URLs
-- [ ] Create API endpoints for URL expiration management
-- [ ] Add expiration warnings and notifications
+- [x] Add expiration date field to URL entity
+- [x] Implement expiration validation in URL service
+- [x] Add scheduled cleanup for expired URLs
+- [x] Create API endpoints for URL expiration management
+- [x] Add expiration warnings and notifications
 
 ### 1.1.2 URL Deactivation
 - [ ] Add active/inactive status to URL entity
