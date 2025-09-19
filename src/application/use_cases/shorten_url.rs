@@ -43,7 +43,7 @@ where
         // Create the URL using the domain service
         let url = self
             .url_service
-            .create_url(&request.url, custom_short_code, user_id)
+            .create_url(&request.url, custom_short_code, request.expiration_date, user_id)
             .await
             .map_err(UseCaseError::Service)?;
 
@@ -53,6 +53,7 @@ where
             original_url: url.original_url,
             short_code: url.short_code,
             created_at: url.created_at.to_rfc3339(),
+            expiration_date: url.expiration_date.map(|d| d.to_rfc3339()),
         })
     }
 
@@ -118,6 +119,7 @@ mod tests {
             &self,
             short_code: &ShortCode,
             original_url: &str,
+            expiration_date: Option<chrono::DateTime<chrono::Utc>>,
             user_id: Option<i32>,
         ) -> Result<crate::domain::entities::Url, RepositoryError> {
             let mut urls = self.urls.lock().unwrap();
@@ -126,6 +128,7 @@ mod tests {
                 id,
                 short_code.value().to_string(),
                 original_url.to_string(),
+                expiration_date,
                 user_id,
             );
             urls.push(url.clone());
@@ -181,6 +184,18 @@ mod tests {
                 unique_short_codes: filtered_urls.len() as i64,
             })
         }
+
+        async fn find_urls_expiring_soon(&self, _duration: chrono::Duration) -> Result<Vec<crate::domain::entities::Url>, RepositoryError> {
+            Ok(vec![])
+        }
+
+        async fn find_expired_urls(&self) -> Result<Vec<crate::domain::entities::Url>, RepositoryError> {
+            Ok(vec![])
+        }
+
+        async fn delete_expired_urls(&self) -> Result<u64, RepositoryError> {
+            Ok(0)
+        }
     }
 
     #[tokio::test]
@@ -192,6 +207,7 @@ mod tests {
         let request = ShortenUrlRequest {
             url: "https://example.com".to_string(),
             custom_short_code: None,
+            expiration_date: None,
         };
 
         let response = use_case.execute(request, None).await.unwrap();
@@ -209,6 +225,7 @@ mod tests {
         let request = ShortenUrlRequest {
             url: "https://example.com".to_string(),
             custom_short_code: Some("mycode".to_string()),
+            expiration_date: None,
         };
 
         let response = use_case.execute(request, None).await.unwrap();
@@ -225,6 +242,7 @@ mod tests {
         let request = ShortenUrlRequest {
             url: "".to_string(),
             custom_short_code: None,
+            expiration_date: None,
         };
 
         let result = use_case.execute(request, None).await;
@@ -240,6 +258,7 @@ mod tests {
         let request = ShortenUrlRequest {
             url: "ftp://example.com".to_string(),
             custom_short_code: None,
+            expiration_date: None,
         };
 
         let result = use_case.execute(request, None).await;
