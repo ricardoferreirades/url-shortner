@@ -9,6 +9,7 @@ pub struct Url {
     pub short_code: String,
     pub original_url: String,
     pub created_at: DateTime<Utc>,
+    pub expiration_date: Option<DateTime<Utc>>,
     pub user_id: Option<i32>, // For future user association
 }
 
@@ -19,6 +20,7 @@ impl Url {
         short_code: String,
         original_url: String,
         created_at: DateTime<Utc>,
+        expiration_date: Option<DateTime<Utc>>,
         user_id: Option<i32>,
     ) -> Self {
         Self {
@@ -26,6 +28,7 @@ impl Url {
             short_code,
             original_url,
             created_at,
+            expiration_date,
             user_id,
         }
     }
@@ -35,9 +38,10 @@ impl Url {
         id: i32,
         short_code: String,
         original_url: String,
+        expiration_date: Option<DateTime<Utc>>,
         user_id: Option<i32>,
     ) -> Self {
-        Self::new(id, short_code, original_url, Utc::now(), user_id)
+        Self::new(id, short_code, original_url, Utc::now(), expiration_date, user_id)
     }
 
     /// Check if this URL belongs to a specific user
@@ -49,14 +53,34 @@ impl Url {
     pub fn short_url(&self, base_url: &str) -> String {
         format!("{}/{}", base_url.trim_end_matches('/'), self.short_code)
     }
+
+    /// Check if the URL is expired
+    pub fn is_expired(&self) -> bool {
+        if let Some(expiration) = self.expiration_date {
+            Utc::now() > expiration
+        } else {
+            false // No expiration date means never expires
+        }
+    }
+
+    /// Check if the URL will expire within the given duration
+    pub fn expires_within(&self, duration: chrono::Duration) -> bool {
+        if let Some(expiration) = self.expiration_date {
+            let now = Utc::now();
+            let warning_time = expiration - duration;
+            now >= warning_time && now < expiration
+        } else {
+            false
+        }
+    }
 }
 
 impl fmt::Display for Url {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "Url(id={}, short_code={}, original_url={}, created_at={})",
-            self.id, self.short_code, self.original_url, self.created_at
+            "Url(id={}, short_code={}, original_url={}, created_at={}, expiration_date={:?})",
+            self.id, self.short_code, self.original_url, self.created_at, self.expiration_date
         )
     }
 }
@@ -72,12 +96,14 @@ mod tests {
             "abc123".to_string(),
             "https://example.com".to_string(),
             None,
+            None,
         );
         
         assert_eq!(url.id, 1);
         assert_eq!(url.short_code, "abc123");
         assert_eq!(url.original_url, "https://example.com");
         assert!(url.user_id.is_none());
+        assert!(url.expiration_date.is_none());
     }
 
     #[test]
@@ -86,6 +112,7 @@ mod tests {
             1,
             "abc123".to_string(),
             "https://example.com".to_string(),
+            None,
             Some(42),
         );
         
@@ -96,6 +123,7 @@ mod tests {
             2,
             "def456".to_string(),
             "https://example.org".to_string(),
+            None,
             None,
         );
         
@@ -109,9 +137,74 @@ mod tests {
             "abc123".to_string(),
             "https://example.com".to_string(),
             None,
+            None,
         );
         
         assert_eq!(url.short_url("https://short.ly"), "https://short.ly/abc123");
         assert_eq!(url.short_url("https://short.ly/"), "https://short.ly/abc123");
+    }
+
+    #[test]
+    fn test_url_expiration() {
+        let now = Utc::now();
+        let future = now + chrono::Duration::hours(1);
+        let past = now - chrono::Duration::hours(1);
+
+        // URL with no expiration (never expires)
+        let url_no_expiry = Url::new_with_timestamp(
+            1,
+            "abc123".to_string(),
+            "https://example.com".to_string(),
+            None,
+            None,
+        );
+        assert!(!url_no_expiry.is_expired());
+
+        // URL with future expiration
+        let url_future = Url::new_with_timestamp(
+            2,
+            "def456".to_string(),
+            "https://example.org".to_string(),
+            Some(future),
+            None,
+        );
+        assert!(!url_future.is_expired());
+
+        // URL with past expiration
+        let url_past = Url::new_with_timestamp(
+            3,
+            "ghi789".to_string(),
+            "https://example.net".to_string(),
+            Some(past),
+            None,
+        );
+        assert!(url_past.is_expired());
+    }
+
+    #[test]
+    fn test_url_expires_within() {
+        let now = Utc::now();
+        let expires_in_30_min = now + chrono::Duration::minutes(30);
+        let expires_in_2_hours = now + chrono::Duration::hours(2);
+
+        // URL expiring in 30 minutes, warning period 1 hour
+        let url_warning = Url::new_with_timestamp(
+            1,
+            "abc123".to_string(),
+            "https://example.com".to_string(),
+            Some(expires_in_30_min),
+            None,
+        );
+        assert!(url_warning.expires_within(chrono::Duration::hours(1)));
+
+        // URL expiring in 2 hours, warning period 1 hour
+        let url_no_warning = Url::new_with_timestamp(
+            2,
+            "def456".to_string(),
+            "https://example.org".to_string(),
+            Some(expires_in_2_hours),
+            None,
+        );
+        assert!(!url_no_warning.expires_within(chrono::Duration::hours(1)));
     }
 }
