@@ -8,6 +8,7 @@ pub struct ShortenUrlResponse {
     pub original_url: String,
     pub short_code: String,
     pub created_at: String,
+    pub expiration_date: Option<String>,
 }
 
 /// Response DTO for URL information
@@ -18,6 +19,8 @@ pub struct UrlInfoResponse {
     pub original_url: String,
     pub short_url: String,
     pub created_at: String,
+    pub expiration_date: Option<String>,
+    pub is_expired: bool,
     pub click_count: Option<i64>,
 }
 
@@ -57,4 +60,20 @@ pub struct ErrorResponse {
 pub struct SuccessResponse {
     pub message: String,
     pub status_code: u16,
+}
+
+/// Response DTO for expiration information
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
+pub struct ExpirationInfoResponse {
+    pub expiration_date: Option<String>,
+    pub is_expired: bool,
+    pub expires_in_days: Option<i64>,
+}
+
+/// Response DTO for URLs expiring soon
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
+pub struct ExpiringUrlsResponse {
+    pub urls: Vec<UrlInfoResponse>,
+    pub total_count: i64,
+    pub warning_period_days: u32,
 }
