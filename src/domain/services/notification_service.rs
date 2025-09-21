@@ -73,6 +73,7 @@ pub enum NotificationError {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::domain::entities::UrlStatus;
     use chrono::Utc;
 
     #[tokio::test]
@@ -84,6 +85,7 @@ mod tests {
             "https://example.com".to_string(),
             Some(Utc::now() + chrono::Duration::days(3)),
             Some(1),
+            UrlStatus::Active,
         );
 
         let result = service.send_expiration_warning(&url, 3).await;
@@ -99,6 +101,7 @@ mod tests {
             "https://example.com".to_string(),
             Some(Utc::now() - chrono::Duration::days(1)),
             Some(1),
+            UrlStatus::Active,
         );
 
         let result = service.send_expiration_notification(&url).await;
@@ -115,6 +118,7 @@ mod tests {
                 "https://example1.com".to_string(),
                 Some(Utc::now() + chrono::Duration::days(2)),
                 Some(1),
+                UrlStatus::Active,
             ),
             Url::new_with_timestamp(
                 2,
@@ -122,6 +126,7 @@ mod tests {
                 "https://example2.com".to_string(),
                 Some(Utc::now() + chrono::Duration::days(2)),
                 Some(1),
+                UrlStatus::Active,
             ),
         ];
 

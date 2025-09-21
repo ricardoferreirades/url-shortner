@@ -130,6 +130,7 @@ mod tests {
             _original_url: &str,
             _expiration_date: Option<chrono::DateTime<chrono::Utc>>,
             _user_id: Option<i32>,
+            _status: crate::domain::entities::UrlStatus,
         ) -> Result<crate::domain::entities::Url, crate::domain::repositories::RepositoryError> {
             todo!()
         }
@@ -195,6 +196,18 @@ mod tests {
             
             let deleted_count = initial_count - urls.len();
             Ok(deleted_count as u64)
+        }
+
+        async fn soft_delete_by_id(&self, _id: i32, _user_id: Option<i32>) -> Result<bool, crate::domain::repositories::RepositoryError> {
+            todo!()
+        }
+
+        async fn reactivate_by_id(&self, _id: i32, _user_id: Option<i32>) -> Result<bool, crate::domain::repositories::RepositoryError> {
+            todo!()
+        }
+
+        async fn find_by_status(&self, _status: crate::domain::entities::UrlStatus, _user_id: Option<i32>) -> Result<Vec<crate::domain::entities::Url>, crate::domain::repositories::RepositoryError> {
+            todo!()
         }
     }
 
