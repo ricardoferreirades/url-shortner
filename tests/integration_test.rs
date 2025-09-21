@@ -63,13 +63,14 @@ async fn test_url_shortener_integration() {
         assert_eq!(response.original_url, url);
 
         // 5. Test URL entity creation
-        use url_shortner::domain::entities::Url;
+        use url_shortner::domain::entities::{Url, UrlStatus};
         let url_entity = Url::new_with_timestamp(
             1,
             short_code.clone(),
             url.to_string(),
             None,
             None,
+            UrlStatus::Active,
         );
         assert_eq!(url_entity.short_code, short_code);
         assert_eq!(url_entity.original_url, url);
