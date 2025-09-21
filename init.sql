@@ -14,7 +14,8 @@ CREATE TABLE IF NOT EXISTS urls (
     original_url TEXT NOT NULL,
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     expiration_date TIMESTAMPTZ,
-    user_id INTEGER REFERENCES users(id)
+    user_id INTEGER REFERENCES users(id),
+    status VARCHAR(20) DEFAULT 'active' CHECK (status IN ('active', 'inactive'))
 );
 
 -- Create the clicks table for analytics tracking
@@ -32,6 +33,7 @@ CREATE TABLE IF NOT EXISTS clicks (
 -- Create indexes for faster lookups
 CREATE INDEX IF NOT EXISTS idx_urls_short_code ON urls(short_code);
 CREATE INDEX IF NOT EXISTS idx_urls_expiration_date ON urls(expiration_date);
+CREATE INDEX IF NOT EXISTS idx_urls_status ON urls(status);
 CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
 
