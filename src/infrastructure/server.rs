@@ -81,14 +81,14 @@ pub async fn start_server() -> Result<(), Box<dyn std::error::Error>> {
     // Create clean architecture components
     let url_service = UrlService::new(url_repository.clone());
     let base_url = env::var("BASE_URL").unwrap_or_else(|_| "http://localhost:8000".to_string());
-    let shorten_url_use_case = ShortenUrlUseCase::new(url_service, base_url);
+    let shorten_url_use_case = ShortenUrlUseCase::new(url_service.clone(), base_url);
     
     // Create auth service
     let jwt_secret = env::var("JWT_SECRET").unwrap_or_else(|_| "your-secret-key".to_string());
     let auth_service = AuthService::new(user_repository.clone(), jwt_secret);
     
     // Create application state
-    let app_state = AppState::new(shorten_url_use_case, url_repository, auth_service);
+    let app_state = AppState::new(shorten_url_use_case, url_repository, url_service, auth_service);
 
     // OpenAPI doc
     #[derive(OpenApi)]
