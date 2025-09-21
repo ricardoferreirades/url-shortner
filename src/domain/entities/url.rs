@@ -2,6 +2,37 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::fmt;
 
+/// Status of a URL - active or inactive (soft deleted)
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+pub enum UrlStatus {
+    /// URL is active and can be accessed
+    Active,
+    /// URL is inactive (soft deleted) and should not redirect
+    Inactive,
+}
+
+impl UrlStatus {
+    /// Check if the URL status allows access
+    pub fn is_active(&self) -> bool {
+        matches!(self, UrlStatus::Active)
+    }
+}
+
+impl Default for UrlStatus {
+    fn default() -> Self {
+        UrlStatus::Active
+    }
+}
+
+impl fmt::Display for UrlStatus {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            UrlStatus::Active => write!(f, "active"),
+            UrlStatus::Inactive => write!(f, "inactive"),
+        }
+    }
+}
+
 /// Domain entity representing a URL record
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct Url {
@@ -11,6 +42,7 @@ pub struct Url {
     pub created_at: DateTime<Utc>,
     pub expiration_date: Option<DateTime<Utc>>,
     pub user_id: Option<i32>, // For future user association
+    pub status: UrlStatus, // URL status (active/inactive)
 }
 
 impl Url {
@@ -22,6 +54,7 @@ impl Url {
         created_at: DateTime<Utc>,
         expiration_date: Option<DateTime<Utc>>,
         user_id: Option<i32>,
+        status: UrlStatus,
     ) -> Self {
         Self {
             id,
@@ -30,6 +63,7 @@ impl Url {
             created_at,
             expiration_date,
             user_id,
+            status,
         }
     }
 
@@ -40,8 +74,9 @@ impl Url {
         original_url: String,
         expiration_date: Option<DateTime<Utc>>,
         user_id: Option<i32>,
+        status: UrlStatus,
     ) -> Self {
-        Self::new(id, short_code, original_url, Utc::now(), expiration_date, user_id)
+        Self::new(id, short_code, original_url, Utc::now(), expiration_date, user_id, status)
     }
 
     /// Check if this URL belongs to a specific user
@@ -73,14 +108,34 @@ impl Url {
             false
         }
     }
+
+    /// Check if the URL is accessible (active and not expired)
+    pub fn is_accessible(&self) -> bool {
+        self.status.is_active() && !self.is_expired()
+    }
+
+    /// Deactivate the URL (soft delete)
+    pub fn deactivate(&mut self) {
+        self.status = UrlStatus::Inactive;
+    }
+
+    /// Reactivate the URL
+    pub fn reactivate(&mut self) {
+        self.status = UrlStatus::Active;
+    }
+
+    /// Check if the URL is deactivated
+    pub fn is_deactivated(&self) -> bool {
+        matches!(self.status, UrlStatus::Inactive)
+    }
 }
 
 impl fmt::Display for Url {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "Url(id={}, short_code={}, original_url={}, created_at={}, expiration_date={:?})",
-            self.id, self.short_code, self.original_url, self.created_at, self.expiration_date
+            "Url(id={}, short_code={}, original_url={}, created_at={}, expiration_date={:?}, status={})",
+            self.id, self.short_code, self.original_url, self.created_at, self.expiration_date, self.status
         )
     }
 }
@@ -97,6 +152,7 @@ mod tests {
             "https://example.com".to_string(),
             None,
             None,
+            UrlStatus::Active,
         );
         
         assert_eq!(url.id, 1);
@@ -104,6 +160,7 @@ mod tests {
         assert_eq!(url.original_url, "https://example.com");
         assert!(url.user_id.is_none());
         assert!(url.expiration_date.is_none());
+        assert_eq!(url.status, UrlStatus::Active);
     }
 
     #[test]
@@ -114,6 +171,7 @@ mod tests {
             "https://example.com".to_string(),
             None,
             Some(42),
+            UrlStatus::Active,
         );
         
         assert!(url.belongs_to_user(42));
@@ -125,6 +183,7 @@ mod tests {
             "https://example.org".to_string(),
             None,
             None,
+            UrlStatus::Active,
         );
         
         assert!(anonymous_url.belongs_to_user(42)); // Anonymous URLs belong to everyone
@@ -138,6 +197,7 @@ mod tests {
             "https://example.com".to_string(),
             None,
             None,
+            UrlStatus::Active,
         );
         
         assert_eq!(url.short_url("https://short.ly"), "https://short.ly/abc123");
@@ -157,6 +217,7 @@ mod tests {
             "https://example.com".to_string(),
             None,
             None,
+            UrlStatus::Active,
         );
         assert!(!url_no_expiry.is_expired());
 
@@ -167,6 +228,7 @@ mod tests {
             "https://example.org".to_string(),
             Some(future),
             None,
+            UrlStatus::Active,
         );
         assert!(!url_future.is_expired());
 
@@ -177,6 +239,7 @@ mod tests {
             "https://example.net".to_string(),
             Some(past),
             None,
+            UrlStatus::Active,
         );
         assert!(url_past.is_expired());
     }
@@ -194,6 +257,7 @@ mod tests {
             "https://example.com".to_string(),
             Some(expires_in_30_min),
             None,
+            UrlStatus::Active,
         );
         assert!(url_warning.expires_within(chrono::Duration::hours(1)));
 
@@ -204,7 +268,43 @@ mod tests {
             "https://example.org".to_string(),
             Some(expires_in_2_hours),
             None,
+            UrlStatus::Active,
         );
         assert!(!url_no_warning.expires_within(chrono::Duration::hours(1)));
+    }
+
+    #[test]
+    fn test_url_status_functionality() {
+        let mut url = Url::new_with_timestamp(
+            1,
+            "abc123".to_string(),
+            "https://example.com".to_string(),
+            None,
+            None,
+            UrlStatus::Active,
+        );
+
+        // Test initial state
+        assert!(url.status.is_active());
+        assert!(url.is_accessible());
+        assert!(!url.is_deactivated());
+
+        // Test deactivation
+        url.deactivate();
+        assert!(url.is_deactivated());
+        assert!(!url.is_accessible());
+        assert_eq!(url.status, UrlStatus::Inactive);
+
+        // Test reactivation
+        url.reactivate();
+        assert!(url.status.is_active());
+        assert!(url.is_accessible());
+        assert!(!url.is_deactivated());
+    }
+
+    #[test]
+    fn test_url_status_display() {
+        assert_eq!(UrlStatus::Active.to_string(), "active");
+        assert_eq!(UrlStatus::Inactive.to_string(), "inactive");
     }
 }
