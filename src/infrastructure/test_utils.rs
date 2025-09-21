@@ -1,5 +1,5 @@
 // Test utilities for integration tests
-use crate::domain::entities::{ShortCode, Url};
+use crate::domain::entities::{ShortCode, Url, UrlStatus};
 use crate::domain::repositories::{RepositoryError, UrlRepository};
 use async_trait::async_trait;
 use std::sync::{Arc, Mutex};
@@ -20,13 +20,14 @@ impl MockUrlRepository {
 
 #[async_trait]
 impl UrlRepository for MockUrlRepository {
-    async fn create_url(&self, short_code: &ShortCode, original_url: &str, expiration_date: Option<chrono::DateTime<chrono::Utc>>, user_id: Option<i32>) -> Result<Url, RepositoryError> {
+    async fn create_url(&self, short_code: &ShortCode, original_url: &str, expiration_date: Option<chrono::DateTime<chrono::Utc>>, user_id: Option<i32>, status: UrlStatus) -> Result<Url, RepositoryError> {
         let url = Url::new_with_timestamp(
             (self.urls.lock().unwrap().len() + 1) as i32,
             short_code.value().to_string(),
             original_url.to_string(),
             expiration_date,
             user_id,
+            status,
         );
         let mut urls = self.urls.lock().unwrap();
         urls.push(url.clone());
@@ -74,5 +75,37 @@ impl UrlRepository for MockUrlRepository {
 
     async fn delete_expired_urls(&self) -> Result<u64, RepositoryError> {
         Ok(0)
+    }
+
+    async fn soft_delete_by_id(&self, id: i32, user_id: Option<i32>) -> Result<bool, RepositoryError> {
+        let mut urls = self.urls.lock().unwrap();
+        if let Some(url) = urls.iter_mut().find(|u| u.id == id && u.user_id == user_id) {
+            url.deactivate();
+            Ok(true)
+        } else {
+            Ok(false)
+        }
+    }
+
+    async fn reactivate_by_id(&self, id: i32, user_id: Option<i32>) -> Result<bool, RepositoryError> {
+        let mut urls = self.urls.lock().unwrap();
+        if let Some(url) = urls.iter_mut().find(|u| u.id == id && u.user_id == user_id) {
+            url.reactivate();
+            Ok(true)
+        } else {
+            Ok(false)
+        }
+    }
+
+    async fn find_by_status(&self, status: UrlStatus, user_id: Option<i32>) -> Result<Vec<Url>, RepositoryError> {
+        let urls = self.urls.lock().unwrap();
+        let filtered_urls: Vec<Url> = urls.iter()
+            .filter(|url| {
+                url.status == status && 
+                (user_id.is_none() || url.user_id == user_id)
+            })
+            .cloned()
+            .collect();
+        Ok(filtered_urls)
     }
 }
