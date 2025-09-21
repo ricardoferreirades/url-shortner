@@ -11,11 +11,11 @@
 - [x] Add expiration warnings and notifications
 
 ### 1.1.2 URL Deactivation
-- [ ] Add active/inactive status to URL entity
-- [ ] Implement soft delete functionality
-- [ ] Create deactivation API endpoints
-- [ ] Add status validation in redirect logic
-- [ ] Implement reactivation functionality
+- [x] Add active/inactive status to URL entity
+- [x] Implement soft delete functionality
+- [x] Create deactivation API endpoints
+- [x] Add status validation in redirect logic
+- [x] Implement reactivation functionality
 
 ### 1.1.3 Bulk URL Management
 - [ ] Create bulk URL creation endpoint
