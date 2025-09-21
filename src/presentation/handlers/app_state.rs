@@ -1,6 +1,6 @@
 use crate::application::ShortenUrlUseCase;
 use crate::domain::repositories::{UrlRepository, UserRepository};
-use crate::domain::services::AuthService;
+use crate::domain::services::{AuthService, UrlService};
 
 /// Application state that contains both use cases and repositories
 #[derive(Clone)]
@@ -11,6 +11,7 @@ where
 {
     pub shorten_url_use_case: ShortenUrlUseCase<R>,
     pub url_repository: R,
+    pub url_service: UrlService<R>,
     pub auth_service: AuthService<U>,
 }
 
@@ -19,10 +20,11 @@ where
     R: UrlRepository + Send + Sync + Clone,
     U: UserRepository + Send + Sync + Clone,
 {
-    pub fn new(shorten_url_use_case: ShortenUrlUseCase<R>, url_repository: R, auth_service: AuthService<U>) -> Self {
+    pub fn new(shorten_url_use_case: ShortenUrlUseCase<R>, url_repository: R, url_service: UrlService<R>, auth_service: AuthService<U>) -> Self {
         Self {
             shorten_url_use_case,
             url_repository,
+            url_service,
             auth_service,
         }
     }
