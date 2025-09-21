@@ -1,4 +1,4 @@
-use crate::domain::entities::{ShortCode, Url};
+use crate::domain::entities::{ShortCode, Url, UrlStatus};
 use async_trait::async_trait;
 
 /// Repository trait for URL operations
@@ -12,6 +12,7 @@ pub trait UrlRepository: Send + Sync {
         original_url: &str,
         expiration_date: Option<chrono::DateTime<chrono::Utc>>,
         user_id: Option<i32>,
+        status: UrlStatus,
     ) -> Result<Url, RepositoryError>;
 
     /// Find a URL by short code
@@ -40,6 +41,15 @@ pub trait UrlRepository: Send + Sync {
 
     /// Delete expired URLs
     async fn delete_expired_urls(&self) -> Result<u64, RepositoryError>;
+
+    /// Soft delete a URL by setting status to inactive
+    async fn soft_delete_by_id(&self, id: i32, user_id: Option<i32>) -> Result<bool, RepositoryError>;
+
+    /// Reactivate a URL by setting status to active
+    async fn reactivate_by_id(&self, id: i32, user_id: Option<i32>) -> Result<bool, RepositoryError>;
+
+    /// Find URLs by status
+    async fn find_by_status(&self, status: UrlStatus, user_id: Option<i32>) -> Result<Vec<Url>, RepositoryError>;
 }
 
 /// Statistics about URLs
@@ -98,6 +108,7 @@ pub mod tests {
             original_url: &str,
             expiration_date: Option<chrono::DateTime<chrono::Utc>>,
             user_id: Option<i32>,
+            status: UrlStatus,
         ) -> Result<Url, RepositoryError> {
             let mut urls = self.urls.lock().unwrap();
             let id = (urls.len() + 1) as i32;
@@ -107,6 +118,7 @@ pub mod tests {
                 original_url.to_string(),
                 expiration_date,
                 user_id,
+                status,
             );
             urls.push(url.clone());
             Ok(url)
@@ -201,6 +213,38 @@ pub mod tests {
             let deleted_count = initial_count - urls.len();
             Ok(deleted_count as u64)
         }
+
+        async fn soft_delete_by_id(&self, id: i32, user_id: Option<i32>) -> Result<bool, RepositoryError> {
+            let mut urls = self.urls.lock().unwrap();
+            if let Some(url) = urls.iter_mut().find(|u| u.id == id && u.user_id == user_id) {
+                url.deactivate();
+                Ok(true)
+            } else {
+                Ok(false)
+            }
+        }
+
+        async fn reactivate_by_id(&self, id: i32, user_id: Option<i32>) -> Result<bool, RepositoryError> {
+            let mut urls = self.urls.lock().unwrap();
+            if let Some(url) = urls.iter_mut().find(|u| u.id == id && u.user_id == user_id) {
+                url.reactivate();
+                Ok(true)
+            } else {
+                Ok(false)
+            }
+        }
+
+        async fn find_by_status(&self, status: UrlStatus, user_id: Option<i32>) -> Result<Vec<Url>, RepositoryError> {
+            let urls = self.urls.lock().unwrap();
+            let filtered_urls: Vec<Url> = urls.iter()
+                .filter(|url| {
+                    url.status == status && 
+                    (user_id.is_none() || url.user_id == user_id)
+                })
+                .cloned()
+                .collect();
+            Ok(filtered_urls)
+        }
     }
 
     #[tokio::test]
@@ -208,7 +252,7 @@ pub mod tests {
         let repo = MockUrlRepository::new();
         let short_code = ShortCode::new("abc123".to_string()).unwrap();
         
-        let url = repo.create_url(&short_code, "https://example.com", None, None).await.unwrap();
+        let url = repo.create_url(&short_code, "https://example.com", None, None, UrlStatus::Active).await.unwrap();
         assert_eq!(url.short_code, "abc123");
         assert_eq!(url.original_url, "https://example.com");
         
@@ -224,7 +268,7 @@ pub mod tests {
         
         assert!(!repo.exists_by_short_code(&short_code).await.unwrap());
         
-        repo.create_url(&short_code, "https://example.com", None, None).await.unwrap();
+        repo.create_url(&short_code, "https://example.com", None, None, UrlStatus::Active).await.unwrap();
         
         assert!(repo.exists_by_short_code(&short_code).await.unwrap());
     }
