@@ -1,4 +1,4 @@
-use crate::domain::entities::{ShortCode, Url};
+use crate::domain::entities::{ShortCode, Url, UrlStatus};
 use crate::domain::repositories::{RepositoryError, UrlRepository};
 use seahash::SeaHasher;
 use std::hash::{Hash, Hasher};
@@ -103,7 +103,7 @@ where
             None => self.generate_short_code(original_url).await?,
         };
 
-        self.repository.create_url(&short_code, original_url, expiration_date, user_id).await
+        self.repository.create_url(&short_code, original_url, expiration_date, user_id, UrlStatus::Active).await
             .map_err(ServiceError::from)
     }
 
@@ -131,13 +131,12 @@ where
             .map_err(ServiceError::from)
     }
 
-    /// Get URL by short code with expiration validation
+    /// Get URL by short code with validation (expiration and status)
     pub async fn get_url_by_short_code_with_validation(&self, short_code: &ShortCode) -> Result<Option<Url>, ServiceError> {
         match self.repository.find_by_short_code(short_code).await? {
             Some(url) => {
-                if url.is_expired() {
-                    // Optionally delete expired URL or just return None
-                    self.repository.delete_by_id(url.id, url.user_id).await?;
+                if !url.is_accessible() {
+                    // URL is either expired or inactive
                     Ok(None)
                 } else {
                     Ok(Some(url))
@@ -163,6 +162,29 @@ where
     pub async fn cleanup_expired_urls(&self) -> Result<u64, ServiceError> {
         self.repository.delete_expired_urls().await
             .map_err(ServiceError::from)
+    }
+
+    /// Soft delete a URL (deactivate)
+    pub async fn deactivate_url(&self, id: i32, user_id: Option<i32>) -> Result<bool, ServiceError> {
+        self.repository.soft_delete_by_id(id, user_id).await
+            .map_err(ServiceError::from)
+    }
+
+    /// Reactivate a URL
+    pub async fn reactivate_url(&self, id: i32, user_id: Option<i32>) -> Result<bool, ServiceError> {
+        self.repository.reactivate_by_id(id, user_id).await
+            .map_err(ServiceError::from)
+    }
+
+    /// Get URLs by status
+    pub async fn get_urls_by_status(&self, status: UrlStatus, user_id: Option<i32>) -> Result<Vec<Url>, ServiceError> {
+        self.repository.find_by_status(status, user_id).await
+            .map_err(ServiceError::from)
+    }
+
+    /// Get deactivated URLs for a user
+    pub async fn get_deactivated_urls(&self, user_id: Option<i32>) -> Result<Vec<Url>, ServiceError> {
+        self.get_urls_by_status(UrlStatus::Inactive, user_id).await
     }
 }
 
@@ -220,6 +242,7 @@ mod tests {
             original_url: &str,
             expiration_date: Option<chrono::DateTime<chrono::Utc>>,
             user_id: Option<i32>,
+            status: UrlStatus,
         ) -> Result<Url, RepositoryError> {
             let mut urls = self.urls.lock().unwrap();
             let id = (urls.len() + 1) as i32;
@@ -229,6 +252,7 @@ mod tests {
                 original_url.to_string(),
                 expiration_date,
                 user_id,
+                status,
             );
             urls.push(url.clone());
             Ok(url)
@@ -294,6 +318,38 @@ mod tests {
 
         async fn delete_expired_urls(&self) -> Result<u64, RepositoryError> {
             Ok(0)
+        }
+
+        async fn soft_delete_by_id(&self, id: i32, user_id: Option<i32>) -> Result<bool, RepositoryError> {
+            let mut urls = self.urls.lock().unwrap();
+            if let Some(url) = urls.iter_mut().find(|u| u.id == id && u.user_id == user_id) {
+                url.deactivate();
+                Ok(true)
+            } else {
+                Ok(false)
+            }
+        }
+
+        async fn reactivate_by_id(&self, id: i32, user_id: Option<i32>) -> Result<bool, RepositoryError> {
+            let mut urls = self.urls.lock().unwrap();
+            if let Some(url) = urls.iter_mut().find(|u| u.id == id && u.user_id == user_id) {
+                url.reactivate();
+                Ok(true)
+            } else {
+                Ok(false)
+            }
+        }
+
+        async fn find_by_status(&self, status: UrlStatus, user_id: Option<i32>) -> Result<Vec<Url>, RepositoryError> {
+            let urls = self.urls.lock().unwrap();
+            let filtered_urls: Vec<Url> = urls.iter()
+                .filter(|url| {
+                    url.status == status && 
+                    (user_id.is_none() || url.user_id == user_id)
+                })
+                .cloned()
+                .collect();
+            Ok(filtered_urls)
         }
     }
 
