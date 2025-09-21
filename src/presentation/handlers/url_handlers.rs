@@ -110,17 +110,17 @@ where
         }
     };
 
-    // Find the URL
-    match app_state.url_repository.find_by_short_code(&short_code).await {
+    // Find the URL with validation (checks expiration and status)
+    match app_state.url_service.get_url_by_short_code_with_validation(&short_code).await {
         Ok(Some(url)) => {
             info!("Redirecting {} to {}", short_code.value(), url.original_url);
             Ok(Redirect::permanent(&url.original_url))
         }
         Ok(None) => {
-            warn!("Short code not found: {}", short_code.value());
+            warn!("Short code not found or not accessible: {}", short_code.value());
             let error_response = ErrorResponse {
                 error: "NOT_FOUND".to_string(),
-                message: "Short code not found".to_string(),
+                message: "Short code not found or no longer available".to_string(),
                 status_code: StatusCode::NOT_FOUND.as_u16(),
             };
             Err((StatusCode::NOT_FOUND, Json(error_response)))
@@ -130,6 +130,164 @@ where
             let error_response = ErrorResponse {
                 error: "DATABASE_ERROR".to_string(),
                 message: "Internal server error".to_string(),
+                status_code: StatusCode::INTERNAL_SERVER_ERROR.as_u16(),
+            };
+            Err((StatusCode::INTERNAL_SERVER_ERROR, Json(error_response)))
+        }
+    }
+}
+
+/// Handler for deactivating a URL (soft delete)
+#[utoipa::path(
+    delete,
+    path = "/urls/{id}",
+    params(
+        ("id" = i32, Path, description = "URL ID to deactivate")
+    ),
+    responses(
+        (status = 204, description = "URL deactivated successfully"),
+        (status = 404, description = "URL not found", body = ErrorResponse),
+        (status = 401, description = "Unauthorized", body = ErrorResponse),
+    ),
+    tag = "url-shortener"
+)]
+pub async fn deactivate_url_handler<R, U>(
+    State(app_state): State<AppState<R, U>>,
+    headers: HeaderMap,
+    axum::extract::Path(id): axum::extract::Path<i32>,
+) -> Result<StatusCode, (StatusCode, Json<ErrorResponse>)>
+where
+    R: UrlRepository + Send + Sync + Clone,
+    U: crate::domain::repositories::UserRepository + Send + Sync + Clone,
+{
+    // Require Authorization: Bearer <token>
+    let auth_header = headers.get(header::AUTHORIZATION).and_then(|v| v.to_str().ok());
+    let token = match auth_header.and_then(|h| h.strip_prefix("Bearer ")) {
+        Some(t) if !t.is_empty() => t,
+        _ => {
+            let error_response = ErrorResponse {
+                error: "UNAUTHORIZED".to_string(),
+                message: "Missing or invalid Authorization header".to_string(),
+                status_code: StatusCode::UNAUTHORIZED.as_u16(),
+            };
+            return Err((StatusCode::UNAUTHORIZED, Json(error_response)));
+        }
+    };
+
+    // Verify token and get user
+    let user = match app_state.auth_service.verify_token(token).await {
+        Ok(u) => u,
+        Err(e) => {
+            warn!("Token verification failed: {}", e);
+            let error_response = ErrorResponse {
+                error: "INVALID_TOKEN".to_string(),
+                message: "Invalid or expired token".to_string(),
+                status_code: StatusCode::UNAUTHORIZED.as_u16(),
+            };
+            return Err((StatusCode::UNAUTHORIZED, Json(error_response)));
+        }
+    };
+
+    info!("Received deactivate URL request for ID: {} (user: {})", id, user.id);
+
+    match app_state.url_service.deactivate_url(id, Some(user.id)).await {
+        Ok(true) => {
+            info!("Successfully deactivated URL ID: {}", id);
+            Ok(StatusCode::NO_CONTENT)
+        }
+        Ok(false) => {
+            warn!("URL not found or not owned by user: {}", id);
+            let error_response = ErrorResponse {
+                error: "NOT_FOUND".to_string(),
+                message: "URL not found or you don't have permission to deactivate it".to_string(),
+                status_code: StatusCode::NOT_FOUND.as_u16(),
+            };
+            Err((StatusCode::NOT_FOUND, Json(error_response)))
+        }
+        Err(error) => {
+            warn!("Failed to deactivate URL {}: {}", id, error);
+            let error_response = ErrorResponse {
+                error: "DEACTIVATE_FAILED".to_string(),
+                message: error.to_string(),
+                status_code: StatusCode::INTERNAL_SERVER_ERROR.as_u16(),
+            };
+            Err((StatusCode::INTERNAL_SERVER_ERROR, Json(error_response)))
+        }
+    }
+}
+
+/// Handler for reactivating a URL
+#[utoipa::path(
+    patch,
+    path = "/urls/{id}/reactivate",
+    params(
+        ("id" = i32, Path, description = "URL ID to reactivate")
+    ),
+    responses(
+        (status = 204, description = "URL reactivated successfully"),
+        (status = 404, description = "URL not found", body = ErrorResponse),
+        (status = 401, description = "Unauthorized", body = ErrorResponse),
+    ),
+    tag = "url-shortener"
+)]
+pub async fn reactivate_url_handler<R, U>(
+    State(app_state): State<AppState<R, U>>,
+    headers: HeaderMap,
+    axum::extract::Path(id): axum::extract::Path<i32>,
+) -> Result<StatusCode, (StatusCode, Json<ErrorResponse>)>
+where
+    R: UrlRepository + Send + Sync + Clone,
+    U: crate::domain::repositories::UserRepository + Send + Sync + Clone,
+{
+    // Require Authorization: Bearer <token>
+    let auth_header = headers.get(header::AUTHORIZATION).and_then(|v| v.to_str().ok());
+    let token = match auth_header.and_then(|h| h.strip_prefix("Bearer ")) {
+        Some(t) if !t.is_empty() => t,
+        _ => {
+            let error_response = ErrorResponse {
+                error: "UNAUTHORIZED".to_string(),
+                message: "Missing or invalid Authorization header".to_string(),
+                status_code: StatusCode::UNAUTHORIZED.as_u16(),
+            };
+            return Err((StatusCode::UNAUTHORIZED, Json(error_response)));
+        }
+    };
+
+    // Verify token and get user
+    let user = match app_state.auth_service.verify_token(token).await {
+        Ok(u) => u,
+        Err(e) => {
+            warn!("Token verification failed: {}", e);
+            let error_response = ErrorResponse {
+                error: "INVALID_TOKEN".to_string(),
+                message: "Invalid or expired token".to_string(),
+                status_code: StatusCode::UNAUTHORIZED.as_u16(),
+            };
+            return Err((StatusCode::UNAUTHORIZED, Json(error_response)));
+        }
+    };
+
+    info!("Received reactivate URL request for ID: {} (user: {})", id, user.id);
+
+    match app_state.url_service.reactivate_url(id, Some(user.id)).await {
+        Ok(true) => {
+            info!("Successfully reactivated URL ID: {}", id);
+            Ok(StatusCode::NO_CONTENT)
+        }
+        Ok(false) => {
+            warn!("URL not found or not owned by user: {}", id);
+            let error_response = ErrorResponse {
+                error: "NOT_FOUND".to_string(),
+                message: "URL not found or you don't have permission to reactivate it".to_string(),
+                status_code: StatusCode::NOT_FOUND.as_u16(),
+            };
+            Err((StatusCode::NOT_FOUND, Json(error_response)))
+        }
+        Err(error) => {
+            warn!("Failed to reactivate URL {}: {}", id, error);
+            let error_response = ErrorResponse {
+                error: "REACTIVATE_FAILED".to_string(),
+                message: error.to_string(),
                 status_code: StatusCode::INTERNAL_SERVER_ERROR.as_u16(),
             };
             Err((StatusCode::INTERNAL_SERVER_ERROR, Json(error_response)))
