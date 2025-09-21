@@ -1,4 +1,4 @@
-use crate::domain::entities::{ShortCode, Url};
+use crate::domain::entities::{ShortCode, Url, UrlStatus};
 use crate::domain::repositories::{RepositoryError, UrlRepository, UrlStats};
 use async_trait::async_trait;
 use sqlx::{PgPool, Row};
@@ -13,6 +13,28 @@ impl PostgresUrlRepository {
     pub fn new(pool: PgPool) -> Self {
         Self { pool }
     }
+
+    /// Helper function to convert string status to UrlStatus
+    fn status_from_string(status: String) -> UrlStatus {
+        match status.as_str() {
+            "active" => UrlStatus::Active,
+            "inactive" => UrlStatus::Inactive,
+            _ => UrlStatus::Active, // Default fallback
+        }
+    }
+
+    /// Helper function to create Url from database row
+    fn url_from_row(row: &sqlx::postgres::PgRow) -> Url {
+        Url {
+            id: row.get("id"),
+            short_code: row.get("short_code"),
+            original_url: row.get("original_url"),
+            created_at: row.get("created_at"),
+            expiration_date: row.get("expiration_date"),
+            user_id: row.get("user_id"),
+            status: Self::status_from_string(row.get("status")),
+        }
+    }
 }
 
 #[async_trait]
@@ -23,51 +45,39 @@ impl UrlRepository for PostgresUrlRepository {
         original_url: &str,
         expiration_date: Option<chrono::DateTime<chrono::Utc>>,
         user_id: Option<i32>,
+        status: UrlStatus,
     ) -> Result<Url, RepositoryError> {
         let row = sqlx::query(
-            "INSERT INTO urls (short_code, original_url, expiration_date, user_id) VALUES ($1, $2, $3, $4) RETURNING id, short_code, original_url, created_at, expiration_date, user_id"
+            "INSERT INTO urls (short_code, original_url, expiration_date, user_id, status) VALUES ($1, $2, $3, $4, $5) RETURNING id, short_code, original_url, created_at, expiration_date, user_id, status"
         )
         .bind(short_code.value())
         .bind(original_url)
         .bind(expiration_date)
         .bind(user_id)
+        .bind(status.to_string())
         .fetch_one(&self.pool)
         .await?;
 
-        Ok(Url {
-            id: row.get("id"),
-            short_code: row.get("short_code"),
-            original_url: row.get("original_url"),
-            created_at: row.get("created_at"),
-            expiration_date: row.get("expiration_date"),
-            user_id: row.get("user_id"),
-        })
+        Ok(Self::url_from_row(&row))
     }
 
     async fn find_by_short_code(&self, short_code: &ShortCode) -> Result<Option<Url>, RepositoryError> {
         let row = sqlx::query(
-            "SELECT id, short_code, original_url, created_at, expiration_date, user_id FROM urls WHERE short_code = $1"
+            "SELECT id, short_code, original_url, created_at, expiration_date, user_id, status FROM urls WHERE short_code = $1"
         )
         .bind(short_code.value())
         .fetch_optional(&self.pool)
         .await?;
 
         match row {
-            Some(row) => Ok(Some(Url {
-                id: row.get("id"),
-                short_code: row.get("short_code"),
-                original_url: row.get("original_url"),
-                created_at: row.get("created_at"),
-                expiration_date: row.get("expiration_date"),
-                user_id: row.get("user_id"),
-            })),
+            Some(row) => Ok(Some(Self::url_from_row(&row))),
             None => Ok(None),
         }
     }
 
     async fn find_by_user_id(&self, user_id: i32) -> Result<Vec<Url>, RepositoryError> {
         let rows = sqlx::query(
-            "SELECT id, short_code, original_url, created_at, expiration_date, user_id FROM urls WHERE user_id = $1 ORDER BY created_at DESC"
+            "SELECT id, short_code, original_url, created_at, expiration_date, user_id, status FROM urls WHERE user_id = $1 ORDER BY created_at DESC"
         )
         .bind(user_id)
         .fetch_all(&self.pool)
@@ -75,14 +85,7 @@ impl UrlRepository for PostgresUrlRepository {
 
         let urls = rows
             .into_iter()
-            .map(|row| Url {
-                id: row.get("id"),
-                short_code: row.get("short_code"),
-                original_url: row.get("original_url"),
-                created_at: row.get("created_at"),
-                expiration_date: row.get("expiration_date"),
-                user_id: row.get("user_id"),
-            })
+            .map(|row| Self::url_from_row(&row))
             .collect();
 
         Ok(urls)
@@ -115,23 +118,17 @@ impl UrlRepository for PostgresUrlRepository {
 
     async fn update_url(&self, url: &Url) -> Result<Url, RepositoryError> {
         let row = sqlx::query(
-            "UPDATE urls SET short_code = $1, original_url = $2, expiration_date = $3 WHERE id = $4 RETURNING id, short_code, original_url, created_at, expiration_date, user_id"
+            "UPDATE urls SET short_code = $1, original_url = $2, expiration_date = $3, status = $4 WHERE id = $5 RETURNING id, short_code, original_url, created_at, expiration_date, user_id, status"
         )
         .bind(&url.short_code)
         .bind(&url.original_url)
         .bind(&url.expiration_date)
+        .bind(url.status.to_string())
         .bind(url.id)
         .fetch_one(&self.pool)
         .await?;
 
-        Ok(Url {
-            id: row.get("id"),
-            short_code: row.get("short_code"),
-            original_url: row.get("original_url"),
-            created_at: row.get("created_at"),
-            expiration_date: row.get("expiration_date"),
-            user_id: row.get("user_id"),
-        })
+        Ok(Self::url_from_row(&row))
     }
 
     async fn get_stats(&self, user_id: Option<i32>) -> Result<UrlStats, RepositoryError> {
@@ -169,7 +166,7 @@ impl UrlRepository for PostgresUrlRepository {
         let warning_time = now + duration;
         
         let rows = sqlx::query(
-            "SELECT id, short_code, original_url, created_at, expiration_date, user_id 
+            "SELECT id, short_code, original_url, created_at, expiration_date, user_id, status 
              FROM urls 
              WHERE expiration_date IS NOT NULL 
              AND expiration_date > $1 
@@ -183,14 +180,7 @@ impl UrlRepository for PostgresUrlRepository {
 
         let urls = rows
             .into_iter()
-            .map(|row| Url {
-                id: row.get("id"),
-                short_code: row.get("short_code"),
-                original_url: row.get("original_url"),
-                created_at: row.get("created_at"),
-                expiration_date: row.get("expiration_date"),
-                user_id: row.get("user_id"),
-            })
+            .map(|row| Self::url_from_row(&row))
             .collect();
 
         Ok(urls)
@@ -200,7 +190,7 @@ impl UrlRepository for PostgresUrlRepository {
         let now = chrono::Utc::now();
         
         let rows = sqlx::query(
-            "SELECT id, short_code, original_url, created_at, expiration_date, user_id 
+            "SELECT id, short_code, original_url, created_at, expiration_date, user_id, status 
              FROM urls 
              WHERE expiration_date IS NOT NULL 
              AND expiration_date <= $1 
@@ -212,14 +202,7 @@ impl UrlRepository for PostgresUrlRepository {
 
         let urls = rows
             .into_iter()
-            .map(|row| Url {
-                id: row.get("id"),
-                short_code: row.get("short_code"),
-                original_url: row.get("original_url"),
-                created_at: row.get("created_at"),
-                expiration_date: row.get("expiration_date"),
-                user_id: row.get("user_id"),
-            })
+            .map(|row| Self::url_from_row(&row))
             .collect();
 
         Ok(urls)
@@ -236,5 +219,61 @@ impl UrlRepository for PostgresUrlRepository {
         .await?;
 
         Ok(result.rows_affected())
+    }
+
+    async fn soft_delete_by_id(&self, id: i32, user_id: Option<i32>) -> Result<bool, RepositoryError> {
+        let query = if let Some(uid) = user_id {
+            sqlx::query("UPDATE urls SET status = 'inactive' WHERE id = $1 AND user_id = $2")
+                .bind(id)
+                .bind(uid)
+        } else {
+            sqlx::query("UPDATE urls SET status = 'inactive' WHERE id = $1 AND user_id IS NULL")
+                .bind(id)
+        };
+
+        let result = query.execute(&self.pool).await?;
+        Ok(result.rows_affected() > 0)
+    }
+
+    async fn reactivate_by_id(&self, id: i32, user_id: Option<i32>) -> Result<bool, RepositoryError> {
+        let query = if let Some(uid) = user_id {
+            sqlx::query("UPDATE urls SET status = 'active' WHERE id = $1 AND user_id = $2")
+                .bind(id)
+                .bind(uid)
+        } else {
+            sqlx::query("UPDATE urls SET status = 'active' WHERE id = $1 AND user_id IS NULL")
+                .bind(id)
+        };
+
+        let result = query.execute(&self.pool).await?;
+        Ok(result.rows_affected() > 0)
+    }
+
+    async fn find_by_status(&self, status: UrlStatus, user_id: Option<i32>) -> Result<Vec<Url>, RepositoryError> {
+        let rows = if let Some(uid) = user_id {
+            sqlx::query(
+                "SELECT id, short_code, original_url, created_at, expiration_date, user_id, status 
+                 FROM urls WHERE status = $1 AND user_id = $2 ORDER BY created_at DESC"
+            )
+            .bind(status.to_string())
+            .bind(uid)
+            .fetch_all(&self.pool)
+            .await?
+        } else {
+            sqlx::query(
+                "SELECT id, short_code, original_url, created_at, expiration_date, user_id, status 
+                 FROM urls WHERE status = $1 ORDER BY created_at DESC"
+            )
+            .bind(status.to_string())
+            .fetch_all(&self.pool)
+            .await?
+        };
+
+        let urls = rows
+            .into_iter()
+            .map(|row| Self::url_from_row(&row))
+            .collect();
+
+        Ok(urls)
     }
 }
