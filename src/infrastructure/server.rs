@@ -1,7 +1,7 @@
 use axum::{
     middleware,
     response::Html,
-    routing::{get, post},
+    routing::{get, post, put, delete, patch},
     Json, Router,
 };
 use serde_json::json;
@@ -16,9 +16,14 @@ use crate::domain::UrlService;
 use crate::application::{ShortenUrlUseCase, ShortenUrlRequest};
 use crate::infrastructure::{PostgresUrlRepository, PostgresUserRepository};
 use crate::domain::services::AuthService;
-use crate::presentation::{shorten_url_handler, redirect_handler, register_handler, login_handler, AppState};
-use crate::presentation::handlers::url_handlers::{__path_shorten_url_handler, __path_redirect_handler};
+use crate::presentation::{
+    shorten_url_handler, redirect_handler, register_handler, login_handler, AppState,
+    deactivate_url_handler, reactivate_url_handler,
+    get_expiration_info_handler, set_expiration_handler, extend_expiration_handler, get_expiring_urls_handler
+};
+use crate::presentation::handlers::url_handlers::{__path_shorten_url_handler, __path_redirect_handler, __path_deactivate_url_handler, __path_reactivate_url_handler};
 use crate::presentation::handlers::auth_handlers::{__path_register_handler, __path_login_handler};
+use crate::presentation::handlers::expiration_handlers::{__path_get_expiration_info_handler, __path_set_expiration_handler, __path_extend_expiration_handler, __path_get_expiring_urls_handler};
 use crate::infrastructure::rate_limiting::{
     create_request_size_layer, create_tracing_layer_simple, create_compression_layer_simple,
     security_headers_middleware, rate_limit_middleware, RateLimitConfig,
@@ -98,6 +103,12 @@ pub async fn start_server() -> Result<(), Box<dyn std::error::Error>> {
             login_handler,
             shorten_url_handler,
             redirect_handler,
+            deactivate_url_handler,
+            reactivate_url_handler,
+            get_expiration_info_handler,
+            set_expiration_handler,
+            extend_expiration_handler,
+            get_expiring_urls_handler,
             health_check,
         ),
         components(
@@ -127,7 +138,15 @@ pub async fn start_server() -> Result<(), Box<dyn std::error::Error>> {
         .route("/register", post(register_handler))
         .route("/login", post(login_handler))
         .route("/shorten", post(shorten_url_handler))
-        .route("/:short_code", get(redirect_handler));
+        .route("/:short_code", get(redirect_handler))
+        // URL management endpoints
+        .route("/urls/:id", delete(deactivate_url_handler))
+        .route("/urls/:id/reactivate", patch(reactivate_url_handler))
+        // Expiration management endpoints
+        .route("/urls/:short_code/expiration", get(get_expiration_info_handler))
+        .route("/urls/:short_code/expiration", put(set_expiration_handler))
+        .route("/urls/:short_code/extend", post(extend_expiration_handler))
+        .route("/urls/expiring-soon", get(get_expiring_urls_handler));
 
     let app = api_router
         .merge(SwaggerUi::new("/docs").url("/api-docs/openapi.json", openapi))
