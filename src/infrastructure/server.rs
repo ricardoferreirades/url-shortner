@@ -18,10 +18,11 @@ use crate::infrastructure::{PostgresUrlRepository, PostgresUserRepository};
 use crate::domain::services::AuthService;
 use crate::presentation::{
     shorten_url_handler, redirect_handler, register_handler, login_handler, AppState,
+    bulk_shorten_urls_handler,
     deactivate_url_handler, reactivate_url_handler,
     get_expiration_info_handler, set_expiration_handler, extend_expiration_handler, get_expiring_urls_handler
 };
-use crate::presentation::handlers::url_handlers::{__path_shorten_url_handler, __path_redirect_handler, __path_deactivate_url_handler, __path_reactivate_url_handler};
+use crate::presentation::handlers::url_handlers::{__path_shorten_url_handler, __path_redirect_handler, __path_deactivate_url_handler, __path_reactivate_url_handler, __path_bulk_shorten_urls_handler};
 use crate::presentation::handlers::auth_handlers::{__path_register_handler, __path_login_handler};
 use crate::presentation::handlers::expiration_handlers::{__path_get_expiration_info_handler, __path_set_expiration_handler, __path_extend_expiration_handler, __path_get_expiring_urls_handler};
 use crate::infrastructure::rate_limiting::{
@@ -102,6 +103,7 @@ pub async fn start_server() -> Result<(), Box<dyn std::error::Error>> {
             register_handler,
             login_handler,
             shorten_url_handler,
+            bulk_shorten_urls_handler,
             redirect_handler,
             deactivate_url_handler,
             reactivate_url_handler,
@@ -114,6 +116,7 @@ pub async fn start_server() -> Result<(), Box<dyn std::error::Error>> {
         components(
             schemas(
                 ShortenUrlRequest,
+                BulkShortenUrlsRequest,
                 crate::application::ShortenUrlResponse,
                 crate::application::ErrorResponse,
                 crate::infrastructure::rate_limiting::RateLimitError,
@@ -138,6 +141,7 @@ pub async fn start_server() -> Result<(), Box<dyn std::error::Error>> {
         .route("/register", post(register_handler))
         .route("/login", post(login_handler))
         .route("/shorten", post(shorten_url_handler))
+        .route("/urls/bulk", post(bulk_shorten_urls_handler))
         .route("/:short_code", get(redirect_handler))
         // URL management endpoints
         .route("/urls/:id", delete(deactivate_url_handler))
