@@ -43,3 +43,9 @@ pub struct SetExpirationRequest {
 pub struct ExtendExpirationRequest {
     pub additional_days: u32,
 }
+
+/// Request DTO for bulk URL shortening
+#[derive(Debug, Deserialize, Serialize, ToSchema)]
+pub struct BulkShortenUrlsRequest {
+    pub items: Vec<ShortenUrlRequest>,
+}
