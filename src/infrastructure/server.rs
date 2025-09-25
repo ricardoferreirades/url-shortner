@@ -14,6 +14,7 @@ use utoipa_swagger_ui::SwaggerUi;
 // Clean Architecture imports
 use crate::domain::UrlService;
 use crate::application::{ShortenUrlUseCase, ShortenUrlRequest};
+use crate::application::dto::requests::BulkShortenUrlsRequest;
 use crate::infrastructure::{PostgresUrlRepository, PostgresUserRepository};
 use crate::domain::services::AuthService;
 use crate::presentation::{
