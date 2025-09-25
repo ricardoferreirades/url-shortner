@@ -18,7 +18,7 @@
 - [x] Implement reactivation functionality
 
 ### 1.1.3 Bulk URL Management
-- [ ] Create bulk URL creation endpoint
+- [x] Create bulk URL creation endpoint
 - [ ] Implement batch processing for URL operations
 - [ ] Add bulk status update functionality
 - [ ] Create bulk deletion with safety checks
