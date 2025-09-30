@@ -49,3 +49,54 @@ pub struct ExtendExpirationRequest {
 pub struct BulkShortenUrlsRequest {
     pub items: Vec<ShortenUrlRequest>,
 }
+
+/// Request DTO for batch URL operations
+#[derive(Debug, Deserialize, Serialize, ToSchema)]
+pub struct BatchUrlOperationRequest {
+    pub operation: BatchOperationType,
+    pub url_ids: Vec<i32>,
+    pub data: Option<BatchOperationData>,
+}
+
+/// Types of batch operations that can be performed
+#[derive(Debug, Deserialize, Serialize, ToSchema)]
+pub enum BatchOperationType {
+    #[serde(rename = "deactivate")]
+    Deactivate,
+    #[serde(rename = "reactivate")]
+    Reactivate,
+    #[serde(rename = "delete")]
+    Delete,
+    #[serde(rename = "update_status")]
+    UpdateStatus,
+    #[serde(rename = "update_expiration")]
+    UpdateExpiration,
+}
+
+/// Data for batch operations
+#[derive(Debug, Deserialize, Serialize, ToSchema)]
+pub struct BatchOperationData {
+    pub status: Option<String>,
+    pub expiration_date: Option<chrono::DateTime<chrono::Utc>>,
+}
+
+/// Request DTO for bulk URL status updates
+#[derive(Debug, Deserialize, Serialize, ToSchema)]
+pub struct BulkStatusUpdateRequest {
+    pub url_ids: Vec<i32>,
+    pub status: String,
+}
+
+/// Request DTO for bulk URL expiration updates
+#[derive(Debug, Deserialize, Serialize, ToSchema)]
+pub struct BulkExpirationUpdateRequest {
+    pub url_ids: Vec<i32>,
+    pub expiration_date: chrono::DateTime<chrono::Utc>,
+}
+
+/// Request DTO for bulk URL deletion
+#[derive(Debug, Deserialize, Serialize, ToSchema)]
+pub struct BulkDeleteRequest {
+    pub url_ids: Vec<i32>,
+    pub force: Option<bool>,
+}
