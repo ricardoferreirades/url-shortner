@@ -50,6 +50,21 @@ pub trait UrlRepository: Send + Sync {
 
     /// Find URLs by status
     async fn find_by_status(&self, status: UrlStatus, user_id: Option<i32>) -> Result<Vec<Url>, RepositoryError>;
+
+    /// Batch deactivate URLs by IDs
+    async fn batch_deactivate_urls(&self, url_ids: &[i32], user_id: Option<i32>) -> Result<BatchOperationResult, RepositoryError>;
+
+    /// Batch reactivate URLs by IDs
+    async fn batch_reactivate_urls(&self, url_ids: &[i32], user_id: Option<i32>) -> Result<BatchOperationResult, RepositoryError>;
+
+    /// Batch delete URLs by IDs
+    async fn batch_delete_urls(&self, url_ids: &[i32], user_id: Option<i32>) -> Result<BatchOperationResult, RepositoryError>;
+
+    /// Batch update URL status
+    async fn batch_update_status(&self, url_ids: &[i32], status: UrlStatus, user_id: Option<i32>) -> Result<BatchOperationResult, RepositoryError>;
+
+    /// Batch update URL expiration dates
+    async fn batch_update_expiration(&self, url_ids: &[i32], expiration_date: Option<chrono::DateTime<chrono::Utc>>, user_id: Option<i32>) -> Result<BatchOperationResult, RepositoryError>;
 }
 
 /// Statistics about URLs
@@ -58,6 +73,23 @@ pub struct UrlStats {
     pub total_urls: i64,
     pub total_clicks: i64,
     pub unique_short_codes: i64,
+}
+
+/// Result of a batch operation
+#[derive(Debug, Clone)]
+pub struct BatchOperationResult {
+    pub total_processed: usize,
+    pub successful: usize,
+    pub failed: usize,
+    pub results: Vec<BatchItemResult>,
+}
+
+/// Individual result for a batch operation item
+#[derive(Debug, Clone)]
+pub struct BatchItemResult {
+    pub url_id: i32,
+    pub success: bool,
+    pub error: Option<String>,
 }
 
 /// Repository errors
@@ -244,6 +276,171 @@ pub mod tests {
                 .cloned()
                 .collect();
             Ok(filtered_urls)
+        }
+
+        async fn batch_deactivate_urls(&self, url_ids: &[i32], user_id: Option<i32>) -> Result<BatchOperationResult, RepositoryError> {
+            let mut urls = self.urls.lock().unwrap();
+            let mut results = Vec::new();
+            let mut successful = 0;
+            let mut failed = 0;
+
+            for &url_id in url_ids {
+                if let Some(url) = urls.iter_mut().find(|u| u.id == url_id && (user_id.is_none() || u.user_id == user_id)) {
+                    url.deactivate();
+                    results.push(BatchItemResult {
+                        url_id,
+                        success: true,
+                        error: None,
+                    });
+                    successful += 1;
+                } else {
+                    results.push(BatchItemResult {
+                        url_id,
+                        success: false,
+                        error: Some("URL not found or permission denied".to_string()),
+                    });
+                    failed += 1;
+                }
+            }
+
+            Ok(BatchOperationResult {
+                total_processed: url_ids.len(),
+                successful,
+                failed,
+                results,
+            })
+        }
+
+        async fn batch_reactivate_urls(&self, url_ids: &[i32], user_id: Option<i32>) -> Result<BatchOperationResult, RepositoryError> {
+            let mut urls = self.urls.lock().unwrap();
+            let mut results = Vec::new();
+            let mut successful = 0;
+            let mut failed = 0;
+
+            for &url_id in url_ids {
+                if let Some(url) = urls.iter_mut().find(|u| u.id == url_id && (user_id.is_none() || u.user_id == user_id)) {
+                    url.reactivate();
+                    results.push(BatchItemResult {
+                        url_id,
+                        success: true,
+                        error: None,
+                    });
+                    successful += 1;
+                } else {
+                    results.push(BatchItemResult {
+                        url_id,
+                        success: false,
+                        error: Some("URL not found or permission denied".to_string()),
+                    });
+                    failed += 1;
+                }
+            }
+
+            Ok(BatchOperationResult {
+                total_processed: url_ids.len(),
+                successful,
+                failed,
+                results,
+            })
+        }
+
+        async fn batch_delete_urls(&self, url_ids: &[i32], user_id: Option<i32>) -> Result<BatchOperationResult, RepositoryError> {
+            let mut urls = self.urls.lock().unwrap();
+            let mut results = Vec::new();
+            let mut successful = 0;
+            let mut failed = 0;
+
+            for &url_id in url_ids {
+                if let Some(pos) = urls.iter().position(|u| u.id == url_id && (user_id.is_none() || u.user_id == user_id)) {
+                    urls.remove(pos);
+                    results.push(BatchItemResult {
+                        url_id,
+                        success: true,
+                        error: None,
+                    });
+                    successful += 1;
+                } else {
+                    results.push(BatchItemResult {
+                        url_id,
+                        success: false,
+                        error: Some("URL not found or permission denied".to_string()),
+                    });
+                    failed += 1;
+                }
+            }
+
+            Ok(BatchOperationResult {
+                total_processed: url_ids.len(),
+                successful,
+                failed,
+                results,
+            })
+        }
+
+        async fn batch_update_status(&self, url_ids: &[i32], status: UrlStatus, user_id: Option<i32>) -> Result<BatchOperationResult, RepositoryError> {
+            let mut urls = self.urls.lock().unwrap();
+            let mut results = Vec::new();
+            let mut successful = 0;
+            let mut failed = 0;
+
+            for &url_id in url_ids {
+                if let Some(url) = urls.iter_mut().find(|u| u.id == url_id && (user_id.is_none() || u.user_id == user_id)) {
+                    url.status = status.clone();
+                    results.push(BatchItemResult {
+                        url_id,
+                        success: true,
+                        error: None,
+                    });
+                    successful += 1;
+                } else {
+                    results.push(BatchItemResult {
+                        url_id,
+                        success: false,
+                        error: Some("URL not found or permission denied".to_string()),
+                    });
+                    failed += 1;
+                }
+            }
+
+            Ok(BatchOperationResult {
+                total_processed: url_ids.len(),
+                successful,
+                failed,
+                results,
+            })
+        }
+
+        async fn batch_update_expiration(&self, url_ids: &[i32], expiration_date: Option<chrono::DateTime<chrono::Utc>>, user_id: Option<i32>) -> Result<BatchOperationResult, RepositoryError> {
+            let mut urls = self.urls.lock().unwrap();
+            let mut results = Vec::new();
+            let mut successful = 0;
+            let mut failed = 0;
+
+            for &url_id in url_ids {
+                if let Some(url) = urls.iter_mut().find(|u| u.id == url_id && (user_id.is_none() || u.user_id == user_id)) {
+                    url.expiration_date = expiration_date;
+                    results.push(BatchItemResult {
+                        url_id,
+                        success: true,
+                        error: None,
+                    });
+                    successful += 1;
+                } else {
+                    results.push(BatchItemResult {
+                        url_id,
+                        success: false,
+                        error: Some("URL not found or permission denied".to_string()),
+                    });
+                    failed += 1;
+                }
+            }
+
+            Ok(BatchOperationResult {
+                total_processed: url_ids.len(),
+                successful,
+                failed,
+                results,
+            })
         }
     }
 
