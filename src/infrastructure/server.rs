@@ -19,9 +19,12 @@ use crate::infrastructure::{PostgresUrlRepository, PostgresUserRepository};
 use crate::domain::services::AuthService;
 use crate::presentation::{
     shorten_url_handler, redirect_handler, register_handler, login_handler, AppState,
-    bulk_shorten_urls_handler,
+    bulk_shorten_urls_handler, batch_url_operations_handler, bulk_status_update_handler,
+    bulk_expiration_update_handler, bulk_delete_handler,
     deactivate_url_handler, reactivate_url_handler,
-    get_expiration_info_handler, set_expiration_handler, extend_expiration_handler, get_expiring_urls_handler
+    get_expiration_info_handler, set_expiration_handler, extend_expiration_handler, get_expiring_urls_handler,
+    async_bulk_shorten_urls_handler, async_batch_url_operations_handler,
+    get_bulk_operation_progress_handler, cancel_bulk_operation_handler, get_user_operations_handler
 };
 use crate::presentation::handlers::url_handlers::{__path_shorten_url_handler, __path_redirect_handler, __path_deactivate_url_handler, __path_reactivate_url_handler, __path_bulk_shorten_urls_handler};
 use crate::presentation::handlers::auth_handlers::{__path_register_handler, __path_login_handler};
@@ -95,7 +98,7 @@ pub async fn start_server() -> Result<(), Box<dyn std::error::Error>> {
     let auth_service = AuthService::new(user_repository.clone(), jwt_secret);
     
     // Create application state
-    let app_state = AppState::new(shorten_url_use_case, url_repository, url_service, auth_service);
+    let app_state = AppState::new(shorten_url_use_case, url_repository, url_service, auth_service, user_repository);
 
     // OpenAPI doc
     #[derive(OpenApi)]
@@ -105,6 +108,15 @@ pub async fn start_server() -> Result<(), Box<dyn std::error::Error>> {
             login_handler,
             shorten_url_handler,
             bulk_shorten_urls_handler,
+            batch_url_operations_handler,
+            bulk_status_update_handler,
+            bulk_expiration_update_handler,
+            bulk_delete_handler,
+            async_bulk_shorten_urls_handler,
+            async_batch_url_operations_handler,
+            get_bulk_operation_progress_handler,
+            cancel_bulk_operation_handler,
+            get_user_operations_handler,
             redirect_handler,
             deactivate_url_handler,
             reactivate_url_handler,
@@ -142,8 +154,20 @@ pub async fn start_server() -> Result<(), Box<dyn std::error::Error>> {
         .route("/register", post(register_handler))
         .route("/login", post(login_handler))
         .route("/shorten", post(shorten_url_handler))
-        .route("/urls/bulk", post(bulk_shorten_urls_handler))
         .route("/:short_code", get(redirect_handler))
+        // Bulk operations (synchronous)
+        .route("/urls/bulk", post(bulk_shorten_urls_handler))
+        .route("/urls/batch", post(batch_url_operations_handler))
+        .route("/urls/bulk/status", patch(bulk_status_update_handler))
+        .route("/urls/bulk/expiration", patch(bulk_expiration_update_handler))
+        .route("/urls/bulk", delete(bulk_delete_handler))
+        // Async bulk operations with progress tracking
+        .route("/urls/bulk/async", post(async_bulk_shorten_urls_handler))
+        .route("/urls/batch/async", post(async_batch_url_operations_handler))
+        // Progress tracking endpoints
+        .route("/urls/bulk/progress/:operation_id", get(get_bulk_operation_progress_handler))
+        .route("/urls/bulk/progress/:operation_id", delete(cancel_bulk_operation_handler))
+        .route("/urls/bulk/operations", get(get_user_operations_handler))
         // URL management endpoints
         .route("/urls/:id", delete(deactivate_url_handler))
         .route("/urls/:id/reactivate", patch(reactivate_url_handler))
