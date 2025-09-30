@@ -77,3 +77,48 @@ pub struct ExpiringUrlsResponse {
     pub total_count: i64,
     pub warning_period_days: u32,
 }
+
+/// Response DTO for batch operation results
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
+pub struct BatchOperationResponse {
+    pub operation: String,
+    pub total_processed: usize,
+    pub successful: usize,
+    pub failed: usize,
+    pub results: Vec<BatchOperationResult>,
+}
+
+/// Individual result for a batch operation
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
+pub struct BatchOperationResult {
+    pub url_id: i32,
+    pub success: bool,
+    pub error: Option<String>,
+}
+
+/// Response DTO for bulk operation progress
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
+pub struct BulkOperationProgress {
+    pub operation_id: String,
+    pub status: BulkOperationStatus,
+    pub total_items: usize,
+    pub processed_items: usize,
+    pub successful_items: usize,
+    pub failed_items: usize,
+    pub progress_percentage: f32,
+}
+
+/// Status of a bulk operation
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
+pub enum BulkOperationStatus {
+    #[serde(rename = "pending")]
+    Pending,
+    #[serde(rename = "processing")]
+    Processing,
+    #[serde(rename = "completed")]
+    Completed,
+    #[serde(rename = "failed")]
+    Failed,
+    #[serde(rename = "cancelled")]
+    Cancelled,
+}
