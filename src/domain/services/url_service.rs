@@ -186,6 +186,72 @@ where
     pub async fn get_deactivated_urls(&self, user_id: Option<i32>) -> Result<Vec<Url>, ServiceError> {
         self.get_urls_by_status(UrlStatus::Inactive, user_id).await
     }
+
+    /// Batch deactivate URLs
+    pub async fn batch_deactivate_urls(&self, url_ids: &[i32], user_id: Option<i32>) -> Result<crate::domain::repositories::BatchOperationResult, ServiceError> {
+        self.repository.batch_deactivate_urls(url_ids, user_id).await
+            .map_err(ServiceError::from)
+    }
+
+    /// Batch reactivate URLs
+    pub async fn batch_reactivate_urls(&self, url_ids: &[i32], user_id: Option<i32>) -> Result<crate::domain::repositories::BatchOperationResult, ServiceError> {
+        self.repository.batch_reactivate_urls(url_ids, user_id).await
+            .map_err(ServiceError::from)
+    }
+
+    /// Batch delete URLs
+    pub async fn batch_delete_urls(&self, url_ids: &[i32], user_id: Option<i32>) -> Result<crate::domain::repositories::BatchOperationResult, ServiceError> {
+        self.repository.batch_delete_urls(url_ids, user_id).await
+            .map_err(ServiceError::from)
+    }
+
+    /// Batch update URL status
+    pub async fn batch_update_status(&self, url_ids: &[i32], status: UrlStatus, user_id: Option<i32>) -> Result<crate::domain::repositories::BatchOperationResult, ServiceError> {
+        self.repository.batch_update_status(url_ids, status, user_id).await
+            .map_err(ServiceError::from)
+    }
+
+    /// Batch update URL expiration dates
+    pub async fn batch_update_expiration(&self, url_ids: &[i32], expiration_date: Option<chrono::DateTime<chrono::Utc>>, user_id: Option<i32>) -> Result<crate::domain::repositories::BatchOperationResult, ServiceError> {
+        self.repository.batch_update_expiration(url_ids, expiration_date, user_id).await
+            .map_err(ServiceError::from)
+    }
+
+    /// Process batch URL operations
+    pub async fn process_batch_operations(
+        &self,
+        operation: &crate::application::dto::requests::BatchOperationType,
+        url_ids: &[i32],
+        data: Option<&crate::application::dto::requests::BatchOperationData>,
+        user_id: Option<i32>,
+    ) -> Result<crate::domain::repositories::BatchOperationResult, ServiceError> {
+        match operation {
+            crate::application::dto::requests::BatchOperationType::Deactivate => {
+                self.batch_deactivate_urls(url_ids, user_id).await
+            }
+            crate::application::dto::requests::BatchOperationType::Reactivate => {
+                self.batch_reactivate_urls(url_ids, user_id).await
+            }
+            crate::application::dto::requests::BatchOperationType::Delete => {
+                self.batch_delete_urls(url_ids, user_id).await
+            }
+            crate::application::dto::requests::BatchOperationType::UpdateStatus => {
+                let status = data
+                    .and_then(|d| d.status.as_ref())
+                    .and_then(|s| match s.as_str() {
+                        "active" => Some(UrlStatus::Active),
+                        "inactive" => Some(UrlStatus::Inactive),
+                        _ => None,
+                    })
+                    .ok_or_else(|| ServiceError::InvalidData("Invalid status provided".to_string()))?;
+                self.batch_update_status(url_ids, status, user_id).await
+            }
+            crate::application::dto::requests::BatchOperationType::UpdateExpiration => {
+                let expiration_date = data.and_then(|d| d.expiration_date);
+                self.batch_update_expiration(url_ids, expiration_date, user_id).await
+            }
+        }
+    }
 }
 
 /// Service errors
@@ -205,6 +271,9 @@ pub enum ServiceError {
     
     #[error("Permission denied: {0}")]
     PermissionDenied(String),
+    
+    #[error("Invalid data: {0}")]
+    InvalidData(String),
 }
 
 impl From<crate::domain::entities::ShortCodeError> for ServiceError {
@@ -351,6 +420,171 @@ mod tests {
                 .collect();
             Ok(filtered_urls)
         }
+
+        async fn batch_deactivate_urls(&self, url_ids: &[i32], user_id: Option<i32>) -> Result<crate::domain::repositories::BatchOperationResult, RepositoryError> {
+            let mut urls = self.urls.lock().unwrap();
+            let mut results = Vec::new();
+            let mut successful = 0;
+            let mut failed = 0;
+
+            for &url_id in url_ids {
+                if let Some(url) = urls.iter_mut().find(|u| u.id == url_id && (user_id.is_none() || u.user_id == user_id)) {
+                    url.deactivate();
+                    results.push(crate::domain::repositories::BatchItemResult {
+                        url_id,
+                        success: true,
+                        error: None,
+                    });
+                    successful += 1;
+                } else {
+                    results.push(crate::domain::repositories::BatchItemResult {
+                        url_id,
+                        success: false,
+                        error: Some("URL not found or permission denied".to_string()),
+                    });
+                    failed += 1;
+                }
+            }
+
+            Ok(crate::domain::repositories::BatchOperationResult {
+                total_processed: url_ids.len(),
+                successful,
+                failed,
+                results,
+            })
+        }
+
+        async fn batch_reactivate_urls(&self, url_ids: &[i32], user_id: Option<i32>) -> Result<crate::domain::repositories::BatchOperationResult, RepositoryError> {
+            let mut urls = self.urls.lock().unwrap();
+            let mut results = Vec::new();
+            let mut successful = 0;
+            let mut failed = 0;
+
+            for &url_id in url_ids {
+                if let Some(url) = urls.iter_mut().find(|u| u.id == url_id && (user_id.is_none() || u.user_id == user_id)) {
+                    url.reactivate();
+                    results.push(crate::domain::repositories::BatchItemResult {
+                        url_id,
+                        success: true,
+                        error: None,
+                    });
+                    successful += 1;
+                } else {
+                    results.push(crate::domain::repositories::BatchItemResult {
+                        url_id,
+                        success: false,
+                        error: Some("URL not found or permission denied".to_string()),
+                    });
+                    failed += 1;
+                }
+            }
+
+            Ok(crate::domain::repositories::BatchOperationResult {
+                total_processed: url_ids.len(),
+                successful,
+                failed,
+                results,
+            })
+        }
+
+        async fn batch_delete_urls(&self, url_ids: &[i32], user_id: Option<i32>) -> Result<crate::domain::repositories::BatchOperationResult, RepositoryError> {
+            let mut urls = self.urls.lock().unwrap();
+            let mut results = Vec::new();
+            let mut successful = 0;
+            let mut failed = 0;
+
+            for &url_id in url_ids {
+                if let Some(pos) = urls.iter().position(|u| u.id == url_id && (user_id.is_none() || u.user_id == user_id)) {
+                    urls.remove(pos);
+                    results.push(crate::domain::repositories::BatchItemResult {
+                        url_id,
+                        success: true,
+                        error: None,
+                    });
+                    successful += 1;
+                } else {
+                    results.push(crate::domain::repositories::BatchItemResult {
+                        url_id,
+                        success: false,
+                        error: Some("URL not found or permission denied".to_string()),
+                    });
+                    failed += 1;
+                }
+            }
+
+            Ok(crate::domain::repositories::BatchOperationResult {
+                total_processed: url_ids.len(),
+                successful,
+                failed,
+                results,
+            })
+        }
+
+        async fn batch_update_status(&self, url_ids: &[i32], status: UrlStatus, user_id: Option<i32>) -> Result<crate::domain::repositories::BatchOperationResult, RepositoryError> {
+            let mut urls = self.urls.lock().unwrap();
+            let mut results = Vec::new();
+            let mut successful = 0;
+            let mut failed = 0;
+
+            for &url_id in url_ids {
+                if let Some(url) = urls.iter_mut().find(|u| u.id == url_id && (user_id.is_none() || u.user_id == user_id)) {
+                    url.status = status.clone();
+                    results.push(crate::domain::repositories::BatchItemResult {
+                        url_id,
+                        success: true,
+                        error: None,
+                    });
+                    successful += 1;
+                } else {
+                    results.push(crate::domain::repositories::BatchItemResult {
+                        url_id,
+                        success: false,
+                        error: Some("URL not found or permission denied".to_string()),
+                    });
+                    failed += 1;
+                }
+            }
+
+            Ok(crate::domain::repositories::BatchOperationResult {
+                total_processed: url_ids.len(),
+                successful,
+                failed,
+                results,
+            })
+        }
+
+        async fn batch_update_expiration(&self, url_ids: &[i32], expiration_date: Option<chrono::DateTime<chrono::Utc>>, user_id: Option<i32>) -> Result<crate::domain::repositories::BatchOperationResult, RepositoryError> {
+            let mut urls = self.urls.lock().unwrap();
+            let mut results = Vec::new();
+            let mut successful = 0;
+            let mut failed = 0;
+
+            for &url_id in url_ids {
+                if let Some(url) = urls.iter_mut().find(|u| u.id == url_id && (user_id.is_none() || u.user_id == user_id)) {
+                    url.expiration_date = expiration_date;
+                    results.push(crate::domain::repositories::BatchItemResult {
+                        url_id,
+                        success: true,
+                        error: None,
+                    });
+                    successful += 1;
+                } else {
+                    results.push(crate::domain::repositories::BatchItemResult {
+                        url_id,
+                        success: false,
+                        error: Some("URL not found or permission denied".to_string()),
+                    });
+                    failed += 1;
+                }
+            }
+
+            Ok(crate::domain::repositories::BatchOperationResult {
+                total_processed: url_ids.len(),
+                successful,
+                failed,
+                results,
+            })
+        }
     }
 
     #[tokio::test]
@@ -382,5 +616,85 @@ mod tests {
         let url = service.create_url("https://example.com", Some(custom_code.clone()), None, None).await.unwrap();
         assert_eq!(url.short_code, custom_code.value());
         assert_eq!(url.original_url, "https://example.com");
+    }
+
+    #[tokio::test]
+    async fn test_batch_deactivate_urls() {
+        let repo = MockUrlRepository::new();
+        let service = UrlService::new(repo.clone());
+        
+        // Create some test URLs
+        let url1 = service.create_url("https://example1.com", None, None, Some(1)).await.unwrap();
+        let url2 = service.create_url("https://example2.com", None, None, Some(1)).await.unwrap();
+        let url3 = service.create_url("https://example3.com", None, None, Some(2)).await.unwrap();
+        
+        // Batch deactivate URLs for user 1
+        let result = service.batch_deactivate_urls(&[url1.id, url2.id], Some(1)).await.unwrap();
+        assert_eq!(result.total_processed, 2);
+        assert_eq!(result.successful, 2);
+        assert_eq!(result.failed, 0);
+        
+        // Try to deactivate URL owned by different user
+        let result = service.batch_deactivate_urls(&[url3.id], Some(1)).await.unwrap();
+        assert_eq!(result.total_processed, 1);
+        assert_eq!(result.successful, 0);
+        assert_eq!(result.failed, 1);
+    }
+
+    #[tokio::test]
+    async fn test_batch_delete_urls() {
+        let repo = MockUrlRepository::new();
+        let service = UrlService::new(repo.clone());
+        
+        // Create some test URLs
+        let url1 = service.create_url("https://example1.com", None, None, Some(1)).await.unwrap();
+        let url2 = service.create_url("https://example2.com", None, None, Some(1)).await.unwrap();
+        let url3 = service.create_url("https://example3.com", None, None, Some(2)).await.unwrap();
+        
+        // Batch delete URLs for user 1
+        let result = service.batch_delete_urls(&[url1.id, url2.id], Some(1)).await.unwrap();
+        assert_eq!(result.total_processed, 2);
+        assert_eq!(result.successful, 2);
+        assert_eq!(result.failed, 0);
+        
+        // Try to delete URL owned by different user
+        let result = service.batch_delete_urls(&[url3.id], Some(1)).await.unwrap();
+        assert_eq!(result.total_processed, 1);
+        assert_eq!(result.successful, 0);
+        assert_eq!(result.failed, 1);
+    }
+
+    #[tokio::test]
+    async fn test_batch_update_status() {
+        let repo = MockUrlRepository::new();
+        let service = UrlService::new(repo.clone());
+        
+        // Create some test URLs
+        let url1 = service.create_url("https://example1.com", None, None, Some(1)).await.unwrap();
+        let url2 = service.create_url("https://example2.com", None, None, Some(1)).await.unwrap();
+        
+        // Batch update status to inactive
+        let result = service.batch_update_status(&[url1.id, url2.id], UrlStatus::Inactive, Some(1)).await.unwrap();
+        assert_eq!(result.total_processed, 2);
+        assert_eq!(result.successful, 2);
+        assert_eq!(result.failed, 0);
+    }
+
+    #[tokio::test]
+    async fn test_batch_update_expiration() {
+        let repo = MockUrlRepository::new();
+        let service = UrlService::new(repo.clone());
+        
+        // Create some test URLs
+        let url1 = service.create_url("https://example1.com", None, None, Some(1)).await.unwrap();
+        let url2 = service.create_url("https://example2.com", None, None, Some(1)).await.unwrap();
+        
+        let new_expiration = chrono::Utc::now() + chrono::Duration::days(30);
+        
+        // Batch update expiration
+        let result = service.batch_update_expiration(&[url1.id, url2.id], Some(new_expiration), Some(1)).await.unwrap();
+        assert_eq!(result.total_processed, 2);
+        assert_eq!(result.successful, 2);
+        assert_eq!(result.failed, 0);
     }
 }
