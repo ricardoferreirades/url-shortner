@@ -27,3 +27,7 @@ async-trait = "0.1"
 jsonwebtoken = "9.2"
 bcrypt = "0.15"
 uuid = { version = "1.6", features = ["v4", "serde"] }
+axum-extra = { version = "0.9", features = ["multipart"] }
+image = "0.24"
+mime_guess = "2.0"
+regex = "1.10"
