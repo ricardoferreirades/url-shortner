@@ -100,3 +100,26 @@ pub struct BulkDeleteRequest {
     pub url_ids: Vec<i32>,
     pub force: Option<bool>,
 }
+
+/// Request DTO for updating user profile
+#[derive(Debug, Deserialize, Serialize, ToSchema)]
+pub struct UpdateProfileRequest {
+    pub first_name: Option<String>,
+    pub last_name: Option<String>,
+    pub bio: Option<String>,
+    pub avatar_url: Option<String>,
+    pub website: Option<String>,
+    pub location: Option<String>,
+    pub privacy: Option<ProfilePrivacyRequest>,
+}
+
+/// Privacy settings for profile requests
+#[derive(Debug, Deserialize, Serialize, ToSchema)]
+pub enum ProfilePrivacyRequest {
+    #[serde(rename = "public")]
+    Public,
+    #[serde(rename = "private")]
+    Private,
+    #[serde(rename = "friends_only")]
+    FriendsOnly,
+}
