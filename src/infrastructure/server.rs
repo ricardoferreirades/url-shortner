@@ -24,7 +24,10 @@ use crate::presentation::{
     deactivate_url_handler, reactivate_url_handler,
     get_expiration_info_handler, set_expiration_handler, extend_expiration_handler, get_expiring_urls_handler,
     async_bulk_shorten_urls_handler, async_batch_url_operations_handler,
-    get_bulk_operation_progress_handler, cancel_bulk_operation_handler, get_user_operations_handler
+    get_bulk_operation_progress_handler, cancel_bulk_operation_handler, get_user_operations_handler,
+    get_my_profile, get_public_profile, update_my_profile, patch_my_profile, get_profile_by_username,
+    upload_profile_picture, delete_profile_picture,
+    get_privacy_settings, update_privacy_settings, get_privacy_recommendations
 };
 use crate::presentation::handlers::url_handlers::{__path_shorten_url_handler, __path_redirect_handler, __path_deactivate_url_handler, __path_reactivate_url_handler, __path_bulk_shorten_urls_handler};
 use crate::presentation::handlers::auth_handlers::{__path_register_handler, __path_login_handler};
@@ -124,6 +127,16 @@ pub async fn start_server() -> Result<(), Box<dyn std::error::Error>> {
             set_expiration_handler,
             extend_expiration_handler,
             get_expiring_urls_handler,
+            get_my_profile,
+            get_public_profile,
+            update_my_profile,
+            patch_my_profile,
+            get_profile_by_username,
+            upload_profile_picture,
+            delete_profile_picture,
+            get_privacy_settings,
+            update_privacy_settings,
+            get_privacy_recommendations,
             health_check,
         ),
         components(
@@ -137,6 +150,11 @@ pub async fn start_server() -> Result<(), Box<dyn std::error::Error>> {
                 crate::presentation::handlers::auth_handlers::LoginRequest,
                 crate::presentation::handlers::auth_handlers::AuthResponse,
                 crate::presentation::handlers::auth_handlers::UserResponse,
+                crate::application::dto::requests::UpdateProfileRequest,
+                crate::application::dto::requests::ProfilePrivacyRequest,
+                crate::application::dto::responses::UserProfileResponse,
+                crate::application::dto::responses::PublicUserProfileResponse,
+                crate::application::dto::responses::ProfilePrivacyResponse,
             )
         ),
         tags(
@@ -175,7 +193,20 @@ pub async fn start_server() -> Result<(), Box<dyn std::error::Error>> {
         .route("/urls/:short_code/expiration", get(get_expiration_info_handler))
         .route("/urls/:short_code/expiration", put(set_expiration_handler))
         .route("/urls/:short_code/extend", post(extend_expiration_handler))
-        .route("/urls/expiring-soon", get(get_expiring_urls_handler));
+        .route("/urls/expiring-soon", get(get_expiring_urls_handler))
+        // Profile management endpoints
+        .route("/profile", get(get_my_profile))
+        .route("/profile", put(update_my_profile))
+        .route("/profile", patch(patch_my_profile))
+        .route("/profile/:user_id", get(get_public_profile))
+        .route("/profile/username/:username", get(get_profile_by_username))
+        // Profile picture upload endpoints
+        .route("/profile/avatar", post(upload_profile_picture))
+        .route("/profile/avatar", delete(delete_profile_picture))
+        // Privacy management endpoints
+        .route("/profile/privacy", get(get_privacy_settings))
+        .route("/profile/privacy", put(update_privacy_settings))
+        .route("/profile/privacy/recommendations", get(get_privacy_recommendations));
 
     let app = api_router
         .merge(SwaggerUi::new("/docs").url("/api-docs/openapi.json", openapi))
