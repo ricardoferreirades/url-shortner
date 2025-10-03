@@ -4,7 +4,16 @@ CREATE TABLE IF NOT EXISTS users (
     username VARCHAR(50) UNIQUE NOT NULL,
     email VARCHAR(255) UNIQUE NOT NULL,
     password_hash VARCHAR(255) NOT NULL,
-    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    -- Profile fields
+    first_name VARCHAR(100),
+    last_name VARCHAR(100),
+    bio TEXT,
+    avatar_url VARCHAR(500),
+    website VARCHAR(500),
+    location VARCHAR(200),
+    privacy VARCHAR(20) DEFAULT 'public' CHECK (privacy IN ('public', 'private', 'friends_only')),
+    updated_at TIMESTAMPTZ
 );
 
 -- Create the urls table
