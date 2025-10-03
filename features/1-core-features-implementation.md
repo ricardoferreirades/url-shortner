@@ -28,11 +28,11 @@
 **Goal**: Enhanced user account management and features
 
 ### 1.2.1 User Profiles
-- [ ] Extend user entity with profile fields
-- [ ] Create user profile management API
-- [ ] Add profile picture upload functionality
-- [ ] Implement profile validation and sanitization
-- [ ] Add profile privacy settings
+- [x] Extend user entity with profile fields
+- [x] Create user profile management API
+- [x] Add profile picture upload functionality
+- [x] Implement profile validation and sanitization
+- [x] Add profile privacy settings
 
 ### 1.2.2 Password Reset
 - [ ] Implement password reset token generation
@@ -68,10 +68,10 @@
 ## Technical Considerations
 
 ### Database Changes
-- Add expiration_date column to urls table
-- Add status column for URL deactivation
-- Extend users table with profile fields
-- Add password_reset_tokens table
+- [x] Add expiration_date column to urls table
+- [x] Add status column for URL deactivation
+- [x] Extend users table with profile fields
+- [ ] Add password_reset_tokens table
 
 ### API Design
 - RESTful endpoints for all operations
