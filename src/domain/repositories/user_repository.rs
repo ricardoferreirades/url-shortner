@@ -1,4 +1,4 @@
-use crate::domain::entities::User;
+use crate::domain::entities::{User, ProfilePrivacy};
 use async_trait::async_trait;
 use thiserror::Error;
 
@@ -27,6 +27,22 @@ pub trait UserRepository: Send + Sync {
 
     /// Check if email exists
     async fn exists_by_email(&self, email: &str) -> Result<bool, RepositoryError>;
+
+    /// Update user profile
+    async fn update_profile(
+        &self,
+        user_id: i32,
+        first_name: Option<&str>,
+        last_name: Option<&str>,
+        bio: Option<&str>,
+        avatar_url: Option<&str>,
+        website: Option<&str>,
+        location: Option<&str>,
+        privacy: Option<ProfilePrivacy>,
+    ) -> Result<User, RepositoryError>;
+
+    /// Get user profile (public fields only)
+    async fn get_profile(&self, user_id: i32) -> Result<Option<User>, RepositoryError>;
 }
 
 /// Repository errors
