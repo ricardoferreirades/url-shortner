@@ -35,7 +35,7 @@
 - [x] Add profile privacy settings
 
 ### 1.2.2 Password Reset
-- [ ] Implement password reset token generation
+- [x] Implement password reset token generation
 - [ ] Create secure password reset email system
 - [ ] Add password reset API endpoints
 - [ ] Implement token expiration and validation
@@ -71,7 +71,7 @@
 - [x] Add expiration_date column to urls table
 - [x] Add status column for URL deactivation
 - [x] Extend users table with profile fields
-- [ ] Add password_reset_tokens table
+- [x] Add password_reset_tokens table
 
 ### API Design
 - RESTful endpoints for all operations
