@@ -36,10 +36,21 @@
 
 ### 1.2.2 Password Reset
 - [x] Implement password reset token generation
-- [ ] Create secure password reset email system
+- [x] Create secure password reset email system
 - [ ] Add password reset API endpoints
 - [ ] Implement token expiration and validation
 - [ ] Add rate limiting for password reset requests
+
+**Implementation Details:**
+- Created PasswordResetToken entity with secure token generation
+- Implemented PasswordResetService with UUID + random token generation
+- Added PasswordResetRepository trait and PostgresPasswordResetRepository
+- Added password_reset_tokens table with proper indexes
+- Created EmailSender trait for email abstraction
+- Implemented SmtpEmailSender with lettre library
+- Added password reset email templates (text and HTML)
+- Added SMTP configuration with environment variable support
+- Implemented secure email sending with TLS/SSL
 
 ### 1.2.3 Account Deletion
 - [ ] Implement secure account deletion process
