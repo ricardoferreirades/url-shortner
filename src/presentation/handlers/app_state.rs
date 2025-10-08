@@ -1,26 +1,33 @@
 use crate::application::ShortenUrlUseCase;
-use crate::domain::repositories::{UrlRepository, UserRepository};
+use crate::domain::repositories::{UrlRepository, UserRepository, PasswordResetRepository};
 use crate::domain::services::{AuthService, UrlService, ProgressService, BulkProcessor};
+use crate::infrastructure::email::EmailSender;
+use std::sync::Arc;
 
 /// Application state that contains both use cases and repositories
 #[derive(Clone)]
-pub struct AppState<R, U>
+pub struct AppState<R, U, P>
 where
     R: UrlRepository + Send + Sync + Clone,
     U: UserRepository + Send + Sync + Clone,
+    P: PasswordResetRepository + Send + Sync + Clone,
 {
     pub shorten_url_use_case: ShortenUrlUseCase<R>,
     pub url_repository: R,
     pub url_service: UrlService<R>,
     pub auth_service: AuthService<U>,
+    pub user_repository: U,
     pub progress_service: ProgressService,
     pub bulk_processor: BulkProcessor<R, U>,
+    pub password_reset_repository: P,
+    pub email_sender: Option<Arc<dyn EmailSender>>,
 }
 
-impl<R, U> AppState<R, U>
+impl<R, U, P> AppState<R, U, P>
 where
     R: UrlRepository + Send + Sync + Clone,
     U: UserRepository + Send + Sync + Clone,
+    P: PasswordResetRepository + Send + Sync + Clone,
 {
     pub fn new(
         shorten_url_use_case: ShortenUrlUseCase<R>, 
@@ -28,17 +35,22 @@ where
         url_service: UrlService<R>, 
         auth_service: AuthService<U>,
         user_repository: U,
+        password_reset_repository: P,
+        email_sender: Option<Arc<dyn EmailSender>>,
     ) -> Self {
         let progress_service = ProgressService::new();
-        let bulk_processor = BulkProcessor::new(url_service.clone(), progress_service.clone(), user_repository);
+        let bulk_processor = BulkProcessor::new(url_service.clone(), progress_service.clone(), user_repository.clone());
         
         Self {
             shorten_url_use_case,
             url_repository,
             url_service,
             auth_service,
+            user_repository,
             progress_service,
             bulk_processor,
+            password_reset_repository,
+            email_sender,
         }
     }
 }
