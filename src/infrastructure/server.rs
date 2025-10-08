@@ -15,7 +15,7 @@ use utoipa_swagger_ui::SwaggerUi;
 use crate::domain::UrlService;
 use crate::application::{ShortenUrlUseCase, ShortenUrlRequest};
 use crate::application::dto::requests::BulkShortenUrlsRequest;
-use crate::infrastructure::{PostgresUrlRepository, PostgresUserRepository};
+use crate::infrastructure::{PostgresUrlRepository, PostgresUserRepository, PostgresPasswordResetRepository, SmtpEmailSender};
 use crate::domain::services::AuthService;
 use crate::presentation::{
     shorten_url_handler, redirect_handler, register_handler, login_handler, AppState,
@@ -27,7 +27,8 @@ use crate::presentation::{
     get_bulk_operation_progress_handler, cancel_bulk_operation_handler, get_user_operations_handler,
     get_my_profile, get_public_profile, update_my_profile, patch_my_profile, get_profile_by_username,
     upload_profile_picture, delete_profile_picture,
-    get_privacy_settings, update_privacy_settings, get_privacy_recommendations
+    get_privacy_settings, update_privacy_settings, get_privacy_recommendations,
+    request_password_reset, reset_password, validate_reset_token
 };
 use crate::presentation::handlers::url_handlers::{__path_shorten_url_handler, __path_redirect_handler, __path_deactivate_url_handler, __path_reactivate_url_handler, __path_bulk_shorten_urls_handler};
 use crate::presentation::handlers::auth_handlers::{__path_register_handler, __path_login_handler};
@@ -59,7 +60,8 @@ pub async fn start_server() -> Result<(), Box<dyn std::error::Error>> {
     // Connect to database using new clean architecture
     let pool = sqlx::PgPool::connect(&database_url).await?;
     let url_repository = PostgresUrlRepository::new(pool.clone());
-    let user_repository = PostgresUserRepository::new(pool);
+    let user_repository = PostgresUserRepository::new(pool.clone());
+    let password_reset_repository = PostgresPasswordResetRepository::new(pool);
     info!("Connected to PostgreSQL database with clean architecture");
 
     // Configure rate limiting
@@ -100,8 +102,33 @@ pub async fn start_server() -> Result<(), Box<dyn std::error::Error>> {
     let jwt_secret = env::var("JWT_SECRET").unwrap_or_else(|_| "your-secret-key".to_string());
     let auth_service = AuthService::new(user_repository.clone(), jwt_secret);
     
+    // Create email sender (optional)
+    let email_sender = if env::var("SMTP_ENABLED").unwrap_or_else(|_| "false".to_string()) == "true" {
+        match SmtpEmailSender::from_env() {
+            Ok(sender) => {
+                info!("Email sender configured successfully");
+                Some(std::sync::Arc::new(sender) as std::sync::Arc<dyn crate::infrastructure::email::EmailSender>)
+            }
+            Err(e) => {
+                warn!("Failed to configure email sender: {}", e);
+                None
+            }
+        }
+    } else {
+        info!("Email sender disabled (SMTP_ENABLED=false)");
+        None
+    };
+    
     // Create application state
-    let app_state = AppState::new(shorten_url_use_case, url_repository, url_service, auth_service, user_repository);
+    let app_state = AppState::new(
+        shorten_url_use_case, 
+        url_repository, 
+        url_service, 
+        auth_service, 
+        user_repository,
+        password_reset_repository,
+        email_sender,
+    );
 
     // OpenAPI doc
     #[derive(OpenApi)]
@@ -137,6 +164,9 @@ pub async fn start_server() -> Result<(), Box<dyn std::error::Error>> {
             get_privacy_settings,
             update_privacy_settings,
             get_privacy_recommendations,
+            request_password_reset,
+            reset_password,
+            validate_reset_token,
             health_check,
         ),
         components(
@@ -155,6 +185,10 @@ pub async fn start_server() -> Result<(), Box<dyn std::error::Error>> {
                 crate::application::dto::responses::UserProfileResponse,
                 crate::application::dto::responses::PublicUserProfileResponse,
                 crate::application::dto::responses::ProfilePrivacyResponse,
+                crate::presentation::handlers::password_reset_handlers::RequestPasswordResetRequest,
+                crate::presentation::handlers::password_reset_handlers::RequestPasswordResetResponse,
+                crate::presentation::handlers::password_reset_handlers::ResetPasswordRequest,
+                crate::presentation::handlers::password_reset_handlers::ResetPasswordResponse,
             )
         ),
         tags(
@@ -206,7 +240,11 @@ pub async fn start_server() -> Result<(), Box<dyn std::error::Error>> {
         // Privacy management endpoints
         .route("/profile/privacy", get(get_privacy_settings))
         .route("/profile/privacy", put(update_privacy_settings))
-        .route("/profile/privacy/recommendations", get(get_privacy_recommendations));
+        .route("/profile/privacy/recommendations", get(get_privacy_recommendations))
+        // Password reset endpoints
+        .route("/auth/password-reset/request", post(request_password_reset))
+        .route("/auth/password-reset/confirm", post(reset_password))
+        .route("/auth/password-reset/validate/:token", get(validate_reset_token));
 
     let app = api_router
         .merge(SwaggerUi::new("/docs").url("/api-docs/openapi.json", openapi))
