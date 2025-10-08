@@ -37,7 +37,7 @@
 ### 1.2.2 Password Reset
 - [x] Implement password reset token generation
 - [x] Create secure password reset email system
-- [ ] Add password reset API endpoints
+- [x] Add password reset API endpoints
 - [ ] Implement token expiration and validation
 - [ ] Add rate limiting for password reset requests
 
@@ -51,6 +51,10 @@
 - Added password reset email templates (text and HTML)
 - Added SMTP configuration with environment variable support
 - Implemented secure email sending with TLS/SSL
+- Created password reset API handlers (request, confirm, validate)
+- Added comprehensive request/response DTOs with OpenAPI schemas
+- Updated AppState to support password reset and email functionality
+- Integrated email sending into password reset flow
 
 ### 1.2.3 Account Deletion
 - [ ] Implement secure account deletion process
