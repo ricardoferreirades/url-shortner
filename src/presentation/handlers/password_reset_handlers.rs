@@ -1,7 +1,7 @@
 use super::ConcreteAppState;
 use crate::application::dto::responses::ErrorResponse;
 use crate::domain::services::{PasswordResetService, PasswordResetError, TokenValidationService};
-use crate::infrastructure::email::{EmailSender, EmailMessage};
+use crate::infrastructure::email::EmailMessage;
 use axum::{
     extract::State,
     http::StatusCode,
