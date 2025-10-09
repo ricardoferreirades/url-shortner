@@ -2,6 +2,7 @@ use crate::application::ShortenUrlUseCase;
 use crate::domain::repositories::{UrlRepository, UserRepository, PasswordResetRepository};
 use crate::domain::services::{AuthService, UrlService, ProgressService, BulkProcessor};
 use crate::infrastructure::email::EmailSender;
+use crate::infrastructure::PasswordResetRateLimiter;
 use std::sync::Arc;
 
 /// Application state that contains both use cases and repositories
@@ -21,6 +22,7 @@ where
     pub bulk_processor: BulkProcessor<R, U>,
     pub password_reset_repository: P,
     pub email_sender: Option<Arc<dyn EmailSender>>,
+    pub password_reset_rate_limiter: Arc<PasswordResetRateLimiter>,
 }
 
 impl<R, U, P> AppState<R, U, P>
@@ -37,6 +39,7 @@ where
         user_repository: U,
         password_reset_repository: P,
         email_sender: Option<Arc<dyn EmailSender>>,
+        password_reset_rate_limiter: Arc<PasswordResetRateLimiter>,
     ) -> Self {
         let progress_service = ProgressService::new();
         let bulk_processor = BulkProcessor::new(url_service.clone(), progress_service.clone(), user_repository.clone());
@@ -51,6 +54,7 @@ where
             bulk_processor,
             password_reset_repository,
             email_sender,
+            password_reset_rate_limiter,
         }
     }
 }
