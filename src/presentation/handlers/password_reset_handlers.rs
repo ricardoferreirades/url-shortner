@@ -1,3 +1,4 @@
+use super::ConcreteAppState;
 use crate::application::dto::responses::ErrorResponse;
 use crate::domain::repositories::password_reset_repository::PasswordResetRepository;
 use crate::domain::repositories::user_repository::UserRepository;
@@ -54,7 +55,7 @@ pub struct ResetPasswordResponse {
     tag = "password-reset"
 )]
 pub async fn request_password_reset(
-    State(state): State<AppState>,
+    State(state): State<ConcreteAppState>,
     Json(request): Json<RequestPasswordResetRequest>,
 ) -> Result<Json<RequestPasswordResetResponse>, (StatusCode, Json<ErrorResponse>)> {
     // Get client IP (in production, extract from headers)
@@ -83,11 +84,13 @@ pub async fn request_password_reset(
     );
 
     // Create reset request and generate token
-    let reset_request = password_reset_service
+    let reset_request = match password_reset_service
         .create_reset_request(&request.email)
         .await
-        .map_err(|e| {
-            let (status, message) = match e {
+    {
+        Ok(reset_req) => reset_req,
+        Err(e) => {
+            match e {
                 PasswordResetError::UserNotFound => {
                     // For security, don't reveal if user exists or not
                     // Return success anyway
@@ -97,19 +100,28 @@ pub async fn request_password_reset(
                     }));
                 }
                 PasswordResetError::TooManyRequests => {
-                    (StatusCode::TOO_MANY_REQUESTS, "Too many password reset requests. Please try again later.".to_string())
+                    return Err((
+                        StatusCode::TOO_MANY_REQUESTS,
+                        Json(ErrorResponse {
+                            error: "Password reset error".to_string(),
+                            message: "Too many password reset requests. Please try again later.".to_string(),
+                            status_code: StatusCode::TOO_MANY_REQUESTS.as_u16(),
+                        }),
+                    ));
                 }
-                _ => (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()),
-            };
-            Err((
-                status,
-                Json(ErrorResponse {
-                    error: "Password reset error".to_string(),
-                    message,
-                    status_code: status.as_u16(),
-                }),
-            ))
-        })?;
+                _ => {
+                    return Err((
+                        StatusCode::INTERNAL_SERVER_ERROR,
+                        Json(ErrorResponse {
+                            error: "Password reset error".to_string(),
+                            message: e.to_string(),
+                            status_code: StatusCode::INTERNAL_SERVER_ERROR.as_u16(),
+                        }),
+                    ));
+                }
+            }
+        }
+    };
 
     // Send password reset email
     let base_url = std::env::var("BASE_URL").unwrap_or_else(|_| "http://localhost:8000".to_string());
@@ -153,7 +165,7 @@ pub async fn request_password_reset(
     tag = "password-reset"
 )]
 pub async fn reset_password(
-    State(state): State<AppState>,
+    State(state): State<ConcreteAppState>,
     Json(request): Json<ResetPasswordRequest>,
 ) -> Result<Json<ResetPasswordResponse>, (StatusCode, Json<ErrorResponse>)> {
     // Validate password strength (basic validation)
@@ -223,7 +235,7 @@ pub async fn reset_password(
     tag = "password-reset"
 )]
 pub async fn validate_reset_token(
-    State(state): State<AppState>,
+    State(state): State<ConcreteAppState>,
     axum::extract::Path(token): axum::extract::Path<String>,
 ) -> Result<Json<serde_json::Value>, (StatusCode, Json<ErrorResponse>)> {
     // Create validation service

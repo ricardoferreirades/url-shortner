@@ -114,14 +114,14 @@ where
         let user = self.user_repository
             .find_by_email(email)
             .await
-            .map_err(|e| PasswordResetError::RepositoryError(Box::new(e)))?
+            .map_err(|e| PasswordResetError::Internal(e.to_string()))?
             .ok_or(PasswordResetError::UserNotFound)?;
 
         // Check if user has too many active reset tokens
         let active_tokens = self.password_reset_repository
             .count_active_tokens_for_user(user.id)
             .await
-            .map_err(|e| PasswordResetError::RepositoryError(Box::new(e)))?;
+            .map_err(|e| PasswordResetError::Internal(e.to_string()))?;
 
         if active_tokens >= self.max_tokens_per_user {
             return Err(PasswordResetError::TooManyRequests);
@@ -144,7 +144,7 @@ where
         self.password_reset_repository
             .create_token(reset_token)
             .await
-            .map_err(|e| PasswordResetError::RepositoryError(Box::new(e)))?;
+            .map_err(|e| PasswordResetError::Internal(e.to_string()))?;
 
         Ok(PasswordResetRequest {
             user_id: user.id,
@@ -162,7 +162,7 @@ where
         let reset_token = self.password_reset_repository
             .find_by_token(token)
             .await
-            .map_err(|e| PasswordResetError::RepositoryError(Box::new(e)))?
+            .map_err(|e| PasswordResetError::Internal(e.to_string()))?
             .ok_or(PasswordResetError::InvalidToken)?;
 
         if reset_token.is_expired() {
@@ -189,7 +189,7 @@ where
         let user = self.user_repository
             .find_by_id(reset_token.user_id)
             .await
-            .map_err(|e| PasswordResetError::RepositoryError(Box::new(e)))?
+            .map_err(|e| PasswordResetError::Internal(e.to_string()))?
             .ok_or(PasswordResetError::UserNotFound)?;
 
         // Hash new password (in a real implementation, you would hash the password)
@@ -203,7 +203,7 @@ where
         self.password_reset_repository
             .update_token(reset_token)
             .await
-            .map_err(|e| PasswordResetError::RepositoryError(Box::new(e)))?;
+            .map_err(|e| PasswordResetError::Internal(e.to_string()))?;
 
         Ok(user)
     }
@@ -213,7 +213,7 @@ where
         self.password_reset_repository
             .delete_expired_tokens()
             .await
-            .map_err(|e| PasswordResetError::RepositoryError(Box::new(e)))
+            .map_err(|e| PasswordResetError::Internal(e.to_string()))
     }
 
     /// Get active tokens for a user
@@ -224,7 +224,7 @@ where
         self.password_reset_repository
             .find_active_tokens_for_user(user_id)
             .await
-            .map_err(|e| PasswordResetError::RepositoryError(Box::new(e)))
+            .map_err(|e| PasswordResetError::Internal(e.to_string()))
     }
 
     /// Revoke all tokens for a user
@@ -235,7 +235,7 @@ where
         self.password_reset_repository
             .revoke_all_tokens_for_user(user_id)
             .await
-            .map_err(|e| PasswordResetError::RepositoryError(Box::new(e)))
+            .map_err(|e| PasswordResetError::Internal(e.to_string()))
     }
 }
 
