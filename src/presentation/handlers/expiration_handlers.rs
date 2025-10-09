@@ -18,7 +18,7 @@ use super::app_state::AppState;
         (status = 200, description = "Expiration information retrieved", body = ExpirationInfoResponse),
         (status = 404, description = "URL not found", body = ErrorResponse),
     ),
-    tag = "url-expiration"
+    tag = "expiration"
 )]
 pub async fn get_expiration_info_handler<R, U, P>(
     State(app_state): State<AppState<R, U, P>>,
@@ -92,7 +92,7 @@ where
         (status = 200, description = "Expiration set successfully", body = SuccessResponse),
         (status = 404, description = "URL not found", body = ErrorResponse),
     ),
-    tag = "url-expiration"
+    tag = "expiration"
 )]
 pub async fn set_expiration_handler<R, U, P>(
     State(app_state): State<AppState<R, U, P>>,
@@ -175,7 +175,7 @@ where
         (status = 200, description = "Expiration extended successfully", body = SuccessResponse),
         (status = 404, description = "URL not found", body = ErrorResponse),
     ),
-    tag = "url-expiration"
+    tag = "expiration"
 )]
 pub async fn extend_expiration_handler<R, U, P>(
     State(app_state): State<AppState<R, U, P>>,
@@ -259,7 +259,7 @@ where
     responses(
         (status = 200, description = "Expiring URLs retrieved", body = ExpiringUrlsResponse),
     ),
-    tag = "url-expiration"
+    tag = "expiration"
 )]
 pub async fn get_expiring_urls_handler<R, U, P>(
     State(app_state): State<AppState<R, U, P>>,
