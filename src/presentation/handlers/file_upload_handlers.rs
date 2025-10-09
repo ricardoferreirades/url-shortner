@@ -1,11 +1,14 @@
+use super::ConcreteAppState;
 use crate::application::dto::responses::ErrorResponse;
 use crate::domain::services::{FileUploadService, FileUploadError};
+use crate::domain::repositories::UserRepository;
 use crate::presentation::handlers::app_state::AppState;
 use axum::{
-    extract::{State, Multipart},
+    extract::State,
     http::StatusCode,
     response::Json,
 };
+use axum_extra::extract::Multipart;
 use serde_json::Value;
 
 /// Upload profile picture
@@ -23,7 +26,7 @@ use serde_json::Value;
     tag = "profile"
 )]
 pub async fn upload_profile_picture(
-    State(state): State<AppState>,
+    State(state): State<ConcreteAppState>,
     mut multipart: Multipart,
     // In a real implementation, you would extract user from JWT token
     // For now, we'll use a placeholder user_id
@@ -164,7 +167,7 @@ pub async fn upload_profile_picture(
     tag = "profile"
 )]
 pub async fn delete_profile_picture(
-    State(state): State<AppState>,
+    State(state): State<ConcreteAppState>,
     // In a real implementation, you would extract user from JWT token
     // For now, we'll use a placeholder user_id
 ) -> Result<Json<Value>, (StatusCode, Json<ErrorResponse>)> {

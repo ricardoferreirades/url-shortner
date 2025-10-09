@@ -1,6 +1,8 @@
+use super::ConcreteAppState;
 use crate::application::dto::responses::ErrorResponse;
 use crate::domain::entities::{ProfilePrivacy, User};
 use crate::domain::services::{PrivacyService, PrivacyServiceError, FieldPrivacySettings, DataPrivacyLevel};
+use crate::domain::repositories::UserRepository;
 use crate::presentation::handlers::app_state::AppState;
 use axum::{
     extract::{Path, State},
@@ -142,7 +144,7 @@ fn convert_data_privacy_response(level: DataPrivacyLevel) -> DataPrivacyLevelRes
     tag = "privacy"
 )]
 pub async fn get_privacy_settings(
-    State(state): State<AppState>,
+    State(state): State<ConcreteAppState>,
     // In a real implementation, you would extract user from JWT token
     // For now, we'll use a placeholder user_id
 ) -> Result<Json<PrivacySettingsResponse>, (StatusCode, Json<ErrorResponse>)> {
@@ -177,7 +179,7 @@ pub async fn get_privacy_settings(
     let field_settings = PrivacyService::get_default_privacy_settings();
 
     Ok(Json(PrivacySettingsResponse {
-        profile_privacy: convert_privacy_response(user.privacy),
+        profile_privacy: convert_privacy_response(user.privacy.clone()),
         field_settings: FieldPrivacySettingsResponse {
             first_name: convert_data_privacy_response(field_settings.first_name),
             last_name: convert_data_privacy_response(field_settings.last_name),
@@ -206,7 +208,7 @@ pub async fn get_privacy_settings(
     tag = "privacy"
 )]
 pub async fn update_privacy_settings(
-    State(state): State<AppState>,
+    State(state): State<ConcreteAppState>,
     Json(request): Json<UpdatePrivacyRequest>,
     // In a real implementation, you would extract user from JWT token
     // For now, we'll use a placeholder user_id
@@ -287,7 +289,7 @@ pub async fn update_privacy_settings(
     let field_settings = PrivacyService::get_default_privacy_settings();
 
     Ok(Json(PrivacySettingsResponse {
-        profile_privacy: convert_privacy_response(user.privacy),
+        profile_privacy: convert_privacy_response(user.privacy.clone()),
         field_settings: FieldPrivacySettingsResponse {
             first_name: convert_data_privacy_response(field_settings.first_name),
             last_name: convert_data_privacy_response(field_settings.last_name),

@@ -141,7 +141,7 @@ pub struct BatchOperationResult {
 }
 
 /// Response DTO for bulk operation progress
-#[derive(Debug, Serialize, Deserialize, ToSchema)]
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 pub struct BulkOperationProgress {
     pub operation_id: String,
     pub status: BulkOperationStatus,
@@ -153,7 +153,7 @@ pub struct BulkOperationProgress {
 }
 
 /// Status of a bulk operation
-#[derive(Debug, Serialize, Deserialize, ToSchema)]
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 pub enum BulkOperationStatus {
     #[serde(rename = "pending")]
     Pending,

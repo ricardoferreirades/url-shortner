@@ -1,3 +1,4 @@
+use super::ConcreteAppState;
 use crate::application::dto::{
     requests::{UpdateProfileRequest, ProfilePrivacyRequest},
     responses::{UserProfileResponse, PublicUserProfileResponse, ProfilePrivacyResponse, ErrorResponse},
@@ -7,10 +8,11 @@ use crate::domain::repositories::user_repository::UserRepository;
 use crate::domain::services::{FileUploadService, FileUploadError, ProfileValidationService, ProfileValidationError};
 use crate::presentation::handlers::app_state::AppState;
 use axum::{
-    extract::{Path, State, Multipart},
+    extract::{Path, State},
     http::StatusCode,
     response::Json,
 };
+use axum_extra::extract::Multipart;
 use axum_extra::extract::multipart::MultipartError;
 use serde_json::Value;
 
@@ -34,13 +36,14 @@ fn convert_privacy_response(privacy: ProfilePrivacy) -> ProfilePrivacyResponse {
 
 /// Convert User entity to UserProfileResponse
 fn user_to_profile_response(user: User) -> UserProfileResponse {
+    let full_name = user.full_name();
     UserProfileResponse {
         id: user.id,
         username: user.username,
         email: user.email,
         first_name: user.first_name,
         last_name: user.last_name,
-        full_name: user.full_name(),
+        full_name,
         bio: user.bio,
         avatar_url: user.avatar_url,
         website: user.website,
@@ -53,12 +56,13 @@ fn user_to_profile_response(user: User) -> UserProfileResponse {
 
 /// Convert User entity to PublicUserProfileResponse
 fn user_to_public_profile_response(user: User) -> PublicUserProfileResponse {
+    let full_name = user.full_name();
     PublicUserProfileResponse {
         id: user.id,
         username: user.username,
         first_name: user.first_name,
         last_name: user.last_name,
-        full_name: user.full_name(),
+        full_name,
         bio: user.bio,
         avatar_url: user.avatar_url,
         website: user.website,
@@ -80,7 +84,7 @@ fn user_to_public_profile_response(user: User) -> PublicUserProfileResponse {
     tag = "profile"
 )]
 pub async fn get_my_profile(
-    State(state): State<AppState>,
+    State(state): State<ConcreteAppState>,
     // In a real implementation, you would extract user from JWT token
     // For now, we'll use a placeholder user_id
 ) -> Result<Json<UserProfileResponse>, (StatusCode, Json<ErrorResponse>)> {
@@ -125,7 +129,7 @@ pub async fn get_my_profile(
     tag = "profile"
 )]
 pub async fn get_public_profile(
-    State(state): State<AppState>,
+    State(state): State<ConcreteAppState>,
     Path(user_id): Path<i32>,
 ) -> Result<Json<PublicUserProfileResponse>, (StatusCode, Json<ErrorResponse>)> {
     match state.user_repository.get_profile(user_id).await {
@@ -175,7 +179,7 @@ pub async fn get_public_profile(
     tag = "profile"
 )]
 pub async fn update_my_profile(
-    State(state): State<AppState>,
+    State(state): State<ConcreteAppState>,
     Json(request): Json<UpdateProfileRequest>,
     // In a real implementation, you would extract user from JWT token
     // For now, we'll use a placeholder user_id
@@ -248,7 +252,7 @@ pub async fn update_my_profile(
     tag = "profile"
 )]
 pub async fn patch_my_profile(
-    State(state): State<AppState>,
+    State(state): State<ConcreteAppState>,
     Json(request): Json<UpdateProfileRequest>,
     // In a real implementation, you would extract user from JWT token
     // For now, we'll use a placeholder user_id
@@ -325,7 +329,7 @@ pub async fn patch_my_profile(
     tag = "profile"
 )]
 pub async fn get_profile_by_username(
-    State(state): State<AppState>,
+    State(state): State<ConcreteAppState>,
     Path(username): Path<String>,
 ) -> Result<Json<PublicUserProfileResponse>, (StatusCode, Json<ErrorResponse>)> {
     match state.user_repository.find_by_username(&username).await {
