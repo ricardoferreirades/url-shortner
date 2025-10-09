@@ -34,12 +34,12 @@
 - [x] Implement profile validation and sanitization
 - [x] Add profile privacy settings
 
-### 1.2.2 Password Reset
+### 1.2.2 Password Reset ✅ COMPLETED
 - [x] Implement password reset token generation
 - [x] Create secure password reset email system
 - [x] Add password reset API endpoints
 - [x] Implement token expiration and validation
-- [ ] Add rate limiting for password reset requests
+- [x] Add rate limiting for password reset requests
 
 **Implementation Details:**
 - Created PasswordResetToken entity with secure token generation
@@ -62,6 +62,13 @@
 - Added token strength scoring system
 - Added expiration warning detection (will_expire_soon)
 - Enhanced validate endpoint with detailed validation results
+- Implemented PasswordResetRateLimiter for request limiting
+- Added per-IP rate limiting (5 requests/hour)
+- Added per-email rate limiting (3 requests/hour)
+- Added cooldown period between requests (5 minutes)
+- Integrated rate limiting into password reset request handler
+- Added comprehensive rate limit error messages
+- Included rate limit info endpoint for debugging
 
 ### 1.2.3 Account Deletion
 - [ ] Implement secure account deletion process
