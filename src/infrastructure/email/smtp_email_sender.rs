@@ -18,6 +18,7 @@ pub struct SmtpConfig {
     pub from_name: String,
 }
 
+#[allow(dead_code)]
 impl SmtpConfig {
     /// Create a new SMTP configuration
     pub fn new(

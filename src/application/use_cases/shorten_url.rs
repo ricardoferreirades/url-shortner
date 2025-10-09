@@ -77,6 +77,7 @@ where
 }
 
 /// Use case errors
+#[allow(dead_code)]
 #[derive(Debug, thiserror::Error)]
 pub enum UseCaseError {
     #[error("Validation error: {0}")]

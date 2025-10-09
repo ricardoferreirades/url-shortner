@@ -10,6 +10,7 @@ pub struct EmailMessage {
     pub html_body: Option<String>,
 }
 
+#[allow(dead_code)]
 impl EmailMessage {
     /// Create a new email message
     pub fn new(to: String, subject: String, body: String) -> Self {
@@ -124,6 +125,7 @@ impl EmailMessage {
 
 /// Email sender trait for sending emails
 #[async_trait]
+#[allow(dead_code)]
 pub trait EmailSender: Send + Sync {
     /// Send an email message
     async fn send_email(&self, message: EmailMessage) -> Result<(), EmailError>;
@@ -138,6 +140,7 @@ pub trait EmailSender: Send + Sync {
 }
 
 /// Email sending errors
+#[allow(dead_code)]
 #[derive(Error, Debug)]
 pub enum EmailError {
     #[error("SMTP error: {0}")]

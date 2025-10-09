@@ -20,6 +20,7 @@ pub struct PasswordResetRateLimitConfig {
     /// Cooldown period between requests (in minutes)
     pub cooldown_minutes: i64,
     /// Maximum active tokens per user
+    #[allow(dead_code)]
     pub max_active_tokens_per_user: usize,
 }
 
@@ -43,6 +44,7 @@ pub struct PasswordResetRateLimiter {
 }
 
 /// Rate limiting errors
+#[allow(dead_code)]
 #[derive(Error, Debug)]
 pub enum PasswordResetRateLimitError {
     #[error("Too many requests from this IP address. Please try again in {0} seconds")]
@@ -61,6 +63,7 @@ pub enum PasswordResetRateLimitError {
     Internal(String),
 }
 
+#[allow(dead_code)]
 impl PasswordResetRateLimiter {
     /// Create a new password reset rate limiter
     pub fn new(config: PasswordResetRateLimitConfig) -> Self {
