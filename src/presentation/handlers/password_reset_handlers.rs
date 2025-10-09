@@ -1,7 +1,7 @@
 use crate::application::dto::responses::ErrorResponse;
 use crate::domain::repositories::password_reset_repository::PasswordResetRepository;
 use crate::domain::repositories::user_repository::UserRepository;
-use crate::domain::services::{PasswordResetService, PasswordResetError};
+use crate::domain::services::{PasswordResetService, PasswordResetError, TokenValidationService};
 use crate::infrastructure::email::{EmailSender, EmailMessage};
 use crate::presentation::handlers::app_state::AppState;
 use axum::{
@@ -207,6 +207,21 @@ pub async fn validate_reset_token(
     State(state): State<AppState>,
     axum::extract::Path(token): axum::extract::Path<String>,
 ) -> Result<Json<serde_json::Value>, (StatusCode, Json<ErrorResponse>)> {
+    // Create validation service
+    let validation_service = TokenValidationService::new_default();
+
+    // Validate token format first
+    validation_service.validate_token_format(&token).map_err(|e| {
+        (
+            StatusCode::BAD_REQUEST,
+            Json(ErrorResponse {
+                error: "Token format error".to_string(),
+                message: e.to_string(),
+                status_code: 400,
+            }),
+        )
+    })?;
+
     // Create password reset service
     let password_reset_service = PasswordResetService::new_default(
         state.password_reset_repository.clone(),
@@ -240,9 +255,27 @@ pub async fn validate_reset_token(
             )
         })?;
 
+    // Get comprehensive validation result
+    let validation_result = validation_service.validate(&token, &reset_token).map_err(|e| {
+        (
+            StatusCode::BAD_REQUEST,
+            Json(ErrorResponse {
+                error: "Validation error".to_string(),
+                message: e.to_string(),
+                status_code: 400,
+            }),
+        )
+    })?;
+
+    // Check if token will expire soon
+    let will_expire_soon = validation_service.will_expire_soon(&reset_token, 1);
+
     Ok(Json(serde_json::json!({
-        "valid": true,
+        "valid": validation_result.is_valid,
         "message": "Token is valid",
         "expires_at": reset_token.expires_at,
+        "time_until_expiration_hours": validation_result.time_until_expiration.map(|d| d.num_hours()),
+        "will_expire_soon": will_expire_soon,
+        "token_strength_score": validation_service.get_token_strength_score(&token),
     })))
 }
