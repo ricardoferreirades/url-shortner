@@ -13,6 +13,7 @@ where
     repository: R,
 }
 
+#[allow(dead_code)]
 impl<R> UrlService<R>
 where
     R: UrlRepository + Clone,
@@ -255,6 +256,7 @@ where
 }
 
 /// Service errors
+#[allow(dead_code)]
 #[derive(Debug, thiserror::Error)]
 pub enum ServiceError {
     #[error("Repository error: {0}")]

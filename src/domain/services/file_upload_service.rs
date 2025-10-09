@@ -11,6 +11,7 @@ pub struct FileUploadService {
 }
 
 /// File upload errors
+#[allow(dead_code)]
 #[derive(Error, Debug)]
 pub enum FileUploadError {
     #[error("File too large: {0} bytes (max: {1} bytes)")]
@@ -39,8 +40,10 @@ pub enum FileUploadError {
 #[derive(Debug, Clone)]
 pub struct FileUploadResult {
     pub filename: String,
+    #[allow(dead_code)]
     pub file_path: String,
     pub file_size: usize,
+    #[allow(dead_code)]
     pub mime_type: String,
     pub width: Option<u32>,
     pub height: Option<u32>,

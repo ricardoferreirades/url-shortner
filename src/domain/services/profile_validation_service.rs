@@ -12,6 +12,7 @@ pub struct ProfileValidationService {
 }
 
 /// Profile validation errors
+#[allow(dead_code)]
 #[derive(Error, Debug)]
 pub enum ProfileValidationError {
     #[error("Invalid first name: {0}")]
@@ -51,6 +52,7 @@ pub struct ValidatedProfileData {
     pub privacy: ProfilePrivacy,
 }
 
+#[allow(dead_code)]
 impl ProfileValidationService {
     /// Create a new profile validation service
     pub fn new() -> Self {

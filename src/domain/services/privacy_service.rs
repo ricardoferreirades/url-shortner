@@ -5,6 +5,7 @@ use thiserror::Error;
 pub struct PrivacyService;
 
 /// Privacy service errors
+#[allow(dead_code)]
 #[derive(Error, Debug)]
 pub enum PrivacyServiceError {
     #[error("Invalid privacy setting: {0}")]
@@ -37,6 +38,7 @@ pub struct FieldPrivacySettings {
     pub email: DataPrivacyLevel,
 }
 
+#[allow(dead_code)]
 impl PrivacyService {
     /// Create a new privacy service
     pub fn new() -> Self {

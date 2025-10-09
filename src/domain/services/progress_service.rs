@@ -10,6 +10,7 @@ pub struct ProgressService {
     operations: Arc<RwLock<HashMap<String, BulkOperationProgress>>>,
 }
 
+#[allow(dead_code)]
 impl ProgressService {
     pub fn new() -> Self {
         Self {
@@ -136,6 +137,7 @@ impl Default for ProgressService {
 }
 
 /// Progress service errors
+#[allow(dead_code)]
 #[derive(Debug, thiserror::Error)]
 pub enum ProgressServiceError {
     #[error("Operation not found")]

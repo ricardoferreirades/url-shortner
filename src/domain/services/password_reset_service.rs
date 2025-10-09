@@ -48,12 +48,15 @@ pub enum PasswordResetError {
 /// Password reset request result
 #[derive(Debug, Clone)]
 pub struct PasswordResetRequest {
+    #[allow(dead_code)]
     pub user_id: i32,
     pub email: String,
     pub token: String,
+    #[allow(dead_code)]
     pub expires_at: chrono::DateTime<chrono::Utc>,
 }
 
+#[allow(dead_code)]
 impl<R, U> PasswordResetService<R, U>
 where
     R: PasswordResetRepository,

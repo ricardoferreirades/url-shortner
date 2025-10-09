@@ -6,10 +6,12 @@ use chrono::Duration;
 pub struct TokenValidationService {
     min_token_length: usize,
     max_token_age_hours: i64,
+    #[allow(dead_code)]
     require_https: bool,
 }
 
 /// Token validation errors
+#[allow(dead_code)]
 #[derive(Error, Debug)]
 pub enum TokenValidationError {
     #[error("Token is too short: {0} characters (minimum: {1})")]
@@ -35,13 +37,18 @@ pub enum TokenValidationError {
 #[derive(Debug, Clone)]
 pub struct TokenValidationResult {
     pub is_valid: bool,
+    #[allow(dead_code)]
     pub is_expired: bool,
+    #[allow(dead_code)]
     pub is_used: bool,
     pub time_until_expiration: Option<Duration>,
+    #[allow(dead_code)]
     pub time_since_creation: Duration,
+    #[allow(dead_code)]
     pub validation_errors: Vec<String>,
 }
 
+#[allow(dead_code)]
 impl TokenValidationService {
     /// Create a new token validation service
     pub fn new(

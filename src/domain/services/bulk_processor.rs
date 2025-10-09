@@ -264,6 +264,7 @@ where
 }
 
 /// Bulk processor errors
+#[allow(dead_code)]
 #[derive(Debug, thiserror::Error)]
 pub enum BulkProcessorError {
     #[error("Progress update failed: {0}")]
