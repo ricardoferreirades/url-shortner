@@ -57,6 +57,25 @@ pub async fn request_password_reset(
     State(state): State<AppState>,
     Json(request): Json<RequestPasswordResetRequest>,
 ) -> Result<Json<RequestPasswordResetResponse>, (StatusCode, Json<ErrorResponse>)> {
+    // Get client IP (in production, extract from headers)
+    let client_ip = "127.0.0.1"; // Placeholder - should extract from request headers
+    
+    // Check rate limits
+    state.password_reset_rate_limiter
+        .check_all_limits(client_ip, &request.email)
+        .await
+        .map_err(|e| {
+            let status = StatusCode::TOO_MANY_REQUESTS;
+            (
+                status,
+                Json(ErrorResponse {
+                    error: "Rate limit exceeded".to_string(),
+                    message: e.to_string(),
+                    status_code: status.as_u16(),
+                }),
+            )
+        })?;
+
     // Create password reset service
     let password_reset_service = PasswordResetService::new_default(
         state.password_reset_repository.clone(),
