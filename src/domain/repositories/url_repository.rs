@@ -4,6 +4,7 @@ use async_trait::async_trait;
 /// Repository trait for URL operations
 /// This defines the contract for URL data access without depending on specific implementations
 #[async_trait]
+#[allow(dead_code)]
 pub trait UrlRepository: Send + Sync {
     /// Create a new URL record
     async fn create_url(
@@ -94,6 +95,7 @@ pub struct BatchItemResult {
 }
 
 /// Repository errors
+#[allow(dead_code)]
 #[derive(Debug, thiserror::Error)]
 pub enum RepositoryError {
     #[error("Database connection error: {0}")]

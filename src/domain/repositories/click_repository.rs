@@ -3,6 +3,7 @@ use async_trait::async_trait;
 
 /// Repository trait for click/analytics data operations
 #[async_trait]
+#[allow(dead_code)]
 pub trait ClickRepository: Send + Sync {
     /// Record a new click event
     async fn record_click(&self, click: &Click) -> Result<Click, RepositoryError>;
@@ -49,6 +50,7 @@ pub struct ClickStats {
 }
 
 /// Repository errors
+#[allow(dead_code)]
 #[derive(Debug, thiserror::Error)]
 pub enum RepositoryError {
     #[error("Database error: {0}")]

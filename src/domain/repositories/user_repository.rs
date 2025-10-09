@@ -46,6 +46,7 @@ pub trait UserRepository: Send + Sync {
 }
 
 /// Repository errors
+#[allow(dead_code)]
 #[derive(Error, Debug)]
 pub enum RepositoryError {
     #[error("Database connection error: {0}")]

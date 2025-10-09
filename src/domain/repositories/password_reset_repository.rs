@@ -4,6 +4,7 @@ use thiserror::Error;
 
 /// Repository trait for Password Reset Token operations
 #[async_trait]
+#[allow(dead_code)]
 pub trait PasswordResetRepository: Send + Sync {
     /// Create a new password reset token
     async fn create_token(
@@ -48,6 +49,7 @@ pub trait PasswordResetRepository: Send + Sync {
 }
 
 /// Repository errors
+#[allow(dead_code)]
 #[derive(Error, Debug)]
 pub enum PasswordResetRepositoryError {
     #[error("Database connection error: {0}")]
