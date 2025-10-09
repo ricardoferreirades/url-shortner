@@ -155,6 +155,7 @@ impl FileUploadService {
         let file_path = Path::new(&self.upload_dir).join(&unique_filename);
 
         // Process image if it's an image file
+        let file_size = file_data.len();
         let (processed_data, width, height) = if content_type.starts_with("image/") {
             self.process_image(file_data)?
         } else {
@@ -167,7 +168,7 @@ impl FileUploadService {
         Ok(FileUploadResult {
             filename: unique_filename,
             file_path: file_path.to_string_lossy().to_string(),
-            file_size: file_data.len(),
+            file_size,
             mime_type: content_type.to_string(),
             width,
             height,
@@ -177,7 +178,7 @@ impl FileUploadService {
     /// Process image (resize, optimize, etc.)
     fn process_image(&self, data: Vec<u8>) -> Result<(Vec<u8>, Option<u32>, Option<u32>), FileUploadError> {
         let img = image::load_from_memory(&data)?;
-        let (width, height) = img.dimensions();
+        let (width, height) = (img.width(), img.height());
 
         // Resize image if it's too large (max 1024x1024)
         let processed_img = if width > 1024 || height > 1024 {

@@ -1,5 +1,6 @@
 use crate::application::dto::responses::{BulkOperationProgress, ErrorResponse};
 use crate::domain::services::{ProgressService, ProgressServiceError};
+use crate::presentation::handlers::app_state::AppState;
 use axum::{extract::{Path, State}, http::StatusCode, Json};
 use tracing::{info, warn};
 
@@ -17,10 +18,16 @@ use tracing::{info, warn};
     ),
     tag = "url-shortener"
 )]
-pub async fn get_bulk_operation_progress_handler(
-    State(progress_service): State<ProgressService>,
+pub async fn get_bulk_operation_progress_handler<R, U, P>(
+    State(app_state): State<AppState<R, U, P>>,
     Path(operation_id): Path<String>,
-) -> Result<(StatusCode, Json<BulkOperationProgress>), (StatusCode, Json<ErrorResponse>)> {
+) -> Result<(StatusCode, Json<BulkOperationProgress>), (StatusCode, Json<ErrorResponse>)>
+where
+    R: crate::domain::repositories::UrlRepository + Send + Sync + Clone,
+    U: crate::domain::repositories::UserRepository + Send + Sync + Clone,
+    P: crate::domain::repositories::PasswordResetRepository + Send + Sync + Clone,
+{
+    let progress_service = &app_state.progress_service;
     info!("Getting progress for operation: {}", operation_id);
 
     match progress_service.get_progress(&operation_id).await {
@@ -64,10 +71,16 @@ pub async fn get_bulk_operation_progress_handler(
     ),
     tag = "url-shortener"
 )]
-pub async fn cancel_bulk_operation_handler(
-    State(progress_service): State<ProgressService>,
+pub async fn cancel_bulk_operation_handler<R, U, P>(
+    State(app_state): State<AppState<R, U, P>>,
     Path(operation_id): Path<String>,
-) -> Result<StatusCode, (StatusCode, Json<ErrorResponse>)> {
+) -> Result<StatusCode, (StatusCode, Json<ErrorResponse>)>
+where
+    R: crate::domain::repositories::UrlRepository + Send + Sync + Clone,
+    U: crate::domain::repositories::UserRepository + Send + Sync + Clone,
+    P: crate::domain::repositories::PasswordResetRepository + Send + Sync + Clone,
+{
+    let progress_service = &app_state.progress_service;
     info!("Cancelling operation: {}", operation_id);
 
     match progress_service.cancel_operation(&operation_id).await {
@@ -106,11 +119,17 @@ pub async fn cancel_bulk_operation_handler(
     ),
     tag = "url-shortener"
 )]
-pub async fn get_user_operations_handler(
-    State(progress_service): State<ProgressService>,
+pub async fn get_user_operations_handler<R, U, P>(
+    State(app_state): State<AppState<R, U, P>>,
     // In a real implementation, you'd extract user_id from the auth token
     // For now, we'll use a placeholder user_id
-) -> Result<(StatusCode, Json<Vec<BulkOperationProgress>>), (StatusCode, Json<ErrorResponse>)> {
+) -> Result<(StatusCode, Json<Vec<BulkOperationProgress>>), (StatusCode, Json<ErrorResponse>)>
+where
+    R: crate::domain::repositories::UrlRepository + Send + Sync + Clone,
+    U: crate::domain::repositories::UserRepository + Send + Sync + Clone,
+    P: crate::domain::repositories::PasswordResetRepository + Send + Sync + Clone,
+{
+    let progress_service = &app_state.progress_service;
     let user_id = 1; // This should come from authentication
     info!("Getting operations for user: {}", user_id);
 
