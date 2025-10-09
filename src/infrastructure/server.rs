@@ -134,63 +134,92 @@ pub async fn start_server() -> Result<(), Box<dyn std::error::Error>> {
         password_reset_rate_limiter,
     );
 
-    // OpenAPI doc
-    // TODO: Fix utoipa paths after module refactoring
-    // The __path_* structs need to be properly re-exported from the nested modules
+    // OpenAPI documentation with feature-based grouping
     #[derive(OpenApi)]
     #[openapi(
         paths(
+            // Health & System
             health_check,
-            // register_handler,
-            // login_handler,
-            // shorten_url_handler,
-            // bulk_shorten_urls_handler,
-            // batch_url_operations_handler,
-            // bulk_status_update_handler,
-            // bulk_expiration_update_handler,
-            // bulk_delete_handler,
-            // async_bulk_shorten_urls_handler,
-            // async_batch_url_operations_handler,
-            // get_bulk_operation_progress_handler,
-            // cancel_bulk_operation_handler,
-            // get_user_operations_handler,
-            // redirect_handler,
-            // deactivate_url_handler,
-            // reactivate_url_handler,
-            // get_expiration_info_handler,
-            // set_expiration_handler,
-            // extend_expiration_handler,
-            // get_expiring_urls_handler,
-            // get_my_profile,
-            // get_public_profile,
-            // update_my_profile,
-            // patch_my_profile,
-            // get_profile_by_username,
-            // upload_profile_picture,
-            // delete_profile_picture,
-            // get_privacy_settings,
-            // update_privacy_settings,
-            // get_privacy_recommendations,
-            // request_password_reset,
-            // reset_password,
-            // validate_reset_token,
+            // Authentication
+            crate::presentation::handlers::auth_handlers::register_handler,
+            crate::presentation::handlers::auth_handlers::login_handler,
+            // URL Shortening
+            crate::presentation::handlers::url_handlers::urls::shorten_url_handler::shorten_url_handler,
+            crate::presentation::handlers::url_handlers::urls::redirect_handler::redirect_handler,
+            // URL Management
+            crate::presentation::handlers::url_handlers::urls::deactivate_url_handler::deactivate_url_handler,
+            crate::presentation::handlers::url_handlers::urls::reactivate_url_handler::reactivate_url_handler,
+            // Bulk Operations - Synchronous
+            crate::presentation::handlers::url_handlers::urls::bulk_shorten_urls_handler::bulk_shorten_urls_handler,
+            crate::presentation::handlers::url_handlers::urls::batch_url_operations_handler::batch_url_operations_handler,
+            crate::presentation::handlers::url_handlers::urls::bulk_status_update_handler::bulk_status_update_handler,
+            crate::presentation::handlers::url_handlers::urls::bulk_expiration_update_handler::bulk_expiration_update_handler,
+            crate::presentation::handlers::url_handlers::urls::bulk_delete_handler::bulk_delete_handler,
+            // Bulk Operations - Asynchronous with Progress
+            crate::presentation::handlers::url_handlers::urls::async_bulk_shorten_urls_handler::async_bulk_shorten_urls_handler,
+            crate::presentation::handlers::url_handlers::urls::async_batch_url_operations_handler::async_batch_url_operations_handler,
+            crate::presentation::handlers::progress_handlers::get_bulk_operation_progress_handler,
+            crate::presentation::handlers::progress_handlers::cancel_bulk_operation_handler,
+            crate::presentation::handlers::progress_handlers::get_user_operations_handler,
+            // Expiration Management
+            crate::presentation::handlers::expiration_handlers::get_expiration_info_handler,
+            crate::presentation::handlers::expiration_handlers::set_expiration_handler,
+            crate::presentation::handlers::expiration_handlers::extend_expiration_handler,
+            crate::presentation::handlers::expiration_handlers::get_expiring_urls_handler,
+            // User Profile
+            crate::presentation::handlers::profile_handlers::get_my_profile,
+            crate::presentation::handlers::profile_handlers::get_public_profile,
+            crate::presentation::handlers::profile_handlers::update_my_profile,
+            crate::presentation::handlers::profile_handlers::patch_my_profile,
+            crate::presentation::handlers::profile_handlers::get_profile_by_username,
+            crate::presentation::handlers::file_upload_handlers::upload_profile_picture,
+            crate::presentation::handlers::file_upload_handlers::delete_profile_picture,
+            // Privacy Settings
+            crate::presentation::handlers::privacy_handlers::get_privacy_settings,
+            crate::presentation::handlers::privacy_handlers::update_privacy_settings,
+            crate::presentation::handlers::privacy_handlers::get_privacy_recommendations,
+            // Password Reset
+            crate::presentation::handlers::password_reset_handlers::request_password_reset,
+            crate::presentation::handlers::password_reset_handlers::reset_password,
+            crate::presentation::handlers::password_reset_handlers::validate_reset_token,
         ),
         components(
             schemas(
+                // Request DTOs
                 ShortenUrlRequest,
                 BulkShortenUrlsRequest,
+                crate::application::dto::requests::UpdateUrlRequest,
+                crate::application::dto::requests::SetExpirationRequest,
+                crate::application::dto::requests::ExtendExpirationRequest,
+                crate::application::dto::requests::BatchUrlOperationRequest,
+                crate::application::dto::requests::BatchOperationType,
+                crate::application::dto::requests::BatchOperationData,
+                crate::application::dto::requests::BulkStatusUpdateRequest,
+                crate::application::dto::requests::BulkExpirationUpdateRequest,
+                crate::application::dto::requests::BulkDeleteRequest,
+                crate::application::dto::requests::UpdateProfileRequest,
+                crate::application::dto::requests::ProfilePrivacyRequest,
+                // Response DTOs
                 crate::application::ShortenUrlResponse,
+                crate::application::dto::responses::UrlInfoResponse,
+                crate::application::dto::responses::UserUrlsResponse,
+                crate::application::dto::responses::UserProfileResponse,
+                crate::application::dto::responses::PublicUserProfileResponse,
+                crate::application::dto::responses::ProfilePrivacyResponse,
+                crate::application::dto::responses::BatchOperationResponse,
+                crate::application::dto::responses::BatchOperationResult,
+                crate::application::dto::responses::BulkOperationProgress,
+                crate::application::dto::responses::BulkOperationStatus,
+                crate::application::dto::responses::ExpirationInfoResponse,
+                // Error DTOs
                 crate::application::ErrorResponse,
                 crate::infrastructure::rate_limiting::RateLimitError,
+                // Authentication DTOs
                 crate::presentation::handlers::auth_handlers::RegisterRequest,
                 crate::presentation::handlers::auth_handlers::LoginRequest,
                 crate::presentation::handlers::auth_handlers::AuthResponse,
                 crate::presentation::handlers::auth_handlers::UserResponse,
-                crate::application::dto::requests::UpdateProfileRequest,
-                crate::application::dto::requests::ProfilePrivacyRequest,
-                crate::application::dto::responses::UserProfileResponse,
-                crate::application::dto::responses::PublicUserProfileResponse,
-                crate::application::dto::responses::ProfilePrivacyResponse,
+                // Password Reset DTOs
                 crate::presentation::handlers::password_reset_handlers::RequestPasswordResetRequest,
                 crate::presentation::handlers::password_reset_handlers::RequestPasswordResetResponse,
                 crate::presentation::handlers::password_reset_handlers::ResetPasswordRequest,
@@ -198,7 +227,15 @@ pub async fn start_server() -> Result<(), Box<dyn std::error::Error>> {
             )
         ),
         tags(
-            (name = "url-shortener", description = "URL Shortener API")
+            (name = "health", description = "Health & System Status"),
+            (name = "authentication", description = "User Authentication & Authorization"),
+            (name = "url-shortener", description = "URL Shortening & Redirection"),
+            (name = "url-management", description = "URL Lifecycle Management"),
+            (name = "bulk-operations", description = "Bulk URL Operations (Sync & Async)"),
+            (name = "expiration", description = "URL Expiration Management"),
+            (name = "profile", description = "User Profile Management"),
+            (name = "privacy", description = "Privacy Settings & Controls"),
+            (name = "password-reset", description = "Password Reset & Recovery")
         )
     )]
     struct ApiDoc;
@@ -377,7 +414,8 @@ pub async fn welcome_handler() -> Html<&'static str> {
     path = "/health",
     responses(
         (status = 200, description = "Health check successful", body = serde_json::Value)
-    )
+    ),
+    tag = "health"
 )]
 pub async fn health_check() -> Json<serde_json::Value> {
     let health_status = json!({
