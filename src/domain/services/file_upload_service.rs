@@ -1,7 +1,6 @@
 use std::path::Path;
 use thiserror::Error;
-use image::{ImageFormat, DynamicImage};
-use mime_guess::MimeGuess;
+use image::ImageFormat;
 
 /// File upload service for handling profile pictures
 pub struct FileUploadService {

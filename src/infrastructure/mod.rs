@@ -9,4 +9,4 @@ pub mod email;
 
 pub use database::*;
 pub use email::*;
-pub use password_reset_rate_limiter::{PasswordResetRateLimiter, PasswordResetRateLimitConfig, PasswordResetRateLimitError, RateLimitInfo};
+pub use password_reset_rate_limiter::PasswordResetRateLimiter;

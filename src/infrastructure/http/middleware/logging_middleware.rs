@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 use tower_http::trace::{DefaultMakeSpan, DefaultOnRequest, DefaultOnResponse, TraceLayer};
 use tracing::Level;
 

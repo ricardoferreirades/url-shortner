@@ -133,6 +133,7 @@ pub fn validate_url(url: &str, config: &ValidationConfig) -> Result<String, Vali
 }
 
 /// Validates a short code
+#[allow(dead_code)]
 pub fn validate_short_code(short_code: &str) -> Result<String, ValidationErrorType> {
     if short_code.trim().is_empty() {
         return Err(ValidationErrorType::EmptyUrl);

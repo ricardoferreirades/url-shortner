@@ -1,9 +1,9 @@
-use crate::application::dto::{requests::{BatchOperationType, BatchOperationData}, responses::BatchOperationResult};
+use crate::application::dto::requests::{BatchOperationType, BatchOperationData};
 use crate::domain::services::{ProgressService, UrlService};
 use crate::domain::repositories::{UrlRepository, UserRepository};
 use std::sync::Arc;
 use tokio::task;
-use tracing::{info, warn, error};
+use tracing::{info, error};
 
 /// Service for processing bulk operations in the background
 #[derive(Clone)]
@@ -57,7 +57,7 @@ where
             let mut processed_items = 0;
             let mut successful_items = 0;
             let mut failed_items = 0;
-            let mut batch_size = 10; // Process in batches of 10
+            let batch_size = 10; // Process in batches of 10
 
             // Process URLs in batches
             for chunk in url_ids.chunks(batch_size) {

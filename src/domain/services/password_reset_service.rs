@@ -194,7 +194,7 @@ where
 
         // Hash new password (in a real implementation, you would hash the password)
         // For now, we'll just store it as-is (this should be replaced with proper hashing)
-        let hashed_password = new_password.to_string(); // TODO: Implement proper password hashing
+        let _hashed_password = new_password.to_string(); // TODO: Implement proper password hashing
 
         // Update user password
         // Note: This would require a new method in UserRepository to update password

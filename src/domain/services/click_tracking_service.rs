@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 use crate::domain::entities::Click;
 use crate::domain::repositories::{ClickRepository, ClickStats, ClickRepositoryError};
 use tokio::sync::{mpsc, oneshot};

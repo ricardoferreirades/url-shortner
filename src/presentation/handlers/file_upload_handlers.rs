@@ -2,7 +2,6 @@ use super::ConcreteAppState;
 use crate::application::dto::responses::ErrorResponse;
 use crate::domain::services::{FileUploadService, FileUploadError};
 use crate::domain::repositories::UserRepository;
-use crate::presentation::handlers::app_state::AppState;
 use axum::{
     extract::State,
     http::StatusCode,

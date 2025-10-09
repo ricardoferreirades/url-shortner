@@ -1,5 +1,5 @@
 use crate::domain::entities::PasswordResetToken;
-use crate::domain::repositories::password_reset_repository::{PasswordResetRepository, PasswordResetRepositoryError};
+use crate::domain::repositories::password_reset_repository::PasswordResetRepository;
 use async_trait::async_trait;
 use sqlx::{PgPool, Row};
 
@@ -32,7 +32,7 @@ impl PostgresPasswordResetRepository {
 impl PasswordResetRepository for PostgresPasswordResetRepository {
     async fn create_token(
         &self,
-        mut token: PasswordResetToken,
+        token: PasswordResetToken,
     ) -> Result<PasswordResetToken, Box<dyn std::error::Error + Send + Sync>> {
         let row = sqlx::query(
             "INSERT INTO password_reset_tokens (user_id, token, created_at, expires_at, is_used) 

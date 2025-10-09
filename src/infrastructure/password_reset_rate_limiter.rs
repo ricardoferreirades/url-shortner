@@ -191,6 +191,7 @@ impl PasswordResetRateLimiter {
 }
 
 /// Rate limit information for debugging
+#[allow(dead_code)]
 #[derive(Debug, Clone)]
 pub struct RateLimitInfo {
     pub requests_per_hour_per_ip: u32,

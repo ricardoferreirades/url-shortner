@@ -67,7 +67,8 @@ pub trait UrlRepository: Send + Sync {
     async fn batch_update_expiration(&self, url_ids: &[i32], expiration_date: Option<chrono::DateTime<chrono::Utc>>, user_id: Option<i32>) -> Result<BatchOperationResult, RepositoryError>;
 }
 
-/// Statistics about URLs
+/// Statistics about URLs  
+#[allow(dead_code)]
 #[derive(Debug, Clone)]
 pub struct UrlStats {
     pub total_urls: i64,

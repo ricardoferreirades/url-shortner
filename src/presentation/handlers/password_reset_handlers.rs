@@ -1,10 +1,7 @@
 use super::ConcreteAppState;
 use crate::application::dto::responses::ErrorResponse;
-use crate::domain::repositories::password_reset_repository::PasswordResetRepository;
-use crate::domain::repositories::user_repository::UserRepository;
 use crate::domain::services::{PasswordResetService, PasswordResetError, TokenValidationService};
 use crate::infrastructure::email::{EmailSender, EmailMessage};
-use crate::presentation::handlers::app_state::AppState;
 use axum::{
     extract::State,
     http::StatusCode,

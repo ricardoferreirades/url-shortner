@@ -1,6 +1,6 @@
 use crate::domain::entities::PasswordResetToken;
 use thiserror::Error;
-use chrono::{DateTime, Utc, Duration};
+use chrono::Duration;
 
 /// Token validation service for comprehensive token validation
 pub struct TokenValidationService {

@@ -5,16 +5,12 @@ use crate::application::dto::{
 };
 use crate::domain::entities::{User, ProfilePrivacy};
 use crate::domain::repositories::user_repository::UserRepository;
-use crate::domain::services::{FileUploadService, FileUploadError, ProfileValidationService, ProfileValidationError};
-use crate::presentation::handlers::app_state::AppState;
+use crate::domain::services::ProfileValidationService;
 use axum::{
     extract::{Path, State},
     http::StatusCode,
     response::Json,
 };
-use axum_extra::extract::Multipart;
-use axum_extra::extract::multipart::MultipartError;
-use serde_json::Value;
 
 /// Convert ProfilePrivacyRequest to ProfilePrivacy
 fn convert_privacy_request(privacy: ProfilePrivacyRequest) -> ProfilePrivacy {

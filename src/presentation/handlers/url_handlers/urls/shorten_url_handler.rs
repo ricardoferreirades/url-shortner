@@ -1,6 +1,6 @@
-use crate::application::dto::{requests::{ShortenUrlRequest, BulkShortenUrlsRequest, BatchUrlOperationRequest, BulkStatusUpdateRequest, BulkExpirationUpdateRequest, BulkDeleteRequest}, responses::{ShortenUrlResponse, BatchOperationResponse, BatchOperationResult, BulkOperationProgress}, ErrorResponse};
+use crate::application::dto::{requests::ShortenUrlRequest, responses::ShortenUrlResponse, ErrorResponse};
 use crate::domain::repositories::UrlRepository;
-use axum::{extract::State, http::{StatusCode, header}, response::Redirect, Json, http::HeaderMap};
+use axum::{extract::State, http::{StatusCode, header}, Json, http::HeaderMap};
 use tracing::{info, warn};
 use crate::presentation::handlers::app_state::AppState;
 

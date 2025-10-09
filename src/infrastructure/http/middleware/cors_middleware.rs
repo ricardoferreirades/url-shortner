@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 use tower_http::cors::{Any, CorsLayer};
 
 /// CORS middleware configuration
@@ -13,7 +14,7 @@ impl CorsMiddleware {
     }
 
     /// Create a CORS layer with production settings
-    pub fn production(allowed_origins: Vec<String>) -> CorsLayer {
+    pub fn production(_allowed_origins: Vec<String>) -> CorsLayer {
         // For now, use the same as development - in production you'd want to be more specific
         // TODO: Implement proper origin validation
         Self::development()

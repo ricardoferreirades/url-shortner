@@ -4,6 +4,6 @@ pub mod click_repository;
 pub mod password_reset_repository;
 
 pub use url_repository::{UrlRepository, RepositoryError, UrlStats};
-pub use user_repository::{UserRepository, RepositoryError as UserRepositoryError};
+pub use user_repository::UserRepository;
 pub use click_repository::{ClickRepository, ClickStats, RepositoryError as ClickRepositoryError};
-pub use password_reset_repository::{PasswordResetRepository, PasswordResetRepositoryError};
+pub use password_reset_repository::PasswordResetRepository;

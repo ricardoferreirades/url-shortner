@@ -1,11 +1,10 @@
 use super::ConcreteAppState;
 use crate::application::dto::responses::ErrorResponse;
-use crate::domain::entities::{ProfilePrivacy, User};
-use crate::domain::services::{PrivacyService, PrivacyServiceError, FieldPrivacySettings, DataPrivacyLevel};
+use crate::domain::entities::ProfilePrivacy;
+use crate::domain::services::{PrivacyService, DataPrivacyLevel};
 use crate::domain::repositories::UserRepository;
-use crate::presentation::handlers::app_state::AppState;
 use axum::{
-    extract::{Path, State},
+    extract::State,
     http::StatusCode,
     response::Json,
 };
@@ -114,6 +113,7 @@ fn convert_privacy_response(privacy: ProfilePrivacy) -> ProfilePrivacyResponse {
 }
 
 /// Convert DataPrivacyLevelRequest to DataPrivacyLevel
+#[allow(dead_code)]
 fn convert_data_privacy_request(level: DataPrivacyLevelRequest) -> DataPrivacyLevel {
     match level {
         DataPrivacyLevelRequest::Public => DataPrivacyLevel::Public,

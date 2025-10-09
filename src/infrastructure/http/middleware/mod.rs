@@ -8,6 +8,3 @@ pub mod error_middleware;
 // Future: pub mod auth_middleware;
 // Future: pub mod metrics_middleware;
 
-pub use cors_middleware::*;
-pub use logging_middleware::*;
-pub use error_middleware::*;

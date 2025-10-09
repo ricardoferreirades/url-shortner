@@ -1,5 +1,5 @@
 use crate::application::dto::responses::{BulkOperationProgress, ErrorResponse};
-use crate::domain::services::{ProgressService, ProgressServiceError};
+use crate::domain::services::ProgressServiceError;
 use crate::presentation::handlers::app_state::AppState;
 use axum::{extract::{Path, State}, http::StatusCode, Json};
 use tracing::{info, warn};

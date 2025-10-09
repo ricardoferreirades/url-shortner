@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 use crate::domain::repositories::UrlRepository;
 use crate::domain::services::NotificationService;
 use std::time::Duration;

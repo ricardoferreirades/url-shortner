@@ -251,6 +251,7 @@ impl PrivacyService {
 
 /// Filtered profile data based on privacy settings
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub struct FilteredProfileData {
     pub id: i32,
     pub username: String,

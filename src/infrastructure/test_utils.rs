@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 // Test utilities for integration tests
 use crate::domain::entities::{ShortCode, Url, UrlStatus};
 use crate::domain::repositories::{RepositoryError, UrlRepository};

@@ -108,7 +108,7 @@ impl EmailSender for SmtpEmailSender {
             .map_err(|e| EmailError::InvalidEmail(format!("Invalid to email: {}", e)))?;
 
         // Build email message
-        let mut email_builder = Message::builder()
+        let email_builder = Message::builder()
             .from(from_mailbox)
             .to(to_mailbox)
             .subject(message.subject);
