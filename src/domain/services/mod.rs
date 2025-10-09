@@ -9,6 +9,7 @@ pub mod file_upload_service;
 pub mod profile_validation_service;
 pub mod privacy_service;
 pub mod password_reset_service;
+pub mod token_validation_service;
 
 pub use url_service::{UrlService, ServiceError};
 pub use auth_service::{AuthService, ServiceError as AuthServiceError};
@@ -21,3 +22,4 @@ pub use file_upload_service::{FileUploadService, FileUploadError, FileUploadResu
 pub use profile_validation_service::{ProfileValidationService, ProfileValidationError, ValidatedProfileData};
 pub use privacy_service::{PrivacyService, PrivacyServiceError, FieldPrivacySettings, FilteredProfileData, DataPrivacyLevel};
 pub use password_reset_service::{PasswordResetService, PasswordResetError, PasswordResetRequest};
+pub use token_validation_service::{TokenValidationService, TokenValidationError, TokenValidationResult};
