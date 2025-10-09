@@ -14,7 +14,7 @@ use crate::presentation::handlers::app_state::AppState;
         (status = 400, description = "Bad request", body = ErrorResponse),
         (status = 401, description = "Unauthorized", body = ErrorResponse),
     ),
-    tag = "url-shortener"
+    tag = "bulk-operations"
 )]
 pub async fn async_bulk_shorten_urls_handler<R, U, P>(
     State(app_state): State<AppState<R, U, P>>,
