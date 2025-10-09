@@ -15,7 +15,7 @@ use utoipa_swagger_ui::SwaggerUi;
 use crate::domain::UrlService;
 use crate::application::{ShortenUrlUseCase, ShortenUrlRequest};
 use crate::application::dto::requests::BulkShortenUrlsRequest;
-use crate::infrastructure::{PostgresUrlRepository, PostgresUserRepository, PostgresPasswordResetRepository, SmtpEmailSender};
+use crate::infrastructure::{PostgresUrlRepository, PostgresUserRepository, PostgresPasswordResetRepository, SmtpEmailSender, PasswordResetRateLimiter};
 use crate::domain::services::AuthService;
 use crate::presentation::{
     shorten_url_handler, redirect_handler, register_handler, login_handler, AppState,
@@ -119,6 +119,10 @@ pub async fn start_server() -> Result<(), Box<dyn std::error::Error>> {
         None
     };
     
+    // Create password reset rate limiter
+    let password_reset_rate_limiter = std::sync::Arc::new(PasswordResetRateLimiter::new_default());
+    info!("Password reset rate limiter configured: 5 req/hour per IP, 3 req/hour per email, 5 min cooldown");
+    
     // Create application state
     let app_state = AppState::new(
         shorten_url_use_case, 
@@ -128,6 +132,7 @@ pub async fn start_server() -> Result<(), Box<dyn std::error::Error>> {
         user_repository,
         password_reset_repository,
         email_sender,
+        password_reset_rate_limiter,
     );
 
     // OpenAPI doc
