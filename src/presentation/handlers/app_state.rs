@@ -9,8 +9,8 @@ use std::sync::Arc;
 #[derive(Clone)]
 pub struct AppState<R, U, P>
 where
-    R: UrlRepository + Send + Sync + Clone,
-    U: UserRepository + Send + Sync + Clone,
+    R: UrlRepository + Send + Sync + Clone + 'static,
+    U: UserRepository + Send + Sync + Clone + 'static,
     P: PasswordResetRepository + Send + Sync + Clone,
 {
     pub shorten_url_use_case: ShortenUrlUseCase<R>,
@@ -27,8 +27,8 @@ where
 
 impl<R, U, P> AppState<R, U, P>
 where
-    R: UrlRepository + Send + Sync + Clone,
-    U: UserRepository + Send + Sync + Clone,
+    R: UrlRepository + Send + Sync + Clone + 'static,
+    U: UserRepository + Send + Sync + Clone + 'static,
     P: PasswordResetRepository + Send + Sync + Clone,
 {
     pub fn new(

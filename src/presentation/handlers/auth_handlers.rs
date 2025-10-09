@@ -59,13 +59,14 @@ pub struct ErrorResponse {
         (status = 400, description = "Invalid input or user already exists", body = ErrorResponse)
     )
 )]
-pub async fn register_handler<R, U>(
-    State(app_state): State<AppState<R, U>>,
+pub async fn register_handler<R, U, P>(
+    State(app_state): State<AppState<R, U, P>>,
     Json(request): Json<RegisterRequest>,
 ) -> Result<(StatusCode, Json<AuthResponse>), (StatusCode, Json<ErrorResponse>)>
 where
     R: crate::domain::repositories::UrlRepository + Send + Sync + Clone,
     U: UserRepository + Send + Sync + Clone,
+    P: crate::domain::repositories::PasswordResetRepository + Send + Sync + Clone,
 {
     info!("Received registration request for username: {}", request.username);
 
@@ -135,13 +136,14 @@ where
         (status = 401, description = "Invalid credentials", body = ErrorResponse)
     )
 )]
-pub async fn login_handler<R, U>(
-    State(app_state): State<AppState<R, U>>,
+pub async fn login_handler<R, U, P>(
+    State(app_state): State<AppState<R, U, P>>,
     Json(request): Json<LoginRequest>,
 ) -> Result<(StatusCode, Json<AuthResponse>), (StatusCode, Json<ErrorResponse>)>
 where
     R: crate::domain::repositories::UrlRepository + Send + Sync + Clone,
     U: UserRepository + Send + Sync + Clone,
+    P: crate::domain::repositories::PasswordResetRepository + Send + Sync + Clone,
 {
     info!("Received login request for username: {}", request.username);
 

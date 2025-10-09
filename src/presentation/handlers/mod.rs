@@ -17,3 +17,10 @@ pub use file_upload_handlers::*;
 pub use privacy_handlers::*;
 pub use password_reset_handlers::*;
 pub use app_state::*;
+
+// Type alias for the concrete AppState used in the application
+pub type ConcreteAppState = app_state::AppState<
+    crate::infrastructure::database::PostgresUrlRepository,
+    crate::infrastructure::database::PostgresUserRepository,
+    crate::infrastructure::database::PostgresPasswordResetRepository,
+>;
