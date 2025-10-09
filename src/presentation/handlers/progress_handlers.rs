@@ -16,7 +16,7 @@ use tracing::{info, warn};
         (status = 404, description = "Operation not found", body = ErrorResponse),
         (status = 401, description = "Unauthorized", body = ErrorResponse),
     ),
-    tag = "url-shortener"
+    tag = "bulk-operations"
 )]
 pub async fn get_bulk_operation_progress_handler<R, U, P>(
     State(app_state): State<AppState<R, U, P>>,
@@ -69,7 +69,7 @@ where
         (status = 400, description = "Operation cannot be cancelled", body = ErrorResponse),
         (status = 401, description = "Unauthorized", body = ErrorResponse),
     ),
-    tag = "url-shortener"
+    tag = "bulk-operations"
 )]
 pub async fn cancel_bulk_operation_handler<R, U, P>(
     State(app_state): State<AppState<R, U, P>>,
@@ -117,7 +117,7 @@ where
         (status = 200, description = "Operations retrieved successfully", body = [BulkOperationProgress]),
         (status = 401, description = "Unauthorized", body = ErrorResponse),
     ),
-    tag = "url-shortener"
+    tag = "bulk-operations"
 )]
 pub async fn get_user_operations_handler<R, U, P>(
     State(app_state): State<AppState<R, U, P>>,
