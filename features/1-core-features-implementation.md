@@ -38,7 +38,7 @@
 - [x] Implement password reset token generation
 - [x] Create secure password reset email system
 - [x] Add password reset API endpoints
-- [ ] Implement token expiration and validation
+- [x] Implement token expiration and validation
 - [ ] Add rate limiting for password reset requests
 
 **Implementation Details:**
@@ -55,6 +55,13 @@
 - Added comprehensive request/response DTOs with OpenAPI schemas
 - Updated AppState to support password reset and email functionality
 - Integrated email sending into password reset flow
+- Implemented TokenValidationService for comprehensive validation
+- Added token format validation (length, character restrictions)
+- Added token entity validation (expiration, usage tracking)
+- Added security validation (HTTPS requirement, XSS prevention)
+- Added token strength scoring system
+- Added expiration warning detection (will_expire_soon)
+- Enhanced validate endpoint with detailed validation results
 
 ### 1.2.3 Account Deletion
 - [ ] Implement secure account deletion process
