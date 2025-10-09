@@ -16,7 +16,7 @@ use crate::presentation::handlers::app_state::AppState;
         (status = 404, description = "URL not found", body = ErrorResponse),
         (status = 401, description = "Unauthorized", body = ErrorResponse),
     ),
-    tag = "url-shortener"
+    tag = "url-management"
 )]
 pub async fn deactivate_url_handler<R, U, P>(
     State(app_state): State<AppState<R, U, P>>,
