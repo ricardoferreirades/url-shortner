@@ -41,35 +41,6 @@
 - [x] Implement token expiration and validation
 - [x] Add rate limiting for password reset requests
 
-**Implementation Details:**
-- Created PasswordResetToken entity with secure token generation
-- Implemented PasswordResetService with UUID + random token generation
-- Added PasswordResetRepository trait and PostgresPasswordResetRepository
-- Added password_reset_tokens table with proper indexes
-- Created EmailSender trait for email abstraction
-- Implemented SmtpEmailSender with lettre library
-- Added password reset email templates (text and HTML)
-- Added SMTP configuration with environment variable support
-- Implemented secure email sending with TLS/SSL
-- Created password reset API handlers (request, confirm, validate)
-- Added comprehensive request/response DTOs with OpenAPI schemas
-- Updated AppState to support password reset and email functionality
-- Integrated email sending into password reset flow
-- Implemented TokenValidationService for comprehensive validation
-- Added token format validation (length, character restrictions)
-- Added token entity validation (expiration, usage tracking)
-- Added security validation (HTTPS requirement, XSS prevention)
-- Added token strength scoring system
-- Added expiration warning detection (will_expire_soon)
-- Enhanced validate endpoint with detailed validation results
-- Implemented PasswordResetRateLimiter for request limiting
-- Added per-IP rate limiting (5 requests/hour)
-- Added per-email rate limiting (3 requests/hour)
-- Added cooldown period between requests (5 minutes)
-- Integrated rate limiting into password reset request handler
-- Added comprehensive rate limit error messages
-- Included rate limit info endpoint for debugging
-
 ### 1.2.3 Account Deletion
 - [ ] Implement secure account deletion process
 - [ ] Add data anonymization for deleted accounts
@@ -113,3 +84,44 @@
 - Proper data sanitization
 - Access control for user data
 - Audit logging for sensitive operations
+
+---
+
+## Implementation Details
+
+### 1.2.1 User Profiles
+- Enhanced User entity with comprehensive profile fields and privacy enum
+- Created ProfileValidationService for data sanitization and validation
+- Implemented FileUploadService for secure avatar management with image processing
+- Added PrivacyService for advanced privacy controls and access management
+- Created complete API endpoints with OpenAPI documentation
+- Added comprehensive test coverage for all services
+
+### 1.2.2 Password Reset
+- Created PasswordResetToken entity with secure token generation
+- Implemented PasswordResetService with UUID + random token generation
+- Added PasswordResetRepository trait and PostgresPasswordResetRepository
+- Added password_reset_tokens table with proper indexes
+- Created EmailSender trait for email abstraction
+- Implemented SmtpEmailSender with lettre library
+- Added password reset email templates (text and HTML)
+- Added SMTP configuration with environment variable support
+- Implemented secure email sending with TLS/SSL
+- Created password reset API handlers (request, confirm, validate)
+- Added comprehensive request/response DTOs with OpenAPI schemas
+- Updated AppState to support password reset and email functionality
+- Integrated email sending into password reset flow
+- Implemented TokenValidationService for comprehensive validation
+- Added token format validation (length, character restrictions)
+- Added token entity validation (expiration, usage tracking)
+- Added security validation (HTTPS requirement, XSS prevention)
+- Added token strength scoring system
+- Added expiration warning detection (will_expire_soon)
+- Enhanced validate endpoint with detailed validation results
+- Implemented PasswordResetRateLimiter for request limiting
+- Added per-IP rate limiting (5 requests/hour)
+- Added per-email rate limiting (3 requests/hour)
+- Added cooldown period between requests (5 minutes)
+- Integrated rate limiting into password reset request handler
+- Added comprehensive rate limit error messages
+- Included rate limit info endpoint for debugging
