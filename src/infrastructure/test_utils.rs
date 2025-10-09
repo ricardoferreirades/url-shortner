@@ -108,4 +108,114 @@ impl UrlRepository for MockUrlRepository {
             .collect();
         Ok(filtered_urls)
     }
+
+    async fn batch_deactivate_urls(&self, url_ids: &[i32], user_id: Option<i32>) -> Result<crate::domain::repositories::url_repository::BatchOperationResult, RepositoryError> {
+        self.batch_update_status(url_ids, UrlStatus::Inactive, user_id).await
+    }
+
+    async fn batch_reactivate_urls(&self, url_ids: &[i32], user_id: Option<i32>) -> Result<crate::domain::repositories::url_repository::BatchOperationResult, RepositoryError> {
+        self.batch_update_status(url_ids, UrlStatus::Active, user_id).await
+    }
+
+    async fn batch_delete_urls(&self, url_ids: &[i32], user_id: Option<i32>) -> Result<crate::domain::repositories::url_repository::BatchOperationResult, RepositoryError> {
+        use crate::domain::repositories::url_repository::{BatchOperationResult, BatchItemResult};
+        
+        let mut urls = self.urls.lock().unwrap();
+        let mut results = Vec::new();
+        
+        for &url_id in url_ids {
+            if let Some(pos) = urls.iter().position(|u| u.id == url_id && (user_id.is_none() || u.user_id == user_id)) {
+                urls.remove(pos);
+                results.push(BatchItemResult {
+                    url_id,
+                    success: true,
+                    error: None,
+                });
+            } else {
+                results.push(BatchItemResult {
+                    url_id,
+                    success: false,
+                    error: Some("URL not found or unauthorized".to_string()),
+                });
+            }
+        }
+        
+        let successful = results.iter().filter(|r| r.success).count();
+        let failed = results.len() - successful;
+        
+        Ok(BatchOperationResult {
+            total_processed: results.len(),
+            successful,
+            failed,
+            results,
+        })
+    }
+
+    async fn batch_update_status(&self, url_ids: &[i32], status: UrlStatus, user_id: Option<i32>) -> Result<crate::domain::repositories::url_repository::BatchOperationResult, RepositoryError> {
+        use crate::domain::repositories::url_repository::{BatchOperationResult, BatchItemResult};
+        
+        let mut urls = self.urls.lock().unwrap();
+        let mut results = Vec::new();
+        
+        for &url_id in url_ids {
+            if let Some(url) = urls.iter_mut().find(|u| u.id == url_id && (user_id.is_none() || u.user_id == user_id)) {
+                url.status = status.clone();
+                results.push(BatchItemResult {
+                    url_id,
+                    success: true,
+                    error: None,
+                });
+            } else {
+                results.push(BatchItemResult {
+                    url_id,
+                    success: false,
+                    error: Some("URL not found or unauthorized".to_string()),
+                });
+            }
+        }
+        
+        let successful = results.iter().filter(|r| r.success).count();
+        let failed = results.len() - successful;
+        
+        Ok(BatchOperationResult {
+            total_processed: results.len(),
+            successful,
+            failed,
+            results,
+        })
+    }
+
+    async fn batch_update_expiration(&self, url_ids: &[i32], expiration_date: Option<chrono::DateTime<chrono::Utc>>, user_id: Option<i32>) -> Result<crate::domain::repositories::url_repository::BatchOperationResult, RepositoryError> {
+        use crate::domain::repositories::url_repository::{BatchOperationResult, BatchItemResult};
+        
+        let mut urls = self.urls.lock().unwrap();
+        let mut results = Vec::new();
+        
+        for &url_id in url_ids {
+            if let Some(url) = urls.iter_mut().find(|u| u.id == url_id && (user_id.is_none() || u.user_id == user_id)) {
+                url.expiration_date = expiration_date;
+                results.push(BatchItemResult {
+                    url_id,
+                    success: true,
+                    error: None,
+                });
+            } else {
+                results.push(BatchItemResult {
+                    url_id,
+                    success: false,
+                    error: Some("URL not found or unauthorized".to_string()),
+                });
+            }
+        }
+        
+        let successful = results.iter().filter(|r| r.success).count();
+        let failed = results.len() - successful;
+        
+        Ok(BatchOperationResult {
+            total_processed: results.len(),
+            successful,
+            failed,
+            results,
+        })
+    }
 }

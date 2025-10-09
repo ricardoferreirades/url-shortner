@@ -188,31 +188,31 @@ where
     }
 
     /// Batch deactivate URLs
-    pub async fn batch_deactivate_urls(&self, url_ids: &[i32], user_id: Option<i32>) -> Result<crate::domain::repositories::BatchOperationResult, ServiceError> {
+    pub async fn batch_deactivate_urls(&self, url_ids: &[i32], user_id: Option<i32>) -> Result<crate::domain::repositories::url_repository::BatchOperationResult, ServiceError> {
         self.repository.batch_deactivate_urls(url_ids, user_id).await
             .map_err(ServiceError::from)
     }
 
     /// Batch reactivate URLs
-    pub async fn batch_reactivate_urls(&self, url_ids: &[i32], user_id: Option<i32>) -> Result<crate::domain::repositories::BatchOperationResult, ServiceError> {
+    pub async fn batch_reactivate_urls(&self, url_ids: &[i32], user_id: Option<i32>) -> Result<crate::domain::repositories::url_repository::BatchOperationResult, ServiceError> {
         self.repository.batch_reactivate_urls(url_ids, user_id).await
             .map_err(ServiceError::from)
     }
 
     /// Batch delete URLs
-    pub async fn batch_delete_urls(&self, url_ids: &[i32], user_id: Option<i32>) -> Result<crate::domain::repositories::BatchOperationResult, ServiceError> {
+    pub async fn batch_delete_urls(&self, url_ids: &[i32], user_id: Option<i32>) -> Result<crate::domain::repositories::url_repository::BatchOperationResult, ServiceError> {
         self.repository.batch_delete_urls(url_ids, user_id).await
             .map_err(ServiceError::from)
     }
 
     /// Batch update URL status
-    pub async fn batch_update_status(&self, url_ids: &[i32], status: UrlStatus, user_id: Option<i32>) -> Result<crate::domain::repositories::BatchOperationResult, ServiceError> {
+    pub async fn batch_update_status(&self, url_ids: &[i32], status: UrlStatus, user_id: Option<i32>) -> Result<crate::domain::repositories::url_repository::BatchOperationResult, ServiceError> {
         self.repository.batch_update_status(url_ids, status, user_id).await
             .map_err(ServiceError::from)
     }
 
     /// Batch update URL expiration dates
-    pub async fn batch_update_expiration(&self, url_ids: &[i32], expiration_date: Option<chrono::DateTime<chrono::Utc>>, user_id: Option<i32>) -> Result<crate::domain::repositories::BatchOperationResult, ServiceError> {
+    pub async fn batch_update_expiration(&self, url_ids: &[i32], expiration_date: Option<chrono::DateTime<chrono::Utc>>, user_id: Option<i32>) -> Result<crate::domain::repositories::url_repository::BatchOperationResult, ServiceError> {
         self.repository.batch_update_expiration(url_ids, expiration_date, user_id).await
             .map_err(ServiceError::from)
     }
@@ -224,7 +224,7 @@ where
         url_ids: &[i32],
         data: Option<&crate::application::dto::requests::BatchOperationData>,
         user_id: Option<i32>,
-    ) -> Result<crate::domain::repositories::BatchOperationResult, ServiceError> {
+    ) -> Result<crate::domain::repositories::url_repository::BatchOperationResult, ServiceError> {
         match operation {
             crate::application::dto::requests::BatchOperationType::Deactivate => {
                 self.batch_deactivate_urls(url_ids, user_id).await
@@ -421,7 +421,7 @@ mod tests {
             Ok(filtered_urls)
         }
 
-        async fn batch_deactivate_urls(&self, url_ids: &[i32], user_id: Option<i32>) -> Result<crate::domain::repositories::BatchOperationResult, RepositoryError> {
+        async fn batch_deactivate_urls(&self, url_ids: &[i32], user_id: Option<i32>) -> Result<crate::domain::repositories::url_repository::BatchOperationResult, RepositoryError> {
             let mut urls = self.urls.lock().unwrap();
             let mut results = Vec::new();
             let mut successful = 0;
@@ -446,7 +446,7 @@ mod tests {
                 }
             }
 
-            Ok(crate::domain::repositories::BatchOperationResult {
+            Ok(crate::domain::repositories::url_repository::BatchOperationResult {
                 total_processed: url_ids.len(),
                 successful,
                 failed,
@@ -454,7 +454,7 @@ mod tests {
             })
         }
 
-        async fn batch_reactivate_urls(&self, url_ids: &[i32], user_id: Option<i32>) -> Result<crate::domain::repositories::BatchOperationResult, RepositoryError> {
+        async fn batch_reactivate_urls(&self, url_ids: &[i32], user_id: Option<i32>) -> Result<crate::domain::repositories::url_repository::BatchOperationResult, RepositoryError> {
             let mut urls = self.urls.lock().unwrap();
             let mut results = Vec::new();
             let mut successful = 0;
@@ -479,7 +479,7 @@ mod tests {
                 }
             }
 
-            Ok(crate::domain::repositories::BatchOperationResult {
+            Ok(crate::domain::repositories::url_repository::BatchOperationResult {
                 total_processed: url_ids.len(),
                 successful,
                 failed,
@@ -487,7 +487,7 @@ mod tests {
             })
         }
 
-        async fn batch_delete_urls(&self, url_ids: &[i32], user_id: Option<i32>) -> Result<crate::domain::repositories::BatchOperationResult, RepositoryError> {
+        async fn batch_delete_urls(&self, url_ids: &[i32], user_id: Option<i32>) -> Result<crate::domain::repositories::url_repository::BatchOperationResult, RepositoryError> {
             let mut urls = self.urls.lock().unwrap();
             let mut results = Vec::new();
             let mut successful = 0;
@@ -512,7 +512,7 @@ mod tests {
                 }
             }
 
-            Ok(crate::domain::repositories::BatchOperationResult {
+            Ok(crate::domain::repositories::url_repository::BatchOperationResult {
                 total_processed: url_ids.len(),
                 successful,
                 failed,
@@ -520,7 +520,7 @@ mod tests {
             })
         }
 
-        async fn batch_update_status(&self, url_ids: &[i32], status: UrlStatus, user_id: Option<i32>) -> Result<crate::domain::repositories::BatchOperationResult, RepositoryError> {
+        async fn batch_update_status(&self, url_ids: &[i32], status: UrlStatus, user_id: Option<i32>) -> Result<crate::domain::repositories::url_repository::BatchOperationResult, RepositoryError> {
             let mut urls = self.urls.lock().unwrap();
             let mut results = Vec::new();
             let mut successful = 0;
@@ -545,7 +545,7 @@ mod tests {
                 }
             }
 
-            Ok(crate::domain::repositories::BatchOperationResult {
+            Ok(crate::domain::repositories::url_repository::BatchOperationResult {
                 total_processed: url_ids.len(),
                 successful,
                 failed,
@@ -553,7 +553,7 @@ mod tests {
             })
         }
 
-        async fn batch_update_expiration(&self, url_ids: &[i32], expiration_date: Option<chrono::DateTime<chrono::Utc>>, user_id: Option<i32>) -> Result<crate::domain::repositories::BatchOperationResult, RepositoryError> {
+        async fn batch_update_expiration(&self, url_ids: &[i32], expiration_date: Option<chrono::DateTime<chrono::Utc>>, user_id: Option<i32>) -> Result<crate::domain::repositories::url_repository::BatchOperationResult, RepositoryError> {
             let mut urls = self.urls.lock().unwrap();
             let mut results = Vec::new();
             let mut successful = 0;
@@ -578,7 +578,7 @@ mod tests {
                 }
             }
 
-            Ok(crate::domain::repositories::BatchOperationResult {
+            Ok(crate::domain::repositories::url_repository::BatchOperationResult {
                 total_processed: url_ids.len(),
                 successful,
                 failed,

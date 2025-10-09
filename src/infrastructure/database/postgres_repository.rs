@@ -276,4 +276,160 @@ impl UrlRepository for PostgresUrlRepository {
 
         Ok(urls)
     }
+
+    async fn batch_deactivate_urls(&self, url_ids: &[i32], user_id: Option<i32>) -> Result<crate::domain::repositories::url_repository::BatchOperationResult, RepositoryError> {
+        self.batch_update_status(url_ids, UrlStatus::Inactive, user_id).await
+    }
+
+    async fn batch_reactivate_urls(&self, url_ids: &[i32], user_id: Option<i32>) -> Result<crate::domain::repositories::url_repository::BatchOperationResult, RepositoryError> {
+        self.batch_update_status(url_ids, UrlStatus::Active, user_id).await
+    }
+
+    async fn batch_delete_urls(&self, url_ids: &[i32], user_id: Option<i32>) -> Result<crate::domain::repositories::url_repository::BatchOperationResult, RepositoryError> {
+        use crate::domain::repositories::url_repository::{BatchOperationResult, BatchItemResult};
+        
+        let mut results = Vec::new();
+        for &url_id in url_ids {
+            let result = if let Some(uid) = user_id {
+                sqlx::query("DELETE FROM urls WHERE id = $1 AND user_id = $2")
+                    .bind(url_id)
+                    .bind(uid)
+                    .execute(&self.pool)
+                    .await
+            } else {
+                sqlx::query("DELETE FROM urls WHERE id = $1")
+                    .bind(url_id)
+                    .execute(&self.pool)
+                    .await
+            };
+            
+            match result {
+                Ok(res) if res.rows_affected() > 0 => results.push(BatchItemResult {
+                    url_id,
+                    success: true,
+                    error: None,
+                }),
+                Ok(_) => results.push(BatchItemResult {
+                    url_id,
+                    success: false,
+                    error: Some("URL not found or unauthorized".to_string()),
+                }),
+                Err(e) => results.push(BatchItemResult {
+                    url_id,
+                    success: false,
+                    error: Some(e.to_string()),
+                }),
+            }
+        }
+        
+        let successful = results.iter().filter(|r| r.success).count();
+        let failed = results.len() - successful;
+        
+        Ok(BatchOperationResult {
+            total_processed: results.len(),
+            successful,
+            failed,
+            results,
+        })
+    }
+
+    async fn batch_update_status(&self, url_ids: &[i32], status: UrlStatus, user_id: Option<i32>) -> Result<crate::domain::repositories::url_repository::BatchOperationResult, RepositoryError> {
+        use crate::domain::repositories::url_repository::{BatchOperationResult, BatchItemResult};
+        
+        let mut results = Vec::new();
+        for &url_id in url_ids {
+            let result = if let Some(uid) = user_id {
+                sqlx::query("UPDATE urls SET status = $1 WHERE id = $2 AND user_id = $3")
+                    .bind(status.to_string())
+                    .bind(url_id)
+                    .bind(uid)
+                    .execute(&self.pool)
+                    .await
+            } else {
+                sqlx::query("UPDATE urls SET status = $1 WHERE id = $2")
+                    .bind(status.to_string())
+                    .bind(url_id)
+                    .execute(&self.pool)
+                    .await
+            };
+            
+            match result {
+                Ok(res) if res.rows_affected() > 0 => results.push(BatchItemResult {
+                    url_id,
+                    success: true,
+                    error: None,
+                }),
+                Ok(_) => results.push(BatchItemResult {
+                    url_id,
+                    success: false,
+                    error: Some("URL not found or unauthorized".to_string()),
+                }),
+                Err(e) => results.push(BatchItemResult {
+                    url_id,
+                    success: false,
+                    error: Some(e.to_string()),
+                }),
+            }
+        }
+        
+        let successful = results.iter().filter(|r| r.success).count();
+        let failed = results.len() - successful;
+        
+        Ok(BatchOperationResult {
+            total_processed: results.len(),
+            successful,
+            failed,
+            results,
+        })
+    }
+
+    async fn batch_update_expiration(&self, url_ids: &[i32], expiration_date: Option<chrono::DateTime<chrono::Utc>>, user_id: Option<i32>) -> Result<crate::domain::repositories::url_repository::BatchOperationResult, RepositoryError> {
+        use crate::domain::repositories::url_repository::{BatchOperationResult, BatchItemResult};
+        
+        let mut results = Vec::new();
+        for &url_id in url_ids {
+            let result = if let Some(uid) = user_id {
+                sqlx::query("UPDATE urls SET expiration_date = $1 WHERE id = $2 AND user_id = $3")
+                    .bind(expiration_date)
+                    .bind(url_id)
+                    .bind(uid)
+                    .execute(&self.pool)
+                    .await
+            } else {
+                sqlx::query("UPDATE urls SET expiration_date = $1 WHERE id = $2")
+                    .bind(expiration_date)
+                    .bind(url_id)
+                    .execute(&self.pool)
+                    .await
+            };
+            
+            match result {
+                Ok(res) if res.rows_affected() > 0 => results.push(BatchItemResult {
+                    url_id,
+                    success: true,
+                    error: None,
+                }),
+                Ok(_) => results.push(BatchItemResult {
+                    url_id,
+                    success: false,
+                    error: Some("URL not found or unauthorized".to_string()),
+                }),
+                Err(e) => results.push(BatchItemResult {
+                    url_id,
+                    success: false,
+                    error: Some(e.to_string()),
+                }),
+            }
+        }
+        
+        let successful = results.iter().filter(|r| r.success).count();
+        let failed = results.len() - successful;
+        
+        Ok(BatchOperationResult {
+            total_processed: results.len(),
+            successful,
+            failed,
+            results,
+        })
+    }
 }
