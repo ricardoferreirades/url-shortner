@@ -14,6 +14,7 @@ pub struct PasswordResetToken {
     pub is_used: bool,
 }
 
+#[allow(dead_code)]
 impl PasswordResetToken {
     /// Create a new Password Reset Token
     pub fn new(

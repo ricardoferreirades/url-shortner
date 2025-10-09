@@ -45,6 +45,7 @@ pub struct Url {
     pub status: UrlStatus, // URL status (active/inactive)
 }
 
+#[allow(dead_code)]
 impl Url {
     /// Create a new URL entity
     pub fn new(

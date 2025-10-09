@@ -35,8 +35,10 @@ pub struct User {
     pub updated_at: Option<DateTime<Utc>>,
 }
 
+#[allow(dead_code)]
 impl User {
     /// Create a new User entity
+    #[allow(dead_code)]
     pub fn new(
         id: i32,
         username: String,

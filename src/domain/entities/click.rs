@@ -15,6 +15,7 @@ pub struct Click {
     pub created_at: DateTime<Utc>,
 }
 
+#[allow(dead_code)]
 impl Click {
     /// Create a new Click entity
     pub fn new(
