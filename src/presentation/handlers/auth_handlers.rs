@@ -57,7 +57,8 @@ pub struct ErrorResponse {
     responses(
         (status = 201, description = "User registered successfully", body = AuthResponse),
         (status = 400, description = "Invalid input or user already exists", body = ErrorResponse)
-    )
+    ),
+    tag = "authentication"
 )]
 pub async fn register_handler<R, U, P>(
     State(app_state): State<AppState<R, U, P>>,
@@ -134,7 +135,8 @@ where
     responses(
         (status = 200, description = "Login successful", body = AuthResponse),
         (status = 401, description = "Invalid credentials", body = ErrorResponse)
-    )
+    ),
+    tag = "authentication"
 )]
 pub async fn login_handler<R, U, P>(
     State(app_state): State<AppState<R, U, P>>,
