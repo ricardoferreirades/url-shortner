@@ -123,3 +123,10 @@ pub enum ProfilePrivacyRequest {
     #[serde(rename = "friends_only")]
     FriendsOnly,
 }
+
+/// Request DTO for account deletion
+#[derive(Debug, Deserialize, Serialize, ToSchema)]
+pub struct DeleteAccountRequest {
+    /// User's current password for confirmation
+    pub password: String,
+}
