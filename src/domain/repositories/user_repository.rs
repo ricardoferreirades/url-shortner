@@ -43,6 +43,9 @@ pub trait UserRepository: Send + Sync {
 
     /// Get user profile (public fields only)
     async fn get_profile(&self, user_id: i32) -> Result<Option<User>, RepositoryError>;
+
+    /// Delete a user account
+    async fn delete_account(&self, user_id: i32) -> Result<(), RepositoryError>;
 }
 
 /// Repository errors
