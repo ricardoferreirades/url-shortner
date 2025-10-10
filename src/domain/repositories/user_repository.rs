@@ -44,8 +44,19 @@ pub trait UserRepository: Send + Sync {
     /// Get user profile (public fields only)
     async fn get_profile(&self, user_id: i32) -> Result<Option<User>, RepositoryError>;
 
-    /// Delete a user account
+    /// Delete a user account (hard delete)
+    /// Note: Consider using anonymize_account for GDPR compliance
+    #[allow(dead_code)]
     async fn delete_account(&self, user_id: i32) -> Result<(), RepositoryError>;
+
+    /// Anonymize a user account (soft delete with data anonymization)
+    async fn anonymize_account(
+        &self,
+        user_id: i32,
+        anonymized_username: &str,
+        anonymized_email: &str,
+        anonymized_password_hash: &str,
+    ) -> Result<(), RepositoryError>;
 }
 
 /// Repository errors
