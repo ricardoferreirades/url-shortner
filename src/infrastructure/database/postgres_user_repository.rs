@@ -254,4 +254,40 @@ impl UserRepository for PostgresUserRepository {
 
         Ok(())
     }
+
+    async fn anonymize_account(
+        &self,
+        user_id: i32,
+        anonymized_username: &str,
+        anonymized_email: &str,
+        anonymized_password_hash: &str,
+    ) -> Result<(), RepositoryError> {
+        let result = sqlx::query(
+            "UPDATE users 
+             SET username = $1,
+                 email = $2,
+                 password_hash = $3,
+                 first_name = NULL,
+                 last_name = NULL,
+                 bio = NULL,
+                 avatar_url = NULL,
+                 website = NULL,
+                 location = NULL,
+                 privacy = 'private',
+                 updated_at = CURRENT_TIMESTAMP
+             WHERE id = $4"
+        )
+        .bind(anonymized_username)
+        .bind(anonymized_email)
+        .bind(anonymized_password_hash)
+        .bind(user_id)
+        .execute(&self.pool)
+        .await?;
+
+        if result.rows_affected() == 0 {
+            return Err(RepositoryError::NotFound);
+        }
+
+        Ok(())
+    }
 }
