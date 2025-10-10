@@ -5,7 +5,7 @@ use crate::application::dto::{
 };
 use crate::domain::entities::{User, ProfilePrivacy};
 use crate::domain::repositories::user_repository::UserRepository;
-use crate::domain::services::ProfileValidationService;
+use crate::domain::services::{ProfileValidationService, anonymization_service::AnonymizationService};
 use axum::{
     extract::{Path, State},
     http::StatusCode,
@@ -435,13 +435,25 @@ pub async fn delete_account(
         ));
     }
 
-    // Delete account
-    match state.user_repository.delete_account(user_id).await {
+    // Anonymize account data instead of hard deletion
+    let anonymization_service = AnonymizationService::new();
+    let anonymized_data = anonymization_service.anonymize_user_data(&user);
+
+    match state
+        .user_repository
+        .anonymize_account(
+            user_id,
+            &anonymized_data.username,
+            &anonymized_data.email,
+            &anonymized_data.password_hash,
+        )
+        .await
+    {
         Ok(()) => Ok(StatusCode::NO_CONTENT),
         Err(e) => Err((
             StatusCode::INTERNAL_SERVER_ERROR,
             Json(ErrorResponse {
-                error: "Deletion failed".to_string(),
+                error: "Account anonymization failed".to_string(),
                 message: e.to_string(),
                 status_code: 500,
             }),
