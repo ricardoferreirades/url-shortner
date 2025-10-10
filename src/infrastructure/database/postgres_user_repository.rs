@@ -241,4 +241,17 @@ impl UserRepository for PostgresUserRepository {
             None => Ok(None),
         }
     }
+
+    async fn delete_account(&self, user_id: i32) -> Result<(), RepositoryError> {
+        let result = sqlx::query("DELETE FROM users WHERE id = $1")
+            .bind(user_id)
+            .execute(&self.pool)
+            .await?;
+
+        if result.rows_affected() == 0 {
+            return Err(RepositoryError::NotFound);
+        }
+
+        Ok(())
+    }
 }
