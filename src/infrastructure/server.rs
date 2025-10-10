@@ -26,7 +26,7 @@ use crate::presentation::{
     async_bulk_shorten_urls_handler, async_batch_url_operations_handler,
     get_bulk_operation_progress_handler, cancel_bulk_operation_handler, get_user_operations_handler,
     get_my_profile, get_public_profile, update_my_profile, patch_my_profile, get_profile_by_username,
-    upload_profile_picture, delete_profile_picture,
+    upload_profile_picture, delete_profile_picture, delete_account,
     get_privacy_settings, update_privacy_settings, get_privacy_recommendations,
     request_password_reset, reset_password, validate_reset_token
 };
@@ -172,6 +172,7 @@ pub async fn start_server() -> Result<(), Box<dyn std::error::Error>> {
             crate::presentation::handlers::profile_handlers::update_my_profile,
             crate::presentation::handlers::profile_handlers::patch_my_profile,
             crate::presentation::handlers::profile_handlers::get_profile_by_username,
+            crate::presentation::handlers::profile_handlers::delete_account,
             crate::presentation::handlers::file_upload_handlers::upload_profile_picture,
             crate::presentation::handlers::file_upload_handlers::delete_profile_picture,
             // Privacy Settings
@@ -199,6 +200,7 @@ pub async fn start_server() -> Result<(), Box<dyn std::error::Error>> {
                 crate::application::dto::requests::BulkDeleteRequest,
                 crate::application::dto::requests::UpdateProfileRequest,
                 crate::application::dto::requests::ProfilePrivacyRequest,
+                crate::application::dto::requests::DeleteAccountRequest,
                 // Response DTOs
                 crate::application::ShortenUrlResponse,
                 crate::application::dto::responses::UrlInfoResponse,
@@ -277,6 +279,7 @@ pub async fn start_server() -> Result<(), Box<dyn std::error::Error>> {
         .route("/profile", patch(patch_my_profile))
         .route("/profile/:user_id", get(get_public_profile))
         .route("/profile/username/:username", get(get_profile_by_username))
+        .route("/profile/delete", delete(delete_account))
         // Profile picture upload endpoints
         .route("/profile/avatar", post(upload_profile_picture))
         .route("/profile/avatar", delete(delete_profile_picture))
