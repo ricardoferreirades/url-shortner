@@ -10,6 +10,7 @@ pub mod profile_validation_service;
 pub mod privacy_service;
 pub mod password_reset_service;
 pub mod token_validation_service;
+pub mod anonymization_service;
 
 pub use url_service::{UrlService, ServiceError};
 pub use auth_service::{AuthService, ServiceError as AuthServiceError};
