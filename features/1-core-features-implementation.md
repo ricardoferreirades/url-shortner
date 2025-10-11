@@ -42,8 +42,8 @@
 - [x] Add rate limiting for password reset requests
 
 ### 1.2.3 Account Deletion
-- [ ] Implement secure account deletion process
-- [ ] Add data anonymization for deleted accounts
+- [x] Implement secure account deletion process
+- [x] Add data anonymization for deleted accounts
 - [ ] Create account deletion confirmation system
 - [ ] Implement cascading deletion for user data
 - [ ] Add account recovery grace period
