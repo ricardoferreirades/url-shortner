@@ -130,3 +130,10 @@ pub struct DeleteAccountRequest {
     /// User's current password for confirmation
     pub password: String,
 }
+
+/// Request DTO for confirming account deletion
+#[derive(Debug, Deserialize, Serialize, ToSchema)]
+pub struct ConfirmAccountDeletionRequest {
+    /// Confirmation token from email
+    pub token: String,
+}
