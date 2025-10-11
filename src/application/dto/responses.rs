@@ -166,3 +166,24 @@ pub enum BulkOperationStatus {
     #[serde(rename = "cancelled")]
     Cancelled,
 }
+
+/// Response DTO for account deletion request
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
+pub struct AccountDeletionRequestResponse {
+    pub message: String,
+    pub expires_at: String,
+}
+
+/// Response DTO for account deletion confirmation
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
+pub struct AccountDeletionConfirmationResponse {
+    pub message: String,
+    pub deleted: bool,
+}
+
+/// Response DTO for account deletion cancellation
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
+pub struct AccountDeletionCancellationResponse {
+    pub message: String,
+    pub cancelled: bool,
+}
