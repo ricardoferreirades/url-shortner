@@ -178,7 +178,6 @@ mod tests {
     use axum::{
         body::Body,
         http::{Request, StatusCode},
-        response::Response,
         routing::get,
         Router,
     };
