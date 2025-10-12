@@ -247,8 +247,6 @@ where
 mod tests {
     use super::*;
     use crate::domain::entities::User;
-    use chrono::Utc;
-
     // Mock implementations for testing
     struct MockPasswordResetRepository;
     struct MockUserRepository;
@@ -422,6 +420,23 @@ mod tests {
                 "test@example.com".to_string(),
                 "hash".to_string(),
             )))
+        }
+
+        async fn delete_account(
+            &self,
+            _user_id: i32,
+        ) -> Result<(), crate::domain::repositories::user_repository::RepositoryError> {
+            Ok(())
+        }
+
+        async fn anonymize_account(
+            &self,
+            _user_id: i32,
+            _anonymized_username: &str,
+            _anonymized_email: &str,
+            _anonymized_password_hash: &str,
+        ) -> Result<(), crate::domain::repositories::user_repository::RepositoryError> {
+            Ok(())
         }
     }
 
