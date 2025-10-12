@@ -119,4 +119,3 @@ mod tests {
         assert_eq!(hash, "DELETED_ACCOUNT_HASH");
     }
 }
-

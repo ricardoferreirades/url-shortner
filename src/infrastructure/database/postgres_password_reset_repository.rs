@@ -37,7 +37,7 @@ impl PasswordResetRepository for PostgresPasswordResetRepository {
         let row = sqlx::query(
             "INSERT INTO password_reset_tokens (user_id, token, created_at, expires_at, is_used) 
              VALUES ($1, $2, $3, $4, $5) 
-             RETURNING id, user_id, token, created_at, expires_at, used_at, is_used"
+             RETURNING id, user_id, token, created_at, expires_at, used_at, is_used",
         )
         .bind(token.user_id)
         .bind(&token.token)
@@ -57,7 +57,7 @@ impl PasswordResetRepository for PostgresPasswordResetRepository {
         let row = sqlx::query(
             "SELECT id, user_id, token, created_at, expires_at, used_at, is_used 
              FROM password_reset_tokens 
-             WHERE token = $1"
+             WHERE token = $1",
         )
         .bind(token)
         .fetch_optional(&self.pool)
@@ -77,16 +77,13 @@ impl PasswordResetRepository for PostgresPasswordResetRepository {
             "SELECT id, user_id, token, created_at, expires_at, used_at, is_used 
              FROM password_reset_tokens 
              WHERE user_id = $1 AND is_used = false AND expires_at > NOW() 
-             ORDER BY created_at DESC"
+             ORDER BY created_at DESC",
         )
         .bind(user_id)
         .fetch_all(&self.pool)
         .await?;
 
-        let tokens = rows
-            .iter()
-            .map(|row| self.row_to_token(row))
-            .collect();
+        let tokens = rows.iter().map(|row| self.row_to_token(row)).collect();
 
         Ok(tokens)
     }
@@ -97,7 +94,7 @@ impl PasswordResetRepository for PostgresPasswordResetRepository {
     ) -> Result<usize, Box<dyn std::error::Error + Send + Sync>> {
         let count: i64 = sqlx::query_scalar(
             "SELECT COUNT(*) FROM password_reset_tokens 
-             WHERE user_id = $1 AND is_used = false AND expires_at > NOW()"
+             WHERE user_id = $1 AND is_used = false AND expires_at > NOW()",
         )
         .bind(user_id)
         .fetch_one(&self.pool)
@@ -114,7 +111,7 @@ impl PasswordResetRepository for PostgresPasswordResetRepository {
             "UPDATE password_reset_tokens 
              SET is_used = $1, used_at = $2 
              WHERE id = $3 
-             RETURNING id, user_id, token, created_at, expires_at, used_at, is_used"
+             RETURNING id, user_id, token, created_at, expires_at, used_at, is_used",
         )
         .bind(token.is_used)
         .bind(token.used_at)
@@ -130,7 +127,7 @@ impl PasswordResetRepository for PostgresPasswordResetRepository {
     ) -> Result<usize, Box<dyn std::error::Error + Send + Sync>> {
         let result = sqlx::query(
             "DELETE FROM password_reset_tokens 
-             WHERE expires_at < NOW()"
+             WHERE expires_at < NOW()",
         )
         .execute(&self.pool)
         .await?;
@@ -145,7 +142,7 @@ impl PasswordResetRepository for PostgresPasswordResetRepository {
         let result = sqlx::query(
             "UPDATE password_reset_tokens 
              SET is_used = true, used_at = NOW() 
-             WHERE user_id = $1 AND is_used = false"
+             WHERE user_id = $1 AND is_used = false",
         )
         .bind(user_id)
         .execute(&self.pool)

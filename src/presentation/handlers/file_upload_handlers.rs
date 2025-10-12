@@ -1,12 +1,8 @@
 use super::ConcreteAppState;
 use crate::application::dto::responses::ErrorResponse;
-use crate::domain::services::{FileUploadService, FileUploadError};
 use crate::domain::repositories::UserRepository;
-use axum::{
-    extract::State,
-    http::StatusCode,
-    response::Json,
-};
+use crate::domain::services::{FileUploadError, FileUploadService};
+use axum::{extract::State, http::StatusCode, response::Json};
 use axum_extra::extract::Multipart;
 use serde_json::Value;
 
@@ -34,7 +30,8 @@ pub async fn upload_profile_picture(
     let user_id = 1; // Placeholder
 
     // Create file upload service
-    let upload_service = FileUploadService::new_profile_picture_service("uploads/avatars".to_string());
+    let upload_service =
+        FileUploadService::new_profile_picture_service("uploads/avatars".to_string());
 
     // Process multipart form
     while let Some(field) = multipart.next_field().await.map_err(|e| {
@@ -48,7 +45,8 @@ pub async fn upload_profile_picture(
         )
     })? {
         if field.name() == Some("avatar") {
-            let filename = field.file_name()
+            let filename = field
+                .file_name()
                 .ok_or_else(|| {
                     (
                         StatusCode::BAD_REQUEST,
@@ -61,7 +59,8 @@ pub async fn upload_profile_picture(
                 })?
                 .to_string();
 
-            let content_type = field.content_type()
+            let content_type = field
+                .content_type()
                 .unwrap_or("application/octet-stream")
                 .to_string();
 
@@ -82,12 +81,14 @@ pub async fn upload_profile_picture(
                 .await
                 .map_err(|e| {
                     let (status, message) = match e {
-                        FileUploadError::FileTooLarge(_, max) => {
-                            (StatusCode::PAYLOAD_TOO_LARGE, format!("File too large. Maximum size: {} bytes", max))
-                        }
-                        FileUploadError::InvalidFileType(_, allowed) => {
-                            (StatusCode::BAD_REQUEST, format!("Invalid file type. Allowed types: {:?}", allowed))
-                        }
+                        FileUploadError::FileTooLarge(_, max) => (
+                            StatusCode::PAYLOAD_TOO_LARGE,
+                            format!("File too large. Maximum size: {} bytes", max),
+                        ),
+                        FileUploadError::InvalidFileType(_, allowed) => (
+                            StatusCode::BAD_REQUEST,
+                            format!("Invalid file type. Allowed types: {:?}", allowed),
+                        ),
                         _ => (StatusCode::BAD_REQUEST, e.to_string()),
                     };
                     (
@@ -101,19 +102,20 @@ pub async fn upload_profile_picture(
                 })?;
 
             // Update user's avatar URL
-            let avatar_url = upload_service.get_file_url(&upload_result.filename, "http://localhost:8000");
-            
+            let avatar_url =
+                upload_service.get_file_url(&upload_result.filename, "http://localhost:8000");
+
             match state
                 .user_repository
                 .update_profile(
                     user_id,
-                    None, // first_name
-                    None, // last_name
-                    None, // bio
+                    None,              // first_name
+                    None,              // last_name
+                    None,              // bio
                     Some(&avatar_url), // avatar_url
-                    None, // website
-                    None, // location
-                    None, // privacy
+                    None,              // website
+                    None,              // location
+                    None,              // privacy
                 )
                 .await
             {
@@ -214,22 +216,20 @@ pub async fn delete_profile_picture(
     };
 
     // Extract filename from URL
-    let filename = avatar_url
-        .split('/')
-        .last()
-        .ok_or_else(|| {
-            (
-                StatusCode::BAD_REQUEST,
-                Json(ErrorResponse {
-                    error: "Invalid avatar URL".to_string(),
-                    message: "Cannot extract filename from avatar URL".to_string(),
-                    status_code: 400,
-                }),
-            )
-        })?;
+    let filename = avatar_url.split('/').last().ok_or_else(|| {
+        (
+            StatusCode::BAD_REQUEST,
+            Json(ErrorResponse {
+                error: "Invalid avatar URL".to_string(),
+                message: "Cannot extract filename from avatar URL".to_string(),
+                status_code: 400,
+            }),
+        )
+    })?;
 
     // Create file upload service
-    let upload_service = FileUploadService::new_profile_picture_service("uploads/avatars".to_string());
+    let upload_service =
+        FileUploadService::new_profile_picture_service("uploads/avatars".to_string());
 
     // Delete file from filesystem
     if let Err(e) = upload_service.delete_file(filename).await {
@@ -242,13 +242,13 @@ pub async fn delete_profile_picture(
         .user_repository
         .update_profile(
             user_id,
-            None, // first_name
-            None, // last_name
-            None, // bio
+            None,     // first_name
+            None,     // last_name
+            None,     // bio
             Some(""), // avatar_url (empty string to clear it)
-            None, // website
-            None, // location
-            None, // privacy
+            None,     // website
+            None,     // location
+            None,     // privacy
         )
         .await
     {

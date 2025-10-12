@@ -1,7 +1,7 @@
 use crate::application::dto::{requests::ShortenUrlRequest, responses::ShortenUrlResponse};
 use crate::domain::entities::ShortCode;
-use crate::domain::services::{ServiceError, UrlService};
 use crate::domain::repositories::UrlRepository;
+use crate::domain::services::{ServiceError, UrlService};
 
 /// Use case for shortening URLs
 #[derive(Clone)]
@@ -35,7 +35,10 @@ where
 
         // Create custom short code if provided
         let custom_short_code = if let Some(code_str) = request.custom_short_code {
-            Some(ShortCode::new(code_str).map_err(|e| UseCaseError::InvalidShortCode(e.to_string()))?)
+            Some(
+                ShortCode::new(code_str)
+                    .map_err(|e| UseCaseError::InvalidShortCode(e.to_string()))?,
+            )
         } else {
             None
         };
@@ -43,7 +46,12 @@ where
         // Create the URL using the domain service
         let url = self
             .url_service
-            .create_url(&request.url, custom_short_code, request.expiration_date, user_id)
+            .create_url(
+                &request.url,
+                custom_short_code,
+                request.expiration_date,
+                user_id,
+            )
             .await
             .map_err(UseCaseError::Service)?;
 
@@ -64,12 +72,16 @@ where
         }
 
         if url.len() > 2048 {
-            return Err(UseCaseError::Validation("URL is too long (max 2048 characters)".to_string()));
+            return Err(UseCaseError::Validation(
+                "URL is too long (max 2048 characters)".to_string(),
+            ));
         }
 
         // Basic URL format validation
         if !url.starts_with("http://") && !url.starts_with("https://") {
-            return Err(UseCaseError::Validation("URL must start with http:// or https://".to_string()));
+            return Err(UseCaseError::Validation(
+                "URL must start with http:// or https://".to_string(),
+            ));
         }
 
         Ok(())
@@ -82,13 +94,13 @@ where
 pub enum UseCaseError {
     #[error("Validation error: {0}")]
     Validation(String),
-    
+
     #[error("Service error: {0}")]
     Service(#[from] ServiceError),
-    
+
     #[error("Invalid short code: {0}")]
     InvalidShortCode(String),
-    
+
     #[error("Internal error: {0}")]
     Internal(String),
 }
@@ -96,7 +108,7 @@ pub enum UseCaseError {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::domain::repositories::{UrlRepository, RepositoryError};
+    use crate::domain::repositories::{RepositoryError, UrlRepository};
     use async_trait::async_trait;
     use std::sync::{Arc, Mutex};
 
@@ -138,22 +150,42 @@ mod tests {
             Ok(url)
         }
 
-        async fn find_by_short_code(&self, short_code: &ShortCode) -> Result<Option<crate::domain::entities::Url>, RepositoryError> {
+        async fn find_by_short_code(
+            &self,
+            short_code: &ShortCode,
+        ) -> Result<Option<crate::domain::entities::Url>, RepositoryError> {
             let urls = self.urls.lock().unwrap();
-            Ok(urls.iter().find(|u| u.short_code == short_code.value()).cloned())
+            Ok(urls
+                .iter()
+                .find(|u| u.short_code == short_code.value())
+                .cloned())
         }
 
-        async fn find_by_user_id(&self, user_id: i32) -> Result<Vec<crate::domain::entities::Url>, RepositoryError> {
+        async fn find_by_user_id(
+            &self,
+            user_id: i32,
+        ) -> Result<Vec<crate::domain::entities::Url>, RepositoryError> {
             let urls = self.urls.lock().unwrap();
-            Ok(urls.iter().filter(|u| u.user_id == Some(user_id)).cloned().collect())
+            Ok(urls
+                .iter()
+                .filter(|u| u.user_id == Some(user_id))
+                .cloned()
+                .collect())
         }
 
-        async fn exists_by_short_code(&self, short_code: &ShortCode) -> Result<bool, RepositoryError> {
+        async fn exists_by_short_code(
+            &self,
+            short_code: &ShortCode,
+        ) -> Result<bool, RepositoryError> {
             let urls = self.urls.lock().unwrap();
             Ok(urls.iter().any(|u| u.short_code == short_code.value()))
         }
 
-        async fn delete_by_id(&self, id: i32, user_id: Option<i32>) -> Result<bool, RepositoryError> {
+        async fn delete_by_id(
+            &self,
+            id: i32,
+            user_id: Option<i32>,
+        ) -> Result<bool, RepositoryError> {
             let mut urls = self.urls.lock().unwrap();
             if let Some(pos) = urls.iter().position(|u| u.id == id && u.user_id == user_id) {
                 urls.remove(pos);
@@ -163,7 +195,10 @@ mod tests {
             }
         }
 
-        async fn update_url(&self, url: &crate::domain::entities::Url) -> Result<crate::domain::entities::Url, RepositoryError> {
+        async fn update_url(
+            &self,
+            url: &crate::domain::entities::Url,
+        ) -> Result<crate::domain::entities::Url, RepositoryError> {
             let mut urls = self.urls.lock().unwrap();
             if let Some(existing) = urls.iter_mut().find(|u| u.id == url.id) {
                 *existing = url.clone();
@@ -173,14 +208,17 @@ mod tests {
             }
         }
 
-        async fn get_stats(&self, user_id: Option<i32>) -> Result<crate::domain::repositories::UrlStats, RepositoryError> {
+        async fn get_stats(
+            &self,
+            user_id: Option<i32>,
+        ) -> Result<crate::domain::repositories::UrlStats, RepositoryError> {
             let urls = self.urls.lock().unwrap();
             let filtered_urls: Vec<_> = if let Some(uid) = user_id {
                 urls.iter().filter(|u| u.user_id == Some(uid)).collect()
             } else {
                 urls.iter().collect()
             };
-            
+
             Ok(crate::domain::repositories::UrlStats {
                 total_urls: filtered_urls.len() as i64,
                 total_clicks: 0,
@@ -188,11 +226,16 @@ mod tests {
             })
         }
 
-        async fn find_urls_expiring_soon(&self, _duration: chrono::Duration) -> Result<Vec<crate::domain::entities::Url>, RepositoryError> {
+        async fn find_urls_expiring_soon(
+            &self,
+            _duration: chrono::Duration,
+        ) -> Result<Vec<crate::domain::entities::Url>, RepositoryError> {
             Ok(vec![])
         }
 
-        async fn find_expired_urls(&self) -> Result<Vec<crate::domain::entities::Url>, RepositoryError> {
+        async fn find_expired_urls(
+            &self,
+        ) -> Result<Vec<crate::domain::entities::Url>, RepositoryError> {
             Ok(vec![])
         }
 
@@ -200,7 +243,11 @@ mod tests {
             Ok(0)
         }
 
-        async fn soft_delete_by_id(&self, id: i32, user_id: Option<i32>) -> Result<bool, RepositoryError> {
+        async fn soft_delete_by_id(
+            &self,
+            id: i32,
+            user_id: Option<i32>,
+        ) -> Result<bool, RepositoryError> {
             let mut urls = self.urls.lock().unwrap();
             if let Some(url) = urls.iter_mut().find(|u| u.id == id && u.user_id == user_id) {
                 url.deactivate();
@@ -210,7 +257,11 @@ mod tests {
             }
         }
 
-        async fn reactivate_by_id(&self, id: i32, user_id: Option<i32>) -> Result<bool, RepositoryError> {
+        async fn reactivate_by_id(
+            &self,
+            id: i32,
+            user_id: Option<i32>,
+        ) -> Result<bool, RepositoryError> {
             let mut urls = self.urls.lock().unwrap();
             if let Some(url) = urls.iter_mut().find(|u| u.id == id && u.user_id == user_id) {
                 url.reactivate();
@@ -220,13 +271,15 @@ mod tests {
             }
         }
 
-        async fn find_by_status(&self, status: crate::domain::entities::UrlStatus, user_id: Option<i32>) -> Result<Vec<crate::domain::entities::Url>, RepositoryError> {
+        async fn find_by_status(
+            &self,
+            status: crate::domain::entities::UrlStatus,
+            user_id: Option<i32>,
+        ) -> Result<Vec<crate::domain::entities::Url>, RepositoryError> {
             let urls = self.urls.lock().unwrap();
-            let filtered_urls: Vec<crate::domain::entities::Url> = urls.iter()
-                .filter(|url| {
-                    url.status == status && 
-                    (user_id.is_none() || url.user_id == user_id)
-                })
+            let filtered_urls: Vec<crate::domain::entities::Url> = urls
+                .iter()
+                .filter(|url| url.status == status && (user_id.is_none() || url.user_id == user_id))
                 .cloned()
                 .collect();
             Ok(filtered_urls)

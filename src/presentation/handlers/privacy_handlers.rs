@@ -1,13 +1,9 @@
 use super::ConcreteAppState;
 use crate::application::dto::responses::ErrorResponse;
 use crate::domain::entities::ProfilePrivacy;
-use crate::domain::services::{PrivacyService, DataPrivacyLevel};
 use crate::domain::repositories::UserRepository;
-use axum::{
-    extract::State,
-    http::StatusCode,
-    response::Json,
-};
+use crate::domain::services::{DataPrivacyLevel, PrivacyService};
+use axum::{extract::State, http::StatusCode, response::Json};
 use serde::{Deserialize, Serialize};
 
 /// Request DTO for updating privacy settings
@@ -190,7 +186,9 @@ pub async fn get_privacy_settings(
             email: convert_data_privacy_response(field_settings.email),
         },
         is_searchable: privacy_service.is_profile_searchable(&user.privacy),
-        privacy_description: privacy_service.get_privacy_description(&user.privacy).to_string(),
+        privacy_description: privacy_service
+            .get_privacy_description(&user.privacy)
+            .to_string(),
     }))
 }
 
@@ -221,16 +219,18 @@ pub async fn update_privacy_settings(
     // Update profile privacy if provided
     if let Some(profile_privacy) = request.profile_privacy {
         let privacy = convert_privacy_request(profile_privacy);
-        privacy_service.validate_privacy_setting(&privacy).map_err(|e| {
-            (
-                StatusCode::BAD_REQUEST,
-                Json(ErrorResponse {
-                    error: "Validation error".to_string(),
-                    message: e.to_string(),
-                    status_code: 400,
-                }),
-            )
-        })?;
+        privacy_service
+            .validate_privacy_setting(&privacy)
+            .map_err(|e| {
+                (
+                    StatusCode::BAD_REQUEST,
+                    Json(ErrorResponse {
+                        error: "Validation error".to_string(),
+                        message: e.to_string(),
+                        status_code: 400,
+                    }),
+                )
+            })?;
 
         // Update user's privacy setting
         match state
@@ -300,7 +300,9 @@ pub async fn update_privacy_settings(
             email: convert_data_privacy_response(field_settings.email),
         },
         is_searchable: privacy_service.is_profile_searchable(&user.privacy),
-        privacy_description: privacy_service.get_privacy_description(&user.privacy).to_string(),
+        privacy_description: privacy_service
+            .get_privacy_description(&user.privacy)
+            .to_string(),
     }))
 }
 
@@ -315,11 +317,10 @@ pub async fn update_privacy_settings(
     ),
     tag = "privacy"
 )]
-pub async fn get_privacy_recommendations(
-    // In a real implementation, you would extract user preferences from JWT token or request
+pub async fn get_privacy_recommendations(// In a real implementation, you would extract user preferences from JWT token or request
 ) -> Result<Json<PrivacySettingsResponse>, (StatusCode, Json<ErrorResponse>)> {
     let privacy_service = PrivacyService::new();
-    
+
     // For demo purposes, return business account recommendations
     // In a real implementation, you would determine this based on user preferences
     let field_settings = privacy_service.get_recommended_privacy_settings(

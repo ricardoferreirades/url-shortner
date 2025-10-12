@@ -1,4 +1,4 @@
-use crate::domain::entities::{User, ProfilePrivacy};
+use crate::domain::entities::{ProfilePrivacy, User};
 use crate::domain::repositories::user_repository::{RepositoryError, UserRepository};
 use async_trait::async_trait;
 use sqlx::{PgPool, Row};
@@ -53,7 +53,7 @@ impl UserRepository for PostgresUserRepository {
         let row = sqlx::query(
             "INSERT INTO users (username, email, password_hash) VALUES ($1, $2, $3) 
              RETURNING id, username, email, password_hash, created_at, first_name, last_name, 
-             bio, avatar_url, website, location, privacy, updated_at"
+             bio, avatar_url, website, location, privacy, updated_at",
         )
         .bind(username)
         .bind(email)
@@ -82,7 +82,7 @@ impl UserRepository for PostgresUserRepository {
     async fn find_by_email(&self, email: &str) -> Result<Option<User>, RepositoryError> {
         let row = sqlx::query(
             "SELECT id, username, email, password_hash, created_at, first_name, last_name, 
-             bio, avatar_url, website, location, privacy, updated_at FROM users WHERE email = $1"
+             bio, avatar_url, website, location, privacy, updated_at FROM users WHERE email = $1",
         )
         .bind(email)
         .fetch_optional(&self.pool)
@@ -97,7 +97,7 @@ impl UserRepository for PostgresUserRepository {
     async fn find_by_id(&self, id: i32) -> Result<Option<User>, RepositoryError> {
         let row = sqlx::query(
             "SELECT id, username, email, password_hash, created_at, first_name, last_name, 
-             bio, avatar_url, website, location, privacy, updated_at FROM users WHERE id = $1"
+             bio, avatar_url, website, location, privacy, updated_at FROM users WHERE id = $1",
         )
         .bind(id)
         .fetch_optional(&self.pool)
@@ -110,23 +110,19 @@ impl UserRepository for PostgresUserRepository {
     }
 
     async fn exists_by_username(&self, username: &str) -> Result<bool, RepositoryError> {
-        let count: i64 = sqlx::query_scalar(
-            "SELECT COUNT(*) FROM users WHERE username = $1"
-        )
-        .bind(username)
-        .fetch_one(&self.pool)
-        .await?;
+        let count: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM users WHERE username = $1")
+            .bind(username)
+            .fetch_one(&self.pool)
+            .await?;
 
         Ok(count > 0)
     }
 
     async fn exists_by_email(&self, email: &str) -> Result<bool, RepositoryError> {
-        let count: i64 = sqlx::query_scalar(
-            "SELECT COUNT(*) FROM users WHERE email = $1"
-        )
-        .bind(email)
-        .fetch_one(&self.pool)
-        .await?;
+        let count: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM users WHERE email = $1")
+            .bind(email)
+            .fetch_one(&self.pool)
+            .await?;
 
         Ok(count > 0)
     }
@@ -176,7 +172,9 @@ impl UserRepository for PostgresUserRepository {
         }
 
         if query_parts.is_empty() {
-            return Err(RepositoryError::InvalidData("No fields to update".to_string()));
+            return Err(RepositoryError::InvalidData(
+                "No fields to update".to_string(),
+            ));
         }
 
         query_parts.push("updated_at = CURRENT_TIMESTAMP".to_string());
@@ -220,9 +218,7 @@ impl UserRepository for PostgresUserRepository {
 
         query_builder = query_builder.bind(user_id);
 
-        let row = query_builder
-            .fetch_one(&self.pool)
-            .await?;
+        let row = query_builder.fetch_one(&self.pool).await?;
 
         Ok(self.row_to_user(&row))
     }
@@ -230,7 +226,7 @@ impl UserRepository for PostgresUserRepository {
     async fn get_profile(&self, user_id: i32) -> Result<Option<User>, RepositoryError> {
         let row = sqlx::query(
             "SELECT id, username, email, password_hash, created_at, first_name, last_name, 
-             bio, avatar_url, website, location, privacy, updated_at FROM users WHERE id = $1"
+             bio, avatar_url, website, location, privacy, updated_at FROM users WHERE id = $1",
         )
         .bind(user_id)
         .fetch_optional(&self.pool)
@@ -275,7 +271,7 @@ impl UserRepository for PostgresUserRepository {
                  location = NULL,
                  privacy = 'private',
                  updated_at = CURRENT_TIMESTAMP
-             WHERE id = $4"
+             WHERE id = $4",
         )
         .bind(anonymized_username)
         .bind(anonymized_email)

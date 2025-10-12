@@ -1,14 +1,14 @@
 use crate::domain::entities::{PasswordResetToken, User};
 use crate::domain::repositories::password_reset_repository::PasswordResetRepository;
 use crate::domain::repositories::user_repository::UserRepository;
+use chrono::{Duration, Utc};
+use rand::distributions::Alphanumeric;
+use rand::{thread_rng, Rng};
 use thiserror::Error;
 use uuid::Uuid;
-use chrono::{Utc, Duration};
-use rand::{thread_rng, Rng};
-use rand::distributions::Alphanumeric;
 
 /// Password reset service for handling password reset operations
-pub struct PasswordResetService<R, U> 
+pub struct PasswordResetService<R, U>
 where
     R: PasswordResetRepository,
     U: UserRepository,
@@ -80,10 +80,7 @@ where
     }
 
     /// Create a default password reset service
-    pub fn new_default(
-        password_reset_repository: R,
-        user_repository: U,
-    ) -> Self {
+    pub fn new_default(password_reset_repository: R, user_repository: U) -> Self {
         Self::new(
             password_reset_repository,
             user_repository,
@@ -104,7 +101,7 @@ where
 
         // Add UUID prefix for additional uniqueness
         let uuid_prefix = Uuid::new_v4().to_string()[..8].to_string();
-        
+
         format!("{}{}", uuid_prefix, random_part)
     }
 
@@ -114,14 +111,16 @@ where
         email: &str,
     ) -> Result<PasswordResetRequest, PasswordResetError> {
         // Find user by email
-        let user = self.user_repository
+        let user = self
+            .user_repository
             .find_by_email(email)
             .await
             .map_err(|e| PasswordResetError::Internal(e.to_string()))?
             .ok_or(PasswordResetError::UserNotFound)?;
 
         // Check if user has too many active reset tokens
-        let active_tokens = self.password_reset_repository
+        let active_tokens = self
+            .password_reset_repository
             .count_active_tokens_for_user(user.id)
             .await
             .map_err(|e| PasswordResetError::Internal(e.to_string()))?;
@@ -162,7 +161,8 @@ where
         &self,
         token: &str,
     ) -> Result<PasswordResetToken, PasswordResetError> {
-        let reset_token = self.password_reset_repository
+        let reset_token = self
+            .password_reset_repository
             .find_by_token(token)
             .await
             .map_err(|e| PasswordResetError::Internal(e.to_string()))?
@@ -189,7 +189,8 @@ where
         let mut reset_token = self.validate_token(token).await?;
 
         // Get user
-        let user = self.user_repository
+        let user = self
+            .user_repository
             .find_by_id(reset_token.user_id)
             .await
             .map_err(|e| PasswordResetError::Internal(e.to_string()))?
@@ -254,84 +255,184 @@ mod tests {
 
     #[async_trait::async_trait]
     impl PasswordResetRepository for MockPasswordResetRepository {
-        async fn create_token(&self, _token: PasswordResetToken) -> Result<PasswordResetToken, Box<dyn std::error::Error + Send + Sync>> {
-            Ok(PasswordResetToken::new_with_timestamp(1, 1, "test_token".to_string(), 24))
+        async fn create_token(
+            &self,
+            _token: PasswordResetToken,
+        ) -> Result<PasswordResetToken, Box<dyn std::error::Error + Send + Sync>> {
+            Ok(PasswordResetToken::new_with_timestamp(
+                1,
+                1,
+                "test_token".to_string(),
+                24,
+            ))
         }
 
-        async fn find_by_token(&self, _token: &str) -> Result<Option<PasswordResetToken>, Box<dyn std::error::Error + Send + Sync>> {
-            Ok(Some(PasswordResetToken::new_with_timestamp(1, 1, "test_token".to_string(), 24)))
+        async fn find_by_token(
+            &self,
+            _token: &str,
+        ) -> Result<Option<PasswordResetToken>, Box<dyn std::error::Error + Send + Sync>> {
+            Ok(Some(PasswordResetToken::new_with_timestamp(
+                1,
+                1,
+                "test_token".to_string(),
+                24,
+            )))
         }
 
-        async fn find_active_tokens_for_user(&self, _user_id: i32) -> Result<Vec<PasswordResetToken>, Box<dyn std::error::Error + Send + Sync>> {
+        async fn find_active_tokens_for_user(
+            &self,
+            _user_id: i32,
+        ) -> Result<Vec<PasswordResetToken>, Box<dyn std::error::Error + Send + Sync>> {
             Ok(vec![])
         }
 
-        async fn count_active_tokens_for_user(&self, _user_id: i32) -> Result<usize, Box<dyn std::error::Error + Send + Sync>> {
+        async fn count_active_tokens_for_user(
+            &self,
+            _user_id: i32,
+        ) -> Result<usize, Box<dyn std::error::Error + Send + Sync>> {
             Ok(0)
         }
 
-        async fn update_token(&self, _token: PasswordResetToken) -> Result<PasswordResetToken, Box<dyn std::error::Error + Send + Sync>> {
-            Ok(PasswordResetToken::new_with_timestamp(1, 1, "test_token".to_string(), 24))
+        async fn update_token(
+            &self,
+            _token: PasswordResetToken,
+        ) -> Result<PasswordResetToken, Box<dyn std::error::Error + Send + Sync>> {
+            Ok(PasswordResetToken::new_with_timestamp(
+                1,
+                1,
+                "test_token".to_string(),
+                24,
+            ))
         }
 
-        async fn delete_expired_tokens(&self) -> Result<usize, Box<dyn std::error::Error + Send + Sync>> {
+        async fn delete_expired_tokens(
+            &self,
+        ) -> Result<usize, Box<dyn std::error::Error + Send + Sync>> {
             Ok(0)
         }
 
-        async fn revoke_all_tokens_for_user(&self, _user_id: i32) -> Result<usize, Box<dyn std::error::Error + Send + Sync>> {
+        async fn revoke_all_tokens_for_user(
+            &self,
+            _user_id: i32,
+        ) -> Result<usize, Box<dyn std::error::Error + Send + Sync>> {
             Ok(0)
         }
     }
 
     #[async_trait::async_trait]
     impl UserRepository for MockUserRepository {
-        async fn create_user(&self, _username: &str, _email: &str, _password_hash: &str) -> Result<User, crate::domain::repositories::user_repository::RepositoryError> {
-            Ok(User::new_with_timestamp(1, "test".to_string(), "test@example.com".to_string(), "hash".to_string()))
+        async fn create_user(
+            &self,
+            _username: &str,
+            _email: &str,
+            _password_hash: &str,
+        ) -> Result<User, crate::domain::repositories::user_repository::RepositoryError> {
+            Ok(User::new_with_timestamp(
+                1,
+                "test".to_string(),
+                "test@example.com".to_string(),
+                "hash".to_string(),
+            ))
         }
 
-        async fn find_by_username(&self, _username: &str) -> Result<Option<User>, crate::domain::repositories::user_repository::RepositoryError> {
-            Ok(Some(User::new_with_timestamp(1, "test".to_string(), "test@example.com".to_string(), "hash".to_string())))
+        async fn find_by_username(
+            &self,
+            _username: &str,
+        ) -> Result<Option<User>, crate::domain::repositories::user_repository::RepositoryError>
+        {
+            Ok(Some(User::new_with_timestamp(
+                1,
+                "test".to_string(),
+                "test@example.com".to_string(),
+                "hash".to_string(),
+            )))
         }
 
-        async fn find_by_email(&self, email: &str) -> Result<Option<User>, crate::domain::repositories::user_repository::RepositoryError> {
+        async fn find_by_email(
+            &self,
+            email: &str,
+        ) -> Result<Option<User>, crate::domain::repositories::user_repository::RepositoryError>
+        {
             if email == "test@example.com" {
-                Ok(Some(User::new_with_timestamp(1, "test".to_string(), "test@example.com".to_string(), "hash".to_string())))
+                Ok(Some(User::new_with_timestamp(
+                    1,
+                    "test".to_string(),
+                    "test@example.com".to_string(),
+                    "hash".to_string(),
+                )))
             } else {
                 Ok(None)
             }
         }
 
-        async fn find_by_id(&self, _id: i32) -> Result<Option<User>, crate::domain::repositories::user_repository::RepositoryError> {
-            Ok(Some(User::new_with_timestamp(1, "test".to_string(), "test@example.com".to_string(), "hash".to_string())))
+        async fn find_by_id(
+            &self,
+            _id: i32,
+        ) -> Result<Option<User>, crate::domain::repositories::user_repository::RepositoryError>
+        {
+            Ok(Some(User::new_with_timestamp(
+                1,
+                "test".to_string(),
+                "test@example.com".to_string(),
+                "hash".to_string(),
+            )))
         }
 
-        async fn exists_by_username(&self, _username: &str) -> Result<bool, crate::domain::repositories::user_repository::RepositoryError> {
+        async fn exists_by_username(
+            &self,
+            _username: &str,
+        ) -> Result<bool, crate::domain::repositories::user_repository::RepositoryError> {
             Ok(false)
         }
 
-        async fn exists_by_email(&self, _email: &str) -> Result<bool, crate::domain::repositories::user_repository::RepositoryError> {
+        async fn exists_by_email(
+            &self,
+            _email: &str,
+        ) -> Result<bool, crate::domain::repositories::user_repository::RepositoryError> {
             Ok(false)
         }
 
-        async fn update_profile(&self, _user_id: i32, _first_name: Option<&str>, _last_name: Option<&str>, _bio: Option<&str>, _avatar_url: Option<&str>, _website: Option<&str>, _location: Option<&str>, _privacy: Option<crate::domain::entities::ProfilePrivacy>) -> Result<User, crate::domain::repositories::user_repository::RepositoryError> {
-            Ok(User::new_with_timestamp(1, "test".to_string(), "test@example.com".to_string(), "hash".to_string()))
+        async fn update_profile(
+            &self,
+            _user_id: i32,
+            _first_name: Option<&str>,
+            _last_name: Option<&str>,
+            _bio: Option<&str>,
+            _avatar_url: Option<&str>,
+            _website: Option<&str>,
+            _location: Option<&str>,
+            _privacy: Option<crate::domain::entities::ProfilePrivacy>,
+        ) -> Result<User, crate::domain::repositories::user_repository::RepositoryError> {
+            Ok(User::new_with_timestamp(
+                1,
+                "test".to_string(),
+                "test@example.com".to_string(),
+                "hash".to_string(),
+            ))
         }
 
-        async fn get_profile(&self, _user_id: i32) -> Result<Option<User>, crate::domain::repositories::user_repository::RepositoryError> {
-            Ok(Some(User::new_with_timestamp(1, "test".to_string(), "test@example.com".to_string(), "hash".to_string())))
+        async fn get_profile(
+            &self,
+            _user_id: i32,
+        ) -> Result<Option<User>, crate::domain::repositories::user_repository::RepositoryError>
+        {
+            Ok(Some(User::new_with_timestamp(
+                1,
+                "test".to_string(),
+                "test@example.com".to_string(),
+                "hash".to_string(),
+            )))
         }
     }
 
     #[tokio::test]
     async fn test_create_reset_request() {
-        let service = PasswordResetService::new_default(
-            MockPasswordResetRepository,
-            MockUserRepository,
-        );
+        let service =
+            PasswordResetService::new_default(MockPasswordResetRepository, MockUserRepository);
 
         let result = service.create_reset_request("test@example.com").await;
         assert!(result.is_ok());
-        
+
         let request = result.unwrap();
         assert_eq!(request.email, "test@example.com");
         assert_eq!(request.user_id, 1);
@@ -340,21 +441,19 @@ mod tests {
 
     #[tokio::test]
     async fn test_create_reset_request_user_not_found() {
-        let service = PasswordResetService::new_default(
-            MockPasswordResetRepository,
-            MockUserRepository,
-        );
+        let service =
+            PasswordResetService::new_default(MockPasswordResetRepository, MockUserRepository);
 
-        let result = service.create_reset_request("nonexistent@example.com").await;
+        let result = service
+            .create_reset_request("nonexistent@example.com")
+            .await;
         assert!(matches!(result, Err(PasswordResetError::UserNotFound)));
     }
 
     #[tokio::test]
     async fn test_validate_token() {
-        let service = PasswordResetService::new_default(
-            MockPasswordResetRepository,
-            MockUserRepository,
-        );
+        let service =
+            PasswordResetService::new_default(MockPasswordResetRepository, MockUserRepository);
 
         let result = service.validate_token("test_token").await;
         assert!(result.is_ok());
@@ -362,10 +461,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_reset_password() {
-        let service = PasswordResetService::new_default(
-            MockPasswordResetRepository,
-            MockUserRepository,
-        );
+        let service =
+            PasswordResetService::new_default(MockPasswordResetRepository, MockUserRepository);
 
         let result = service.reset_password("test_token", "new_password").await;
         assert!(result.is_ok());

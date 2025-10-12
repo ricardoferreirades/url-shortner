@@ -13,16 +13,19 @@ impl ShortCode {
         if value.is_empty() {
             return Err(ShortCodeError::Empty);
         }
-        
+
         if value.len() > 50 {
             return Err(ShortCodeError::TooLong);
         }
-        
+
         // Check for invalid characters
-        if !value.chars().all(|c| c.is_alphanumeric() || c == '-' || c == '_') {
+        if !value
+            .chars()
+            .all(|c| c.is_alphanumeric() || c == '-' || c == '_')
+        {
             return Err(ShortCodeError::InvalidCharacters);
         }
-        
+
         Ok(ShortCode { value })
     }
 
@@ -73,7 +76,10 @@ impl fmt::Display for ShortCodeError {
         match self {
             ShortCodeError::Empty => write!(f, "Short code cannot be empty"),
             ShortCodeError::TooLong => write!(f, "Short code is too long (max 50 characters)"),
-            ShortCodeError::InvalidCharacters => write!(f, "Short code contains invalid characters (only alphanumeric, -, _ allowed)"),
+            ShortCodeError::InvalidCharacters => write!(
+                f,
+                "Short code contains invalid characters (only alphanumeric, -, _ allowed)"
+            ),
         }
     }
 }

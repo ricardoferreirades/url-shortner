@@ -1,8 +1,13 @@
 use crate::application::dto::ErrorResponse;
 use crate::domain::repositories::UrlRepository;
-use axum::{extract::State, http::{StatusCode, header}, Json, http::HeaderMap};
-use tracing::{info, warn};
 use crate::presentation::handlers::app_state::AppState;
+use axum::{
+    extract::State,
+    http::HeaderMap,
+    http::{header, StatusCode},
+    Json,
+};
+use tracing::{info, warn};
 
 /// Handler for reactivating a URL
 #[utoipa::path(
@@ -26,9 +31,12 @@ pub async fn reactivate_url_handler<R, U, P>(
 where
     R: UrlRepository + Send + Sync + Clone,
     U: crate::domain::repositories::UserRepository + Send + Sync + Clone,
-    P: crate::domain::repositories::PasswordResetRepository + Send + Sync + Clone,{
+    P: crate::domain::repositories::PasswordResetRepository + Send + Sync + Clone,
+{
     // Require Authorization: Bearer <token>
-    let auth_header = headers.get(header::AUTHORIZATION).and_then(|v| v.to_str().ok());
+    let auth_header = headers
+        .get(header::AUTHORIZATION)
+        .and_then(|v| v.to_str().ok());
     let token = match auth_header.and_then(|h| h.strip_prefix("Bearer ")) {
         Some(t) if !t.is_empty() => t,
         _ => {
@@ -55,9 +63,16 @@ where
         }
     };
 
-    info!("Received reactivate URL request for ID: {} (user: {})", id, user.id);
+    info!(
+        "Received reactivate URL request for ID: {} (user: {})",
+        id, user.id
+    );
 
-    match app_state.url_service.reactivate_url(id, Some(user.id)).await {
+    match app_state
+        .url_service
+        .reactivate_url(id, Some(user.id))
+        .await
+    {
         Ok(true) => {
             info!("Successfully reactivated URL ID: {}", id);
             Ok(StatusCode::NO_CONTENT)

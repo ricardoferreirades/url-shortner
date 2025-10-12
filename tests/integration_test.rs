@@ -7,7 +7,12 @@ use url_shortner::infrastructure::test_utils::MockUrlRepository;
 async fn generate_short_code(url: &str) -> String {
     let mock_repo = MockUrlRepository::new();
     let url_service = UrlService::new(mock_repo);
-    url_service.generate_short_code(url).await.unwrap().value().to_string()
+    url_service
+        .generate_short_code(url)
+        .await
+        .unwrap()
+        .value()
+        .to_string()
 }
 
 /// Integration test for the URL shortener feature

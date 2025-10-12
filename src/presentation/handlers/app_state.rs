@@ -1,6 +1,6 @@
 use crate::application::ShortenUrlUseCase;
-use crate::domain::repositories::{UrlRepository, UserRepository, PasswordResetRepository};
-use crate::domain::services::{AuthService, UrlService, ProgressService, BulkProcessor};
+use crate::domain::repositories::{PasswordResetRepository, UrlRepository, UserRepository};
+use crate::domain::services::{AuthService, BulkProcessor, ProgressService, UrlService};
 use crate::infrastructure::email::EmailSender;
 use crate::infrastructure::PasswordResetRateLimiter;
 use std::sync::Arc;
@@ -32,9 +32,9 @@ where
     P: PasswordResetRepository + Send + Sync + Clone,
 {
     pub fn new(
-        shorten_url_use_case: ShortenUrlUseCase<R>, 
-        url_repository: R, 
-        url_service: UrlService<R>, 
+        shorten_url_use_case: ShortenUrlUseCase<R>,
+        url_repository: R,
+        url_service: UrlService<R>,
         auth_service: AuthService<U>,
         user_repository: U,
         password_reset_repository: P,
@@ -42,8 +42,12 @@ where
         password_reset_rate_limiter: Arc<PasswordResetRateLimiter>,
     ) -> Self {
         let progress_service = ProgressService::new();
-        let bulk_processor = BulkProcessor::new(url_service.clone(), progress_service.clone(), user_repository.clone());
-        
+        let bulk_processor = BulkProcessor::new(
+            url_service.clone(),
+            progress_service.clone(),
+            user_repository.clone(),
+        );
+
         Self {
             shorten_url_use_case,
             url_repository,

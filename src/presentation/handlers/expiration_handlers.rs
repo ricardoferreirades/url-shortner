@@ -1,11 +1,14 @@
+use super::app_state::AppState;
 use crate::application::dto::{
-    requests::{SetExpirationRequest, ExtendExpirationRequest},
-    responses::{ExpirationInfoResponse, ExpiringUrlsResponse, UrlInfoResponse, ErrorResponse, SuccessResponse},
+    requests::{ExtendExpirationRequest, SetExpirationRequest},
+    responses::{
+        ErrorResponse, ExpirationInfoResponse, ExpiringUrlsResponse, SuccessResponse,
+        UrlInfoResponse,
+    },
 };
 use crate::domain::repositories::UrlRepository;
-use axum::{extract::State, http::StatusCode, Json, extract::Path};
+use axum::{extract::Path, extract::State, http::StatusCode, Json};
 use tracing::{info, warn};
-use super::app_state::AppState;
 
 /// Handler for getting expiration information for a URL
 #[utoipa::path(
@@ -27,7 +30,8 @@ pub async fn get_expiration_info_handler<R, U, P>(
 where
     R: UrlRepository + Send + Sync + Clone,
     U: crate::domain::repositories::UserRepository + Send + Sync + Clone,
-    P: crate::domain::repositories::PasswordResetRepository + Send + Sync + Clone,{
+    P: crate::domain::repositories::PasswordResetRepository + Send + Sync + Clone,
+{
     info!("Getting expiration info for short code: {}", short_code_str);
 
     let short_code = match crate::domain::entities::ShortCode::new(short_code_str) {
@@ -43,7 +47,11 @@ where
         }
     };
 
-    match app_state.url_repository.find_by_short_code(&short_code).await {
+    match app_state
+        .url_repository
+        .find_by_short_code(&short_code)
+        .await
+    {
         Ok(Some(url)) => {
             let now = chrono::Utc::now();
             let expires_in_days = url.expiration_date.map(|exp| {
@@ -102,7 +110,8 @@ pub async fn set_expiration_handler<R, U, P>(
 where
     R: UrlRepository + Send + Sync + Clone,
     U: crate::domain::repositories::UserRepository + Send + Sync + Clone,
-    P: crate::domain::repositories::PasswordResetRepository + Send + Sync + Clone,{
+    P: crate::domain::repositories::PasswordResetRepository + Send + Sync + Clone,
+{
     info!("Setting expiration for short code: {}", short_code_str);
 
     let short_code = match crate::domain::entities::ShortCode::new(short_code_str) {
@@ -118,10 +127,14 @@ where
         }
     };
 
-    match app_state.url_repository.find_by_short_code(&short_code).await {
+    match app_state
+        .url_repository
+        .find_by_short_code(&short_code)
+        .await
+    {
         Ok(Some(mut url)) => {
             url.expiration_date = Some(request.expiration_date);
-            
+
             match app_state.url_repository.update_url(&url).await {
                 Ok(_) => {
                     info!("Expiration set successfully for URL: {}", url.short_code);
@@ -185,7 +198,8 @@ pub async fn extend_expiration_handler<R, U, P>(
 where
     R: UrlRepository + Send + Sync + Clone,
     U: crate::domain::repositories::UserRepository + Send + Sync + Clone,
-    P: crate::domain::repositories::PasswordResetRepository + Send + Sync + Clone,{
+    P: crate::domain::repositories::PasswordResetRepository + Send + Sync + Clone,
+{
     info!("Extending expiration for short code: {}", short_code_str);
 
     let short_code = match crate::domain::entities::ShortCode::new(short_code_str) {
@@ -201,16 +215,24 @@ where
         }
     };
 
-    match app_state.url_repository.find_by_short_code(&short_code).await {
+    match app_state
+        .url_repository
+        .find_by_short_code(&short_code)
+        .await
+    {
         Ok(Some(mut url)) => {
             let now = chrono::Utc::now();
             let current_expiration = url.expiration_date.unwrap_or(now);
-            let new_expiration = current_expiration + chrono::Duration::days(request.additional_days as i64);
+            let new_expiration =
+                current_expiration + chrono::Duration::days(request.additional_days as i64);
             url.expiration_date = Some(new_expiration);
-            
+
             match app_state.url_repository.update_url(&url).await {
                 Ok(_) => {
-                    info!("Expiration extended successfully for URL: {}", url.short_code);
+                    info!(
+                        "Expiration extended successfully for URL: {}",
+                        url.short_code
+                    );
                     let response = SuccessResponse {
                         message: format!("Expiration extended by {} days", request.additional_days),
                         status_code: StatusCode::OK.as_u16(),
@@ -268,27 +290,35 @@ pub async fn get_expiring_urls_handler<R, U, P>(
 where
     R: UrlRepository + Send + Sync + Clone,
     U: crate::domain::repositories::UserRepository + Send + Sync + Clone,
-    P: crate::domain::repositories::PasswordResetRepository + Send + Sync + Clone,{
+    P: crate::domain::repositories::PasswordResetRepository + Send + Sync + Clone,
+{
     let days = params.get("days").copied().unwrap_or(7); // Default to 7 days
     info!("Getting URLs expiring within {} days", days);
 
     let duration = chrono::Duration::days(days as i64);
-    
-    match app_state.url_repository.find_urls_expiring_soon(duration).await {
+
+    match app_state
+        .url_repository
+        .find_urls_expiring_soon(duration)
+        .await
+    {
         Ok(urls) => {
             let total_count = urls.len() as i64;
-            let url_responses: Vec<UrlInfoResponse> = urls.into_iter().map(|url| {
-                UrlInfoResponse {
-                    id: url.id,
-                    short_code: url.short_code.clone(),
-                    original_url: url.original_url.clone(),
-                    short_url: url.short_url("https://short.ly"), // TODO: Get from config
-                    created_at: url.created_at.to_rfc3339(),
-                    expiration_date: url.expiration_date.map(|d| d.to_rfc3339()),
-                    is_expired: url.is_expired(),
-                    click_count: None, // TODO: Add click tracking
-                }
-            }).collect();
+            let url_responses: Vec<UrlInfoResponse> = urls
+                .into_iter()
+                .map(|url| {
+                    UrlInfoResponse {
+                        id: url.id,
+                        short_code: url.short_code.clone(),
+                        original_url: url.original_url.clone(),
+                        short_url: url.short_url("https://short.ly"), // TODO: Get from config
+                        created_at: url.created_at.to_rfc3339(),
+                        expiration_date: url.expiration_date.map(|d| d.to_rfc3339()),
+                        is_expired: url.is_expired(),
+                        click_count: None, // TODO: Add click tracking
+                    }
+                })
+                .collect();
 
             let response = ExpiringUrlsResponse {
                 urls: url_responses,

@@ -37,7 +37,11 @@ impl ProgressService {
     }
 
     /// Update operation status
-    pub async fn update_status(&self, operation_id: &str, status: BulkOperationStatus) -> Result<(), ProgressServiceError> {
+    pub async fn update_status(
+        &self,
+        operation_id: &str,
+        status: BulkOperationStatus,
+    ) -> Result<(), ProgressServiceError> {
         let mut operations = self.operations.write().await;
         if let Some(progress) = operations.get_mut(operation_id) {
             progress.status = status;
@@ -85,9 +89,13 @@ impl ProgressService {
     }
 
     /// Get operation progress
-    pub async fn get_progress(&self, operation_id: &str) -> Result<BulkOperationProgress, ProgressServiceError> {
+    pub async fn get_progress(
+        &self,
+        operation_id: &str,
+    ) -> Result<BulkOperationProgress, ProgressServiceError> {
         let operations = self.operations.read().await;
-        operations.get(operation_id)
+        operations
+            .get(operation_id)
             .cloned()
             .ok_or(ProgressServiceError::OperationNotFound)
     }
@@ -107,11 +115,13 @@ impl ProgressService {
     pub async fn cleanup_old_operations(&self) -> Result<usize, ProgressServiceError> {
         let mut operations = self.operations.write().await;
         let initial_count = operations.len();
-        
+
         // Remove operations that are completed, failed, or cancelled and older than 1 hour
         operations.retain(|_, progress| {
             match progress.status {
-                BulkOperationStatus::Completed | BulkOperationStatus::Failed | BulkOperationStatus::Cancelled => {
+                BulkOperationStatus::Completed
+                | BulkOperationStatus::Failed
+                | BulkOperationStatus::Cancelled => {
                     // For simplicity, we'll keep operations for now
                     // In a real implementation, you'd check timestamps here
                     false
@@ -124,7 +134,10 @@ impl ProgressService {
     }
 
     /// Get all operations for a user (if we add user association later)
-    pub async fn get_user_operations(&self, _user_id: i32) -> Result<Vec<BulkOperationProgress>, ProgressServiceError> {
+    pub async fn get_user_operations(
+        &self,
+        _user_id: i32,
+    ) -> Result<Vec<BulkOperationProgress>, ProgressServiceError> {
         let operations = self.operations.read().await;
         Ok(operations.values().cloned().collect())
     }
@@ -142,10 +155,10 @@ impl Default for ProgressService {
 pub enum ProgressServiceError {
     #[error("Operation not found")]
     OperationNotFound,
-    
+
     #[error("Invalid operation state")]
     InvalidOperationState,
-    
+
     #[error("Internal error: {0}")]
     Internal(String),
 }
@@ -171,8 +184,11 @@ mod tests {
         let service = ProgressService::new();
         let operation_id = service.create_operation(100).await;
 
-        service.update_progress(&operation_id, 50, 45, 5).await.unwrap();
-        
+        service
+            .update_progress(&operation_id, 50, 45, 5)
+            .await
+            .unwrap();
+
         let progress = service.get_progress(&operation_id).await.unwrap();
         assert_eq!(progress.processed_items, 50);
         assert_eq!(progress.successful_items, 45);
@@ -186,8 +202,11 @@ mod tests {
         let service = ProgressService::new();
         let operation_id = service.create_operation(100).await;
 
-        service.update_progress(&operation_id, 100, 95, 5).await.unwrap();
-        
+        service
+            .update_progress(&operation_id, 100, 95, 5)
+            .await
+            .unwrap();
+
         let progress = service.get_progress(&operation_id).await.unwrap();
         assert_eq!(progress.progress_percentage, 100.0);
         assert!(matches!(progress.status, BulkOperationStatus::Completed));
@@ -199,7 +218,7 @@ mod tests {
         let operation_id = service.create_operation(100).await;
 
         service.cancel_operation(&operation_id).await.unwrap();
-        
+
         let progress = service.get_progress(&operation_id).await.unwrap();
         assert!(matches!(progress.status, BulkOperationStatus::Cancelled));
     }
@@ -208,6 +227,9 @@ mod tests {
     async fn test_operation_not_found() {
         let service = ProgressService::new();
         let result = service.get_progress("non-existent").await;
-        assert!(matches!(result, Err(ProgressServiceError::OperationNotFound)));
+        assert!(matches!(
+            result,
+            Err(ProgressServiceError::OperationNotFound)
+        ));
     }
 }

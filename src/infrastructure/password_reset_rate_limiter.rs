@@ -1,14 +1,14 @@
+use chrono::{DateTime, Duration, Utc};
 use governor::{
     clock::{Clock, DefaultClock},
     state::keyed::DefaultKeyedStateStore,
     Quota, RateLimiter,
 };
+use std::collections::HashMap;
 use std::num::NonZeroU32;
 use std::sync::Arc;
-use tokio::sync::Mutex;
-use std::collections::HashMap;
-use chrono::{DateTime, Utc, Duration};
 use thiserror::Error;
+use tokio::sync::Mutex;
 
 /// Password reset rate limiting configuration
 #[derive(Debug, Clone)]
@@ -27,10 +27,10 @@ pub struct PasswordResetRateLimitConfig {
 impl Default for PasswordResetRateLimitConfig {
     fn default() -> Self {
         Self {
-            requests_per_hour_per_ip: 5,      // 5 requests per hour per IP
-            requests_per_hour_per_email: 3,   // 3 requests per hour per email
-            cooldown_minutes: 5,               // 5 minutes between requests
-            max_active_tokens_per_user: 5,    // Max 5 active tokens per user
+            requests_per_hour_per_ip: 5,    // 5 requests per hour per IP
+            requests_per_hour_per_email: 3, // 3 requests per hour per email
+            cooldown_minutes: 5,            // 5 minutes between requests
+            max_active_tokens_per_user: 5,  // Max 5 active tokens per user
         }
     }
 }
@@ -56,7 +56,9 @@ pub enum PasswordResetRateLimitError {
     #[error("Please wait {0} minutes before requesting another password reset")]
     CooldownPeriodActive(i64),
 
-    #[error("Too many active reset tokens. Please use an existing token or wait for them to expire")]
+    #[error(
+        "Too many active reset tokens. Please use an existing token or wait for them to expire"
+    )]
     TooManyActiveTokens,
 
     #[error("Internal rate limiting error: {0}")]
@@ -68,7 +70,8 @@ impl PasswordResetRateLimiter {
     /// Create a new password reset rate limiter
     pub fn new(config: PasswordResetRateLimitConfig) -> Self {
         let ip_quota = Quota::per_hour(NonZeroU32::new(config.requests_per_hour_per_ip).unwrap());
-        let email_quota = Quota::per_hour(NonZeroU32::new(config.requests_per_hour_per_email).unwrap());
+        let email_quota =
+            Quota::per_hour(NonZeroU32::new(config.requests_per_hour_per_email).unwrap());
 
         let ip_limiter = Arc::new(RateLimiter::new(
             ip_quota,
@@ -100,8 +103,12 @@ impl PasswordResetRateLimiter {
         match self.ip_limiter.check_key(&ip.to_string()) {
             Ok(_) => Ok(()),
             Err(negative) => {
-                let retry_after = negative.wait_time_from(DefaultClock::default().now()).as_secs();
-                Err(PasswordResetRateLimitError::IpRateLimitExceeded(retry_after))
+                let retry_after = negative
+                    .wait_time_from(DefaultClock::default().now())
+                    .as_secs();
+                Err(PasswordResetRateLimitError::IpRateLimitExceeded(
+                    retry_after,
+                ))
             }
         }
     }
@@ -111,8 +118,12 @@ impl PasswordResetRateLimiter {
         match self.email_limiter.check_key(&email.to_string()) {
             Ok(_) => Ok(()),
             Err(negative) => {
-                let retry_after = negative.wait_time_from(DefaultClock::default().now()).as_secs();
-                Err(PasswordResetRateLimitError::EmailRateLimitExceeded(retry_after))
+                let retry_after = negative
+                    .wait_time_from(DefaultClock::default().now())
+                    .as_secs();
+                Err(PasswordResetRateLimitError::EmailRateLimitExceeded(
+                    retry_after,
+                ))
             }
         }
     }
@@ -120,21 +131,23 @@ impl PasswordResetRateLimiter {
     /// Check cooldown period
     pub async fn check_cooldown(&self, email: &str) -> Result<(), PasswordResetRateLimitError> {
         let mut last_times = self.last_request_times.lock().await;
-        
+
         if let Some(last_time) = last_times.get(email) {
             let now = Utc::now();
             let elapsed = now - *last_time;
             let cooldown = Duration::minutes(self.config.cooldown_minutes);
-            
+
             if elapsed < cooldown {
                 let remaining_minutes = (cooldown - elapsed).num_minutes();
-                return Err(PasswordResetRateLimitError::CooldownPeriodActive(remaining_minutes));
+                return Err(PasswordResetRateLimitError::CooldownPeriodActive(
+                    remaining_minutes,
+                ));
             }
         }
-        
+
         // Update last request time
         last_times.insert(email.to_string(), Utc::now());
-        
+
         Ok(())
     }
 
@@ -146,13 +159,13 @@ impl PasswordResetRateLimiter {
     ) -> Result<(), PasswordResetRateLimitError> {
         // Check IP rate limit
         self.check_ip_limit(ip)?;
-        
+
         // Check email rate limit
         self.check_email_limit(email)?;
-        
+
         // Check cooldown period
         self.check_cooldown(email).await?;
-        
+
         Ok(())
     }
 
@@ -160,20 +173,20 @@ impl PasswordResetRateLimiter {
     pub async fn cleanup_old_entries(&self) {
         let mut last_times = self.last_request_times.lock().await;
         let cutoff_time = Utc::now() - Duration::hours(24);
-        
+
         last_times.retain(|_, time| *time > cutoff_time);
     }
 
     /// Get rate limit info for debugging
     pub async fn get_rate_limit_info(&self, email: &str) -> RateLimitInfo {
         let last_times = self.last_request_times.lock().await;
-        
+
         let last_request = last_times.get(email).cloned();
         let cooldown_remaining = if let Some(last_time) = last_request {
             let now = Utc::now();
             let elapsed = now - last_time;
             let cooldown = Duration::minutes(self.config.cooldown_minutes);
-            
+
             if elapsed < cooldown {
                 Some((cooldown - elapsed).num_minutes())
             } else {
@@ -227,10 +240,10 @@ mod tests {
     #[tokio::test]
     async fn test_cooldown_check() {
         let limiter = PasswordResetRateLimiter::new_default();
-        
+
         // First request should succeed
         assert!(limiter.check_cooldown("test@example.com").await.is_ok());
-        
+
         // Second immediate request should fail
         let result = limiter.check_cooldown("test@example.com").await;
         assert!(result.is_err());
@@ -239,13 +252,13 @@ mod tests {
     #[tokio::test]
     async fn test_cleanup_old_entries() {
         let limiter = PasswordResetRateLimiter::new_default();
-        
+
         // Add an entry
         let _ = limiter.check_cooldown("test@example.com").await;
-        
+
         // Cleanup should work
         limiter.cleanup_old_entries().await;
-        
+
         // Entry should still exist (not old enough)
         let last_times = limiter.last_request_times.lock().await;
         assert!(last_times.contains_key("test@example.com"));
@@ -255,7 +268,7 @@ mod tests {
     async fn test_get_rate_limit_info() {
         let limiter = PasswordResetRateLimiter::new_default();
         let _ = limiter.check_cooldown("test@example.com").await;
-        
+
         let info = limiter.get_rate_limit_info("test@example.com").await;
         assert_eq!(info.requests_per_hour_per_ip, 5);
         assert_eq!(info.requests_per_hour_per_email, 3);

@@ -1,12 +1,8 @@
 use super::ConcreteAppState;
 use crate::application::dto::responses::ErrorResponse;
-use crate::domain::services::{PasswordResetService, PasswordResetError, TokenValidationService};
+use crate::domain::services::{PasswordResetError, PasswordResetService, TokenValidationService};
 use crate::infrastructure::email::EmailMessage;
-use axum::{
-    extract::State,
-    http::StatusCode,
-    response::Json,
-};
+use axum::{extract::State, http::StatusCode, response::Json};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
@@ -57,9 +53,10 @@ pub async fn request_password_reset(
 ) -> Result<Json<RequestPasswordResetResponse>, (StatusCode, Json<ErrorResponse>)> {
     // Get client IP (in production, extract from headers)
     let client_ip = "127.0.0.1"; // Placeholder - should extract from request headers
-    
+
     // Check rate limits
-    state.password_reset_rate_limiter
+    state
+        .password_reset_rate_limiter
         .check_all_limits(client_ip, &request.email)
         .await
         .map_err(|e| {
@@ -101,7 +98,8 @@ pub async fn request_password_reset(
                         StatusCode::TOO_MANY_REQUESTS,
                         Json(ErrorResponse {
                             error: "Password reset error".to_string(),
-                            message: "Too many password reset requests. Please try again later.".to_string(),
+                            message: "Too many password reset requests. Please try again later."
+                                .to_string(),
                             status_code: StatusCode::TOO_MANY_REQUESTS.as_u16(),
                         }),
                     ));
@@ -121,9 +119,10 @@ pub async fn request_password_reset(
     };
 
     // Send password reset email
-    let base_url = std::env::var("BASE_URL").unwrap_or_else(|_| "http://localhost:8000".to_string());
+    let base_url =
+        std::env::var("BASE_URL").unwrap_or_else(|_| "http://localhost:8000".to_string());
     let reset_link = format!("{}/reset-password?token={}", base_url, reset_request.token);
-    
+
     let email_message = EmailMessage::password_reset(
         reset_request.email.clone(),
         reset_link,
@@ -139,11 +138,16 @@ pub async fn request_password_reset(
         }
     } else {
         tracing::warn!("Email sender not configured, password reset email not sent");
-        tracing::info!("Password reset token for {}: {}", reset_request.email, reset_request.token);
+        tracing::info!(
+            "Password reset token for {}: {}",
+            reset_request.email,
+            reset_request.token
+        );
     }
 
     Ok(Json(RequestPasswordResetResponse {
-        message: "If the email exists in our system, a password reset link has been sent.".to_string(),
+        message: "If the email exists in our system, a password reset link has been sent."
+            .to_string(),
         email: request.email,
     }))
 }
@@ -189,15 +193,18 @@ pub async fn reset_password(
         .await
         .map_err(|e| {
             let (status, message) = match e {
-                PasswordResetError::InvalidToken => {
-                    (StatusCode::BAD_REQUEST, "Invalid password reset token".to_string())
-                }
-                PasswordResetError::TokenExpired => {
-                    (StatusCode::BAD_REQUEST, "Password reset token has expired".to_string())
-                }
-                PasswordResetError::TokenAlreadyUsed => {
-                    (StatusCode::BAD_REQUEST, "Password reset token has already been used".to_string())
-                }
+                PasswordResetError::InvalidToken => (
+                    StatusCode::BAD_REQUEST,
+                    "Invalid password reset token".to_string(),
+                ),
+                PasswordResetError::TokenExpired => (
+                    StatusCode::BAD_REQUEST,
+                    "Password reset token has expired".to_string(),
+                ),
+                PasswordResetError::TokenAlreadyUsed => (
+                    StatusCode::BAD_REQUEST,
+                    "Password reset token has already been used".to_string(),
+                ),
                 _ => (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()),
             };
             (
@@ -239,16 +246,18 @@ pub async fn validate_reset_token(
     let validation_service = TokenValidationService::new_default();
 
     // Validate token format first
-    validation_service.validate_token_format(&token).map_err(|e| {
-        (
-            StatusCode::BAD_REQUEST,
-            Json(ErrorResponse {
-                error: "Token format error".to_string(),
-                message: e.to_string(),
-                status_code: 400,
-            }),
-        )
-    })?;
+    validation_service
+        .validate_token_format(&token)
+        .map_err(|e| {
+            (
+                StatusCode::BAD_REQUEST,
+                Json(ErrorResponse {
+                    error: "Token format error".to_string(),
+                    message: e.to_string(),
+                    status_code: 400,
+                }),
+            )
+        })?;
 
     // Create password reset service
     let password_reset_service = PasswordResetService::new_default(
@@ -262,15 +271,18 @@ pub async fn validate_reset_token(
         .await
         .map_err(|e| {
             let (status, message) = match e {
-                PasswordResetError::InvalidToken => {
-                    (StatusCode::BAD_REQUEST, "Invalid password reset token".to_string())
-                }
-                PasswordResetError::TokenExpired => {
-                    (StatusCode::BAD_REQUEST, "Password reset token has expired".to_string())
-                }
-                PasswordResetError::TokenAlreadyUsed => {
-                    (StatusCode::BAD_REQUEST, "Password reset token has already been used".to_string())
-                }
+                PasswordResetError::InvalidToken => (
+                    StatusCode::BAD_REQUEST,
+                    "Invalid password reset token".to_string(),
+                ),
+                PasswordResetError::TokenExpired => (
+                    StatusCode::BAD_REQUEST,
+                    "Password reset token has expired".to_string(),
+                ),
+                PasswordResetError::TokenAlreadyUsed => (
+                    StatusCode::BAD_REQUEST,
+                    "Password reset token has already been used".to_string(),
+                ),
                 _ => (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()),
             };
             (
@@ -284,16 +296,18 @@ pub async fn validate_reset_token(
         })?;
 
     // Get comprehensive validation result
-    let validation_result = validation_service.validate(&token, &reset_token).map_err(|e| {
-        (
-            StatusCode::BAD_REQUEST,
-            Json(ErrorResponse {
-                error: "Validation error".to_string(),
-                message: e.to_string(),
-                status_code: 400,
-            }),
-        )
-    })?;
+    let validation_result = validation_service
+        .validate(&token, &reset_token)
+        .map_err(|e| {
+            (
+                StatusCode::BAD_REQUEST,
+                Json(ErrorResponse {
+                    error: "Validation error".to_string(),
+                    message: e.to_string(),
+                    status_code: 400,
+                }),
+            )
+        })?;
 
     // Check if token will expire soon
     let will_expire_soon = validation_service.will_expire_soon(&reset_token, 1);

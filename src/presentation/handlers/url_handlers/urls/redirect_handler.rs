@@ -1,8 +1,8 @@
 use crate::application::dto::ErrorResponse;
 use crate::domain::repositories::UrlRepository;
+use crate::presentation::handlers::app_state::AppState;
 use axum::{extract::State, http::StatusCode, response::Redirect, Json};
 use tracing::{info, warn};
-use crate::presentation::handlers::app_state::AppState;
 
 /// Handler for redirecting to original URL
 #[utoipa::path(
@@ -25,8 +25,12 @@ pub async fn redirect_handler<R, U, P>(
 where
     R: UrlRepository + Send + Sync + Clone,
     U: crate::domain::repositories::UserRepository + Send + Sync + Clone,
-    P: crate::domain::repositories::PasswordResetRepository + Send + Sync + Clone,{
-    info!("Received redirect request for short code: {}", short_code_str);
+    P: crate::domain::repositories::PasswordResetRepository + Send + Sync + Clone,
+{
+    info!(
+        "Received redirect request for short code: {}",
+        short_code_str
+    );
 
     // Parse and validate short code
     let short_code = match crate::domain::entities::ShortCode::new(short_code_str) {
@@ -43,13 +47,20 @@ where
     };
 
     // Find the URL with validation (checks expiration and status)
-    match app_state.url_service.get_url_by_short_code_with_validation(&short_code).await {
+    match app_state
+        .url_service
+        .get_url_by_short_code_with_validation(&short_code)
+        .await
+    {
         Ok(Some(url)) => {
             info!("Redirecting {} to {}", short_code.value(), url.original_url);
             Ok(Redirect::permanent(&url.original_url))
         }
         Ok(None) => {
-            warn!("Short code not found or not accessible: {}", short_code.value());
+            warn!(
+                "Short code not found or not accessible: {}",
+                short_code.value()
+            );
             let error_response = ErrorResponse {
                 error: "NOT_FOUND".to_string(),
                 message: "Short code not found or no longer available".to_string(),

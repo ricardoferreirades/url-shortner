@@ -7,7 +7,9 @@ use axum::{
 };
 use tracing::info;
 
-use crate::application::dto::{requests::ShortenUrlRequest, responses::ShortenUrlResponse, ErrorResponse};
+use crate::application::dto::{
+    requests::ShortenUrlRequest, responses::ShortenUrlResponse, ErrorResponse,
+};
 use crate::domain::repositories::UrlRepository;
 use crate::presentation::handlers::AppState;
 
@@ -24,12 +26,19 @@ impl AxumUrlController {
     where
         R: UrlRepository + Send + Sync + Clone,
         U: crate::domain::repositories::UserRepository + Send + Sync + Clone,
-    P: crate::domain::repositories::PasswordResetRepository + Send + Sync + Clone,    {
-        info!("Axum controller: Received shorten URL request for: {}", request.url);
+        P: crate::domain::repositories::PasswordResetRepository + Send + Sync + Clone,
+    {
+        info!(
+            "Axum controller: Received shorten URL request for: {}",
+            request.url
+        );
 
         match app_state.shorten_url_use_case.execute(request, None).await {
             Ok(response) => {
-                info!("Axum controller: Successfully shortened URL: {} -> {}", response.original_url, response.short_url);
+                info!(
+                    "Axum controller: Successfully shortened URL: {} -> {}",
+                    response.original_url, response.short_url
+                );
                 Ok((StatusCode::CREATED, Json(response)))
             }
             Err(error) => {
@@ -51,8 +60,12 @@ impl AxumUrlController {
     where
         R: UrlRepository + Send + Sync + Clone,
         U: crate::domain::repositories::UserRepository + Send + Sync + Clone,
-    P: crate::domain::repositories::PasswordResetRepository + Send + Sync + Clone,    {
-        info!("Axum controller: Received redirect request for short code: {}", short_code_str);
+        P: crate::domain::repositories::PasswordResetRepository + Send + Sync + Clone,
+    {
+        info!(
+            "Axum controller: Received redirect request for short code: {}",
+            short_code_str
+        );
 
         // Parse and validate short code
         let short_code = match crate::domain::entities::ShortCode::new(short_code_str) {
@@ -68,9 +81,17 @@ impl AxumUrlController {
         };
 
         // Find the URL
-        match app_state.url_repository.find_by_short_code(&short_code).await {
+        match app_state
+            .url_repository
+            .find_by_short_code(&short_code)
+            .await
+        {
             Ok(Some(url)) => {
-                info!("Axum controller: Redirecting {} to {}", short_code.value(), url.original_url);
+                info!(
+                    "Axum controller: Redirecting {} to {}",
+                    short_code.value(),
+                    url.original_url
+                );
                 Ok(Redirect::permanent(&url.original_url))
             }
             Ok(None) => {
@@ -94,7 +115,8 @@ impl AxumUrlController {
 
     /// Handle welcome page
     pub async fn welcome() -> Html<&'static str> {
-        Html(r#"
+        Html(
+            r#"
         <!DOCTYPE html>
         <html>
         <head>
@@ -117,7 +139,8 @@ impl AxumUrlController {
             </div>
         </body>
         </html>
-        "#)
+        "#,
+        )
     }
 
     /// Handle health checks

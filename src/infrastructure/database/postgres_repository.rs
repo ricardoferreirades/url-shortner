@@ -61,7 +61,10 @@ impl UrlRepository for PostgresUrlRepository {
         Ok(Self::url_from_row(&row))
     }
 
-    async fn find_by_short_code(&self, short_code: &ShortCode) -> Result<Option<Url>, RepositoryError> {
+    async fn find_by_short_code(
+        &self,
+        short_code: &ShortCode,
+    ) -> Result<Option<Url>, RepositoryError> {
         let row = sqlx::query(
             "SELECT id, short_code, original_url, created_at, expiration_date, user_id, status FROM urls WHERE short_code = $1"
         )
@@ -92,12 +95,10 @@ impl UrlRepository for PostgresUrlRepository {
     }
 
     async fn exists_by_short_code(&self, short_code: &ShortCode) -> Result<bool, RepositoryError> {
-        let count: i64 = sqlx::query_scalar(
-            "SELECT COUNT(*) FROM urls WHERE short_code = $1"
-        )
-        .bind(short_code.value())
-        .fetch_one(&self.pool)
-        .await?;
+        let count: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM urls WHERE short_code = $1")
+            .bind(short_code.value())
+            .fetch_one(&self.pool)
+            .await?;
 
         Ok(count > 0)
     }
@@ -108,8 +109,7 @@ impl UrlRepository for PostgresUrlRepository {
                 .bind(id)
                 .bind(uid)
         } else {
-            sqlx::query("DELETE FROM urls WHERE id = $1 AND user_id IS NULL")
-                .bind(id)
+            sqlx::query("DELETE FROM urls WHERE id = $1 AND user_id IS NULL").bind(id)
         };
 
         let result = query.execute(&self.pool).await?;
@@ -139,7 +139,7 @@ impl UrlRepository for PostgresUrlRepository {
             .bind(uid)
             .fetch_one(&self.pool)
             .await?;
-            
+
             (row.get("total_urls"), row.get("unique_short_codes"))
         } else {
             let row = sqlx::query(
@@ -147,7 +147,7 @@ impl UrlRepository for PostgresUrlRepository {
             )
             .fetch_one(&self.pool)
             .await?;
-            
+
             (row.get("total_urls"), row.get("unique_short_codes"))
         };
 
@@ -161,17 +161,20 @@ impl UrlRepository for PostgresUrlRepository {
         })
     }
 
-    async fn find_urls_expiring_soon(&self, duration: chrono::Duration) -> Result<Vec<Url>, RepositoryError> {
+    async fn find_urls_expiring_soon(
+        &self,
+        duration: chrono::Duration,
+    ) -> Result<Vec<Url>, RepositoryError> {
         let now = chrono::Utc::now();
         let warning_time = now + duration;
-        
+
         let rows = sqlx::query(
             "SELECT id, short_code, original_url, created_at, expiration_date, user_id, status 
              FROM urls 
              WHERE expiration_date IS NOT NULL 
              AND expiration_date > $1 
              AND expiration_date <= $2 
-             ORDER BY expiration_date ASC"
+             ORDER BY expiration_date ASC",
         )
         .bind(now)
         .bind(warning_time)
@@ -188,13 +191,13 @@ impl UrlRepository for PostgresUrlRepository {
 
     async fn find_expired_urls(&self) -> Result<Vec<Url>, RepositoryError> {
         let now = chrono::Utc::now();
-        
+
         let rows = sqlx::query(
             "SELECT id, short_code, original_url, created_at, expiration_date, user_id, status 
              FROM urls 
              WHERE expiration_date IS NOT NULL 
              AND expiration_date <= $1 
-             ORDER BY expiration_date ASC"
+             ORDER BY expiration_date ASC",
         )
         .bind(now)
         .fetch_all(&self.pool)
@@ -210,9 +213,9 @@ impl UrlRepository for PostgresUrlRepository {
 
     async fn delete_expired_urls(&self) -> Result<u64, RepositoryError> {
         let now = chrono::Utc::now();
-        
+
         let result = sqlx::query(
-            "DELETE FROM urls WHERE expiration_date IS NOT NULL AND expiration_date <= $1"
+            "DELETE FROM urls WHERE expiration_date IS NOT NULL AND expiration_date <= $1",
         )
         .bind(now)
         .execute(&self.pool)
@@ -221,7 +224,11 @@ impl UrlRepository for PostgresUrlRepository {
         Ok(result.rows_affected())
     }
 
-    async fn soft_delete_by_id(&self, id: i32, user_id: Option<i32>) -> Result<bool, RepositoryError> {
+    async fn soft_delete_by_id(
+        &self,
+        id: i32,
+        user_id: Option<i32>,
+    ) -> Result<bool, RepositoryError> {
         let query = if let Some(uid) = user_id {
             sqlx::query("UPDATE urls SET status = 'inactive' WHERE id = $1 AND user_id = $2")
                 .bind(id)
@@ -235,7 +242,11 @@ impl UrlRepository for PostgresUrlRepository {
         Ok(result.rows_affected() > 0)
     }
 
-    async fn reactivate_by_id(&self, id: i32, user_id: Option<i32>) -> Result<bool, RepositoryError> {
+    async fn reactivate_by_id(
+        &self,
+        id: i32,
+        user_id: Option<i32>,
+    ) -> Result<bool, RepositoryError> {
         let query = if let Some(uid) = user_id {
             sqlx::query("UPDATE urls SET status = 'active' WHERE id = $1 AND user_id = $2")
                 .bind(id)
@@ -249,11 +260,15 @@ impl UrlRepository for PostgresUrlRepository {
         Ok(result.rows_affected() > 0)
     }
 
-    async fn find_by_status(&self, status: UrlStatus, user_id: Option<i32>) -> Result<Vec<Url>, RepositoryError> {
+    async fn find_by_status(
+        &self,
+        status: UrlStatus,
+        user_id: Option<i32>,
+    ) -> Result<Vec<Url>, RepositoryError> {
         let rows = if let Some(uid) = user_id {
             sqlx::query(
                 "SELECT id, short_code, original_url, created_at, expiration_date, user_id, status 
-                 FROM urls WHERE status = $1 AND user_id = $2 ORDER BY created_at DESC"
+                 FROM urls WHERE status = $1 AND user_id = $2 ORDER BY created_at DESC",
             )
             .bind(status.to_string())
             .bind(uid)
@@ -262,7 +277,7 @@ impl UrlRepository for PostgresUrlRepository {
         } else {
             sqlx::query(
                 "SELECT id, short_code, original_url, created_at, expiration_date, user_id, status 
-                 FROM urls WHERE status = $1 ORDER BY created_at DESC"
+                 FROM urls WHERE status = $1 ORDER BY created_at DESC",
             )
             .bind(status.to_string())
             .fetch_all(&self.pool)
@@ -277,17 +292,34 @@ impl UrlRepository for PostgresUrlRepository {
         Ok(urls)
     }
 
-    async fn batch_deactivate_urls(&self, url_ids: &[i32], user_id: Option<i32>) -> Result<crate::domain::repositories::url_repository::BatchOperationResult, RepositoryError> {
-        self.batch_update_status(url_ids, UrlStatus::Inactive, user_id).await
+    async fn batch_deactivate_urls(
+        &self,
+        url_ids: &[i32],
+        user_id: Option<i32>,
+    ) -> Result<crate::domain::repositories::url_repository::BatchOperationResult, RepositoryError>
+    {
+        self.batch_update_status(url_ids, UrlStatus::Inactive, user_id)
+            .await
     }
 
-    async fn batch_reactivate_urls(&self, url_ids: &[i32], user_id: Option<i32>) -> Result<crate::domain::repositories::url_repository::BatchOperationResult, RepositoryError> {
-        self.batch_update_status(url_ids, UrlStatus::Active, user_id).await
+    async fn batch_reactivate_urls(
+        &self,
+        url_ids: &[i32],
+        user_id: Option<i32>,
+    ) -> Result<crate::domain::repositories::url_repository::BatchOperationResult, RepositoryError>
+    {
+        self.batch_update_status(url_ids, UrlStatus::Active, user_id)
+            .await
     }
 
-    async fn batch_delete_urls(&self, url_ids: &[i32], user_id: Option<i32>) -> Result<crate::domain::repositories::url_repository::BatchOperationResult, RepositoryError> {
-        use crate::domain::repositories::url_repository::{BatchOperationResult, BatchItemResult};
-        
+    async fn batch_delete_urls(
+        &self,
+        url_ids: &[i32],
+        user_id: Option<i32>,
+    ) -> Result<crate::domain::repositories::url_repository::BatchOperationResult, RepositoryError>
+    {
+        use crate::domain::repositories::url_repository::{BatchItemResult, BatchOperationResult};
+
         let mut results = Vec::new();
         for &url_id in url_ids {
             let result = if let Some(uid) = user_id {
@@ -302,7 +334,7 @@ impl UrlRepository for PostgresUrlRepository {
                     .execute(&self.pool)
                     .await
             };
-            
+
             match result {
                 Ok(res) if res.rows_affected() > 0 => results.push(BatchItemResult {
                     url_id,
@@ -321,10 +353,10 @@ impl UrlRepository for PostgresUrlRepository {
                 }),
             }
         }
-        
+
         let successful = results.iter().filter(|r| r.success).count();
         let failed = results.len() - successful;
-        
+
         Ok(BatchOperationResult {
             total_processed: results.len(),
             successful,
@@ -333,9 +365,15 @@ impl UrlRepository for PostgresUrlRepository {
         })
     }
 
-    async fn batch_update_status(&self, url_ids: &[i32], status: UrlStatus, user_id: Option<i32>) -> Result<crate::domain::repositories::url_repository::BatchOperationResult, RepositoryError> {
-        use crate::domain::repositories::url_repository::{BatchOperationResult, BatchItemResult};
-        
+    async fn batch_update_status(
+        &self,
+        url_ids: &[i32],
+        status: UrlStatus,
+        user_id: Option<i32>,
+    ) -> Result<crate::domain::repositories::url_repository::BatchOperationResult, RepositoryError>
+    {
+        use crate::domain::repositories::url_repository::{BatchItemResult, BatchOperationResult};
+
         let mut results = Vec::new();
         for &url_id in url_ids {
             let result = if let Some(uid) = user_id {
@@ -352,7 +390,7 @@ impl UrlRepository for PostgresUrlRepository {
                     .execute(&self.pool)
                     .await
             };
-            
+
             match result {
                 Ok(res) if res.rows_affected() > 0 => results.push(BatchItemResult {
                     url_id,
@@ -371,10 +409,10 @@ impl UrlRepository for PostgresUrlRepository {
                 }),
             }
         }
-        
+
         let successful = results.iter().filter(|r| r.success).count();
         let failed = results.len() - successful;
-        
+
         Ok(BatchOperationResult {
             total_processed: results.len(),
             successful,
@@ -383,9 +421,15 @@ impl UrlRepository for PostgresUrlRepository {
         })
     }
 
-    async fn batch_update_expiration(&self, url_ids: &[i32], expiration_date: Option<chrono::DateTime<chrono::Utc>>, user_id: Option<i32>) -> Result<crate::domain::repositories::url_repository::BatchOperationResult, RepositoryError> {
-        use crate::domain::repositories::url_repository::{BatchOperationResult, BatchItemResult};
-        
+    async fn batch_update_expiration(
+        &self,
+        url_ids: &[i32],
+        expiration_date: Option<chrono::DateTime<chrono::Utc>>,
+        user_id: Option<i32>,
+    ) -> Result<crate::domain::repositories::url_repository::BatchOperationResult, RepositoryError>
+    {
+        use crate::domain::repositories::url_repository::{BatchItemResult, BatchOperationResult};
+
         let mut results = Vec::new();
         for &url_id in url_ids {
             let result = if let Some(uid) = user_id {
@@ -402,7 +446,7 @@ impl UrlRepository for PostgresUrlRepository {
                     .execute(&self.pool)
                     .await
             };
-            
+
             match result {
                 Ok(res) if res.rows_affected() > 0 => results.push(BatchItemResult {
                     url_id,
@@ -421,10 +465,10 @@ impl UrlRepository for PostgresUrlRepository {
                 }),
             }
         }
-        
+
         let successful = results.iter().filter(|r| r.success).count();
         let failed = results.len() - successful;
-        
+
         Ok(BatchOperationResult {
             total_processed: results.len(),
             successful,

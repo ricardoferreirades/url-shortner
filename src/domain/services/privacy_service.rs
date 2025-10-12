@@ -1,4 +1,4 @@
-use crate::domain::entities::{User, ProfilePrivacy};
+use crate::domain::entities::{ProfilePrivacy, User};
 use thiserror::Error;
 
 /// Privacy service for handling user profile privacy settings
@@ -129,24 +129,26 @@ impl PrivacyService {
         field_settings: &FieldPrivacySettings,
     ) -> Result<FilteredProfileData, PrivacyServiceError> {
         let can_view_profile = self.can_view_profile(viewer, profile_owner)?;
-        
+
         if !can_view_profile {
             return Err(PrivacyServiceError::AccessDenied(
-                "Cannot view this profile".to_string()
+                "Cannot view this profile".to_string(),
             ));
         }
 
-        let first_name = if self.can_view_field(viewer, profile_owner, field_settings.first_name.clone())? {
-            profile_owner.first_name.clone()
-        } else {
-            None
-        };
+        let first_name =
+            if self.can_view_field(viewer, profile_owner, field_settings.first_name.clone())? {
+                profile_owner.first_name.clone()
+            } else {
+                None
+            };
 
-        let last_name = if self.can_view_field(viewer, profile_owner, field_settings.last_name.clone())? {
-            profile_owner.last_name.clone()
-        } else {
-            None
-        };
+        let last_name =
+            if self.can_view_field(viewer, profile_owner, field_settings.last_name.clone())? {
+                profile_owner.last_name.clone()
+            } else {
+                None
+            };
 
         let bio = if self.can_view_field(viewer, profile_owner, field_settings.bio.clone())? {
             profile_owner.bio.clone()
@@ -154,23 +156,26 @@ impl PrivacyService {
             None
         };
 
-        let avatar_url = if self.can_view_field(viewer, profile_owner, field_settings.avatar_url.clone())? {
-            profile_owner.avatar_url.clone()
-        } else {
-            None
-        };
+        let avatar_url =
+            if self.can_view_field(viewer, profile_owner, field_settings.avatar_url.clone())? {
+                profile_owner.avatar_url.clone()
+            } else {
+                None
+            };
 
-        let website = if self.can_view_field(viewer, profile_owner, field_settings.website.clone())? {
-            profile_owner.website.clone()
-        } else {
-            None
-        };
+        let website =
+            if self.can_view_field(viewer, profile_owner, field_settings.website.clone())? {
+                profile_owner.website.clone()
+            } else {
+                None
+            };
 
-        let location = if self.can_view_field(viewer, profile_owner, field_settings.location.clone())? {
-            profile_owner.location.clone()
-        } else {
-            None
-        };
+        let location =
+            if self.can_view_field(viewer, profile_owner, field_settings.location.clone())? {
+                profile_owner.location.clone()
+            } else {
+                None
+            };
 
         let email = if self.can_view_field(viewer, profile_owner, field_settings.email.clone())? {
             Some(profile_owner.email.clone())
@@ -195,9 +200,14 @@ impl PrivacyService {
     }
 
     /// Validate privacy setting
-    pub fn validate_privacy_setting(&self, privacy: &ProfilePrivacy) -> Result<(), PrivacyServiceError> {
+    pub fn validate_privacy_setting(
+        &self,
+        privacy: &ProfilePrivacy,
+    ) -> Result<(), PrivacyServiceError> {
         match privacy {
-            ProfilePrivacy::Public | ProfilePrivacy::Private | ProfilePrivacy::FriendsOnly => Ok(()),
+            ProfilePrivacy::Public | ProfilePrivacy::Private | ProfilePrivacy::FriendsOnly => {
+                Ok(())
+            }
         }
     }
 
@@ -306,12 +316,18 @@ mod tests {
 
         // Anyone can view public profiles
         assert!(service.can_view_profile(None, &public_user).unwrap());
-        assert!(service.can_view_profile(Some(&viewer), &public_user).unwrap());
+        assert!(service
+            .can_view_profile(Some(&viewer), &public_user)
+            .unwrap());
 
         // Only owner can view private profiles
         assert!(!service.can_view_profile(None, &private_user).unwrap());
-        assert!(!service.can_view_profile(Some(&viewer), &private_user).unwrap());
-        assert!(service.can_view_profile(Some(&private_user), &private_user).unwrap());
+        assert!(!service
+            .can_view_profile(Some(&viewer), &private_user)
+            .unwrap());
+        assert!(service
+            .can_view_profile(Some(&private_user), &private_user)
+            .unwrap());
     }
 
     #[test]
@@ -329,12 +345,16 @@ mod tests {
         };
 
         // Anonymous user can view public profile
-        let filtered = service.filter_profile_data(None, &public_user, &field_settings).unwrap();
+        let filtered = service
+            .filter_profile_data(None, &public_user, &field_settings)
+            .unwrap();
         assert_eq!(filtered.first_name, Some("John".to_string()));
         assert_eq!(filtered.email, None); // Email is private
 
         // Owner can view all fields
-        let filtered = service.filter_profile_data(Some(&public_user), &public_user, &field_settings).unwrap();
+        let filtered = service
+            .filter_profile_data(Some(&public_user), &public_user, &field_settings)
+            .unwrap();
         assert_eq!(filtered.first_name, Some("John".to_string()));
         assert_eq!(filtered.email, Some("test@example.com".to_string()));
     }

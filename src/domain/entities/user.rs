@@ -178,7 +178,7 @@ mod tests {
             "test@example.com".to_string(),
             "hashed_password".to_string(),
         );
-        
+
         assert_eq!(user.id, 1);
         assert_eq!(user.username, "testuser");
         assert_eq!(user.email, "test@example.com");
@@ -204,7 +204,7 @@ mod tests {
             Some("New York, NY".to_string()),
             ProfilePrivacy::Public,
         );
-        
+
         assert_eq!(user.first_name, Some("John".to_string()));
         assert_eq!(user.last_name, Some("Doe".to_string()));
         assert_eq!(user.bio, Some("Software developer".to_string()));
@@ -221,19 +221,19 @@ mod tests {
             "test@example.com".to_string(),
             "hashed_password".to_string(),
         );
-        
+
         // No name set
         assert_eq!(user.full_name(), None);
-        
+
         // Only first name
         user.first_name = Some("John".to_string());
         assert_eq!(user.full_name(), Some("John".to_string()));
-        
+
         // Only last name
         user.first_name = None;
         user.last_name = Some("Doe".to_string());
         assert_eq!(user.full_name(), Some("Doe".to_string()));
-        
+
         // Both names
         user.first_name = Some("John".to_string());
         assert_eq!(user.full_name(), Some("John Doe".to_string()));
@@ -247,7 +247,7 @@ mod tests {
             "test@example.com".to_string(),
             "hashed_password".to_string(),
         );
-        
+
         user.update_profile(
             Some("Jane".to_string()),
             Some("Smith".to_string()),
@@ -257,11 +257,14 @@ mod tests {
             Some("San Francisco, CA".to_string()),
             Some(ProfilePrivacy::Private),
         );
-        
+
         assert_eq!(user.first_name, Some("Jane".to_string()));
         assert_eq!(user.last_name, Some("Smith".to_string()));
         assert_eq!(user.bio, Some("Updated bio".to_string()));
-        assert_eq!(user.avatar_url, Some("https://example.com/new-avatar.jpg".to_string()));
+        assert_eq!(
+            user.avatar_url,
+            Some("https://example.com/new-avatar.jpg".to_string())
+        );
         assert_eq!(user.website, Some("https://janesmith.com".to_string()));
         assert_eq!(user.location, Some("San Francisco, CA".to_string()));
         assert_eq!(user.privacy, ProfilePrivacy::Private);
@@ -276,20 +279,30 @@ mod tests {
             "public@example.com".to_string(),
             "hash".to_string(),
             Utc::now(),
-            None, None, None, None, None, None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
             ProfilePrivacy::Public,
         );
-        
+
         let private_user = User::new_with_profile(
             2,
             "privateuser".to_string(),
             "private@example.com".to_string(),
             "hash".to_string(),
             Utc::now(),
-            None, None, None, None, None, None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
             ProfilePrivacy::Private,
         );
-        
+
         assert!(public_user.is_profile_public());
         assert!(!private_user.is_profile_public());
     }

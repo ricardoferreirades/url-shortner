@@ -22,7 +22,14 @@ impl MockUrlRepository {
 
 #[async_trait]
 impl UrlRepository for MockUrlRepository {
-    async fn create_url(&self, short_code: &ShortCode, original_url: &str, expiration_date: Option<chrono::DateTime<chrono::Utc>>, user_id: Option<i32>, status: UrlStatus) -> Result<Url, RepositoryError> {
+    async fn create_url(
+        &self,
+        short_code: &ShortCode,
+        original_url: &str,
+        expiration_date: Option<chrono::DateTime<chrono::Utc>>,
+        user_id: Option<i32>,
+        status: UrlStatus,
+    ) -> Result<Url, RepositoryError> {
         let url = Url::new_with_timestamp(
             (self.urls.lock().unwrap().len() + 1) as i32,
             short_code.value().to_string(),
@@ -41,9 +48,15 @@ impl UrlRepository for MockUrlRepository {
         Ok(urls.iter().any(|url| url.short_code == short_code.value()))
     }
 
-    async fn find_by_short_code(&self, short_code: &ShortCode) -> Result<Option<Url>, RepositoryError> {
+    async fn find_by_short_code(
+        &self,
+        short_code: &ShortCode,
+    ) -> Result<Option<Url>, RepositoryError> {
         let urls = self.urls.lock().unwrap();
-        Ok(urls.iter().find(|url| url.short_code == short_code.value()).cloned())
+        Ok(urls
+            .iter()
+            .find(|url| url.short_code == short_code.value())
+            .cloned())
     }
 
     async fn find_by_user_id(&self, _user_id: i32) -> Result<Vec<Url>, RepositoryError> {
@@ -59,7 +72,10 @@ impl UrlRepository for MockUrlRepository {
         Ok(url.clone())
     }
 
-    async fn get_stats(&self, _user_id: Option<i32>) -> Result<crate::domain::repositories::UrlStats, RepositoryError> {
+    async fn get_stats(
+        &self,
+        _user_id: Option<i32>,
+    ) -> Result<crate::domain::repositories::UrlStats, RepositoryError> {
         Ok(crate::domain::repositories::UrlStats {
             total_urls: 0,
             total_clicks: 0,
@@ -67,7 +83,10 @@ impl UrlRepository for MockUrlRepository {
         })
     }
 
-    async fn find_urls_expiring_soon(&self, _duration: chrono::Duration) -> Result<Vec<Url>, RepositoryError> {
+    async fn find_urls_expiring_soon(
+        &self,
+        _duration: chrono::Duration,
+    ) -> Result<Vec<Url>, RepositoryError> {
         Ok(vec![])
     }
 
@@ -79,7 +98,11 @@ impl UrlRepository for MockUrlRepository {
         Ok(0)
     }
 
-    async fn soft_delete_by_id(&self, id: i32, user_id: Option<i32>) -> Result<bool, RepositoryError> {
+    async fn soft_delete_by_id(
+        &self,
+        id: i32,
+        user_id: Option<i32>,
+    ) -> Result<bool, RepositoryError> {
         let mut urls = self.urls.lock().unwrap();
         if let Some(url) = urls.iter_mut().find(|u| u.id == id && u.user_id == user_id) {
             url.deactivate();
@@ -89,7 +112,11 @@ impl UrlRepository for MockUrlRepository {
         }
     }
 
-    async fn reactivate_by_id(&self, id: i32, user_id: Option<i32>) -> Result<bool, RepositoryError> {
+    async fn reactivate_by_id(
+        &self,
+        id: i32,
+        user_id: Option<i32>,
+    ) -> Result<bool, RepositoryError> {
         let mut urls = self.urls.lock().unwrap();
         if let Some(url) = urls.iter_mut().find(|u| u.id == id && u.user_id == user_id) {
             url.reactivate();
@@ -99,34 +126,56 @@ impl UrlRepository for MockUrlRepository {
         }
     }
 
-    async fn find_by_status(&self, status: UrlStatus, user_id: Option<i32>) -> Result<Vec<Url>, RepositoryError> {
+    async fn find_by_status(
+        &self,
+        status: UrlStatus,
+        user_id: Option<i32>,
+    ) -> Result<Vec<Url>, RepositoryError> {
         let urls = self.urls.lock().unwrap();
-        let filtered_urls: Vec<Url> = urls.iter()
-            .filter(|url| {
-                url.status == status && 
-                (user_id.is_none() || url.user_id == user_id)
-            })
+        let filtered_urls: Vec<Url> = urls
+            .iter()
+            .filter(|url| url.status == status && (user_id.is_none() || url.user_id == user_id))
             .cloned()
             .collect();
         Ok(filtered_urls)
     }
 
-    async fn batch_deactivate_urls(&self, url_ids: &[i32], user_id: Option<i32>) -> Result<crate::domain::repositories::url_repository::BatchOperationResult, RepositoryError> {
-        self.batch_update_status(url_ids, UrlStatus::Inactive, user_id).await
+    async fn batch_deactivate_urls(
+        &self,
+        url_ids: &[i32],
+        user_id: Option<i32>,
+    ) -> Result<crate::domain::repositories::url_repository::BatchOperationResult, RepositoryError>
+    {
+        self.batch_update_status(url_ids, UrlStatus::Inactive, user_id)
+            .await
     }
 
-    async fn batch_reactivate_urls(&self, url_ids: &[i32], user_id: Option<i32>) -> Result<crate::domain::repositories::url_repository::BatchOperationResult, RepositoryError> {
-        self.batch_update_status(url_ids, UrlStatus::Active, user_id).await
+    async fn batch_reactivate_urls(
+        &self,
+        url_ids: &[i32],
+        user_id: Option<i32>,
+    ) -> Result<crate::domain::repositories::url_repository::BatchOperationResult, RepositoryError>
+    {
+        self.batch_update_status(url_ids, UrlStatus::Active, user_id)
+            .await
     }
 
-    async fn batch_delete_urls(&self, url_ids: &[i32], user_id: Option<i32>) -> Result<crate::domain::repositories::url_repository::BatchOperationResult, RepositoryError> {
-        use crate::domain::repositories::url_repository::{BatchOperationResult, BatchItemResult};
-        
+    async fn batch_delete_urls(
+        &self,
+        url_ids: &[i32],
+        user_id: Option<i32>,
+    ) -> Result<crate::domain::repositories::url_repository::BatchOperationResult, RepositoryError>
+    {
+        use crate::domain::repositories::url_repository::{BatchItemResult, BatchOperationResult};
+
         let mut urls = self.urls.lock().unwrap();
         let mut results = Vec::new();
-        
+
         for &url_id in url_ids {
-            if let Some(pos) = urls.iter().position(|u| u.id == url_id && (user_id.is_none() || u.user_id == user_id)) {
+            if let Some(pos) = urls
+                .iter()
+                .position(|u| u.id == url_id && (user_id.is_none() || u.user_id == user_id))
+            {
                 urls.remove(pos);
                 results.push(BatchItemResult {
                     url_id,
@@ -141,10 +190,10 @@ impl UrlRepository for MockUrlRepository {
                 });
             }
         }
-        
+
         let successful = results.iter().filter(|r| r.success).count();
         let failed = results.len() - successful;
-        
+
         Ok(BatchOperationResult {
             total_processed: results.len(),
             successful,
@@ -153,14 +202,23 @@ impl UrlRepository for MockUrlRepository {
         })
     }
 
-    async fn batch_update_status(&self, url_ids: &[i32], status: UrlStatus, user_id: Option<i32>) -> Result<crate::domain::repositories::url_repository::BatchOperationResult, RepositoryError> {
-        use crate::domain::repositories::url_repository::{BatchOperationResult, BatchItemResult};
-        
+    async fn batch_update_status(
+        &self,
+        url_ids: &[i32],
+        status: UrlStatus,
+        user_id: Option<i32>,
+    ) -> Result<crate::domain::repositories::url_repository::BatchOperationResult, RepositoryError>
+    {
+        use crate::domain::repositories::url_repository::{BatchItemResult, BatchOperationResult};
+
         let mut urls = self.urls.lock().unwrap();
         let mut results = Vec::new();
-        
+
         for &url_id in url_ids {
-            if let Some(url) = urls.iter_mut().find(|u| u.id == url_id && (user_id.is_none() || u.user_id == user_id)) {
+            if let Some(url) = urls
+                .iter_mut()
+                .find(|u| u.id == url_id && (user_id.is_none() || u.user_id == user_id))
+            {
                 url.status = status.clone();
                 results.push(BatchItemResult {
                     url_id,
@@ -175,10 +233,10 @@ impl UrlRepository for MockUrlRepository {
                 });
             }
         }
-        
+
         let successful = results.iter().filter(|r| r.success).count();
         let failed = results.len() - successful;
-        
+
         Ok(BatchOperationResult {
             total_processed: results.len(),
             successful,
@@ -187,14 +245,23 @@ impl UrlRepository for MockUrlRepository {
         })
     }
 
-    async fn batch_update_expiration(&self, url_ids: &[i32], expiration_date: Option<chrono::DateTime<chrono::Utc>>, user_id: Option<i32>) -> Result<crate::domain::repositories::url_repository::BatchOperationResult, RepositoryError> {
-        use crate::domain::repositories::url_repository::{BatchOperationResult, BatchItemResult};
-        
+    async fn batch_update_expiration(
+        &self,
+        url_ids: &[i32],
+        expiration_date: Option<chrono::DateTime<chrono::Utc>>,
+        user_id: Option<i32>,
+    ) -> Result<crate::domain::repositories::url_repository::BatchOperationResult, RepositoryError>
+    {
+        use crate::domain::repositories::url_repository::{BatchItemResult, BatchOperationResult};
+
         let mut urls = self.urls.lock().unwrap();
         let mut results = Vec::new();
-        
+
         for &url_id in url_ids {
-            if let Some(url) = urls.iter_mut().find(|u| u.id == url_id && (user_id.is_none() || u.user_id == user_id)) {
+            if let Some(url) = urls
+                .iter_mut()
+                .find(|u| u.id == url_id && (user_id.is_none() || u.user_id == user_id))
+            {
                 url.expiration_date = expiration_date;
                 results.push(BatchItemResult {
                     url_id,
@@ -209,10 +276,10 @@ impl UrlRepository for MockUrlRepository {
                 });
             }
         }
-        
+
         let successful = results.iter().filter(|r| r.success).count();
         let failed = results.len() - successful;
-        
+
         Ok(BatchOperationResult {
             total_processed: results.len(),
             successful,

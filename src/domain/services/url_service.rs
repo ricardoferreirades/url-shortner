@@ -28,11 +28,11 @@ where
         let mut hasher = SeaHasher::new();
         original_url.hash(&mut hasher);
         let hash = hasher.finish();
-        
+
         // Convert to base62-like encoding
         let short_code = self.hash_to_short_code(hash);
         let short_code = ShortCode::new(short_code)?;
-        
+
         // Check if it already exists, if so, append a suffix
         if self.repository.exists_by_short_code(&short_code).await? {
             self.generate_unique_short_code(&short_code).await
@@ -42,10 +42,13 @@ where
     }
 
     /// Generate a unique short code with collision handling
-    async fn generate_unique_short_code(&self, base_code: &ShortCode) -> Result<ShortCode, ServiceError> {
+    async fn generate_unique_short_code(
+        &self,
+        base_code: &ShortCode,
+    ) -> Result<ShortCode, ServiceError> {
         let mut counter = 1;
         let base_value = base_code.value();
-        
+
         loop {
             let candidate = if counter < 10 {
                 format!("{}{}", base_value, counter)
@@ -56,13 +59,17 @@ where
                 let hash = hasher.finish();
                 self.hash_to_short_code(hash)
             };
-            
+
             let candidate_code = ShortCode::new(candidate)?;
-            
-            if !self.repository.exists_by_short_code(&candidate_code).await? {
+
+            if !self
+                .repository
+                .exists_by_short_code(&candidate_code)
+                .await?
+            {
                 return Ok(candidate_code);
             }
-            
+
             counter += 1;
             if counter > 1000 {
                 return Err(ServiceError::TooManyCollisions);
@@ -75,13 +82,13 @@ where
         const CHARS: &[u8] = b"0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
         let mut result = String::new();
         let mut value = hash;
-        
+
         // Generate 6-8 character code
         for _ in 0..6 {
             result.push(CHARS[(value % 62) as usize] as char);
             value /= 62;
         }
-        
+
         result
     }
 
@@ -104,36 +111,58 @@ where
             None => self.generate_short_code(original_url).await?,
         };
 
-        self.repository.create_url(&short_code, original_url, expiration_date, user_id, UrlStatus::Active).await
+        self.repository
+            .create_url(
+                &short_code,
+                original_url,
+                expiration_date,
+                user_id,
+                UrlStatus::Active,
+            )
+            .await
             .map_err(ServiceError::from)
     }
 
     /// Get URL by short code
-    pub async fn get_url_by_short_code(&self, short_code: &ShortCode) -> Result<Option<Url>, ServiceError> {
-        self.repository.find_by_short_code(short_code).await
+    pub async fn get_url_by_short_code(
+        &self,
+        short_code: &ShortCode,
+    ) -> Result<Option<Url>, ServiceError> {
+        self.repository
+            .find_by_short_code(short_code)
+            .await
             .map_err(ServiceError::from)
     }
 
     /// Get URLs for a specific user
     pub async fn get_urls_for_user(&self, user_id: i32) -> Result<Vec<Url>, ServiceError> {
-        self.repository.find_by_user_id(user_id).await
+        self.repository
+            .find_by_user_id(user_id)
+            .await
             .map_err(ServiceError::from)
     }
 
     /// Delete a URL (with ownership check)
     pub async fn delete_url(&self, id: i32, user_id: Option<i32>) -> Result<bool, ServiceError> {
-        self.repository.delete_by_id(id, user_id).await
+        self.repository
+            .delete_by_id(id, user_id)
+            .await
             .map_err(ServiceError::from)
     }
 
     /// Update a URL (with ownership check)
     pub async fn update_url(&self, url: &Url) -> Result<Url, ServiceError> {
-        self.repository.update_url(url).await
+        self.repository
+            .update_url(url)
+            .await
             .map_err(ServiceError::from)
     }
 
     /// Get URL by short code with validation (expiration and status)
-    pub async fn get_url_by_short_code_with_validation(&self, short_code: &ShortCode) -> Result<Option<Url>, ServiceError> {
+    pub async fn get_url_by_short_code_with_validation(
+        &self,
+        short_code: &ShortCode,
+    ) -> Result<Option<Url>, ServiceError> {
         match self.repository.find_by_short_code(short_code).await? {
             Some(url) => {
                 if !url.is_accessible() {
@@ -148,73 +177,140 @@ where
     }
 
     /// Get URLs that are expiring soon
-    pub async fn get_urls_expiring_soon(&self, duration: chrono::Duration) -> Result<Vec<Url>, ServiceError> {
-        self.repository.find_urls_expiring_soon(duration).await
+    pub async fn get_urls_expiring_soon(
+        &self,
+        duration: chrono::Duration,
+    ) -> Result<Vec<Url>, ServiceError> {
+        self.repository
+            .find_urls_expiring_soon(duration)
+            .await
             .map_err(ServiceError::from)
     }
 
     /// Get expired URLs
     pub async fn get_expired_urls(&self) -> Result<Vec<Url>, ServiceError> {
-        self.repository.find_expired_urls().await
+        self.repository
+            .find_expired_urls()
+            .await
             .map_err(ServiceError::from)
     }
 
     /// Clean up expired URLs
     pub async fn cleanup_expired_urls(&self) -> Result<u64, ServiceError> {
-        self.repository.delete_expired_urls().await
+        self.repository
+            .delete_expired_urls()
+            .await
             .map_err(ServiceError::from)
     }
 
     /// Soft delete a URL (deactivate)
-    pub async fn deactivate_url(&self, id: i32, user_id: Option<i32>) -> Result<bool, ServiceError> {
-        self.repository.soft_delete_by_id(id, user_id).await
+    pub async fn deactivate_url(
+        &self,
+        id: i32,
+        user_id: Option<i32>,
+    ) -> Result<bool, ServiceError> {
+        self.repository
+            .soft_delete_by_id(id, user_id)
+            .await
             .map_err(ServiceError::from)
     }
 
     /// Reactivate a URL
-    pub async fn reactivate_url(&self, id: i32, user_id: Option<i32>) -> Result<bool, ServiceError> {
-        self.repository.reactivate_by_id(id, user_id).await
+    pub async fn reactivate_url(
+        &self,
+        id: i32,
+        user_id: Option<i32>,
+    ) -> Result<bool, ServiceError> {
+        self.repository
+            .reactivate_by_id(id, user_id)
+            .await
             .map_err(ServiceError::from)
     }
 
     /// Get URLs by status
-    pub async fn get_urls_by_status(&self, status: UrlStatus, user_id: Option<i32>) -> Result<Vec<Url>, ServiceError> {
-        self.repository.find_by_status(status, user_id).await
+    pub async fn get_urls_by_status(
+        &self,
+        status: UrlStatus,
+        user_id: Option<i32>,
+    ) -> Result<Vec<Url>, ServiceError> {
+        self.repository
+            .find_by_status(status, user_id)
+            .await
             .map_err(ServiceError::from)
     }
 
     /// Get deactivated URLs for a user
-    pub async fn get_deactivated_urls(&self, user_id: Option<i32>) -> Result<Vec<Url>, ServiceError> {
+    pub async fn get_deactivated_urls(
+        &self,
+        user_id: Option<i32>,
+    ) -> Result<Vec<Url>, ServiceError> {
         self.get_urls_by_status(UrlStatus::Inactive, user_id).await
     }
 
     /// Batch deactivate URLs
-    pub async fn batch_deactivate_urls(&self, url_ids: &[i32], user_id: Option<i32>) -> Result<crate::domain::repositories::url_repository::BatchOperationResult, ServiceError> {
-        self.repository.batch_deactivate_urls(url_ids, user_id).await
+    pub async fn batch_deactivate_urls(
+        &self,
+        url_ids: &[i32],
+        user_id: Option<i32>,
+    ) -> Result<crate::domain::repositories::url_repository::BatchOperationResult, ServiceError>
+    {
+        self.repository
+            .batch_deactivate_urls(url_ids, user_id)
+            .await
             .map_err(ServiceError::from)
     }
 
     /// Batch reactivate URLs
-    pub async fn batch_reactivate_urls(&self, url_ids: &[i32], user_id: Option<i32>) -> Result<crate::domain::repositories::url_repository::BatchOperationResult, ServiceError> {
-        self.repository.batch_reactivate_urls(url_ids, user_id).await
+    pub async fn batch_reactivate_urls(
+        &self,
+        url_ids: &[i32],
+        user_id: Option<i32>,
+    ) -> Result<crate::domain::repositories::url_repository::BatchOperationResult, ServiceError>
+    {
+        self.repository
+            .batch_reactivate_urls(url_ids, user_id)
+            .await
             .map_err(ServiceError::from)
     }
 
     /// Batch delete URLs
-    pub async fn batch_delete_urls(&self, url_ids: &[i32], user_id: Option<i32>) -> Result<crate::domain::repositories::url_repository::BatchOperationResult, ServiceError> {
-        self.repository.batch_delete_urls(url_ids, user_id).await
+    pub async fn batch_delete_urls(
+        &self,
+        url_ids: &[i32],
+        user_id: Option<i32>,
+    ) -> Result<crate::domain::repositories::url_repository::BatchOperationResult, ServiceError>
+    {
+        self.repository
+            .batch_delete_urls(url_ids, user_id)
+            .await
             .map_err(ServiceError::from)
     }
 
     /// Batch update URL status
-    pub async fn batch_update_status(&self, url_ids: &[i32], status: UrlStatus, user_id: Option<i32>) -> Result<crate::domain::repositories::url_repository::BatchOperationResult, ServiceError> {
-        self.repository.batch_update_status(url_ids, status, user_id).await
+    pub async fn batch_update_status(
+        &self,
+        url_ids: &[i32],
+        status: UrlStatus,
+        user_id: Option<i32>,
+    ) -> Result<crate::domain::repositories::url_repository::BatchOperationResult, ServiceError>
+    {
+        self.repository
+            .batch_update_status(url_ids, status, user_id)
+            .await
             .map_err(ServiceError::from)
     }
 
     /// Batch update URL expiration dates
-    pub async fn batch_update_expiration(&self, url_ids: &[i32], expiration_date: Option<chrono::DateTime<chrono::Utc>>, user_id: Option<i32>) -> Result<crate::domain::repositories::url_repository::BatchOperationResult, ServiceError> {
-        self.repository.batch_update_expiration(url_ids, expiration_date, user_id).await
+    pub async fn batch_update_expiration(
+        &self,
+        url_ids: &[i32],
+        expiration_date: Option<chrono::DateTime<chrono::Utc>>,
+        user_id: Option<i32>,
+    ) -> Result<crate::domain::repositories::url_repository::BatchOperationResult, ServiceError>
+    {
+        self.repository
+            .batch_update_expiration(url_ids, expiration_date, user_id)
+            .await
             .map_err(ServiceError::from)
     }
 
@@ -225,7 +321,8 @@ where
         url_ids: &[i32],
         data: Option<&crate::application::dto::requests::BatchOperationData>,
         user_id: Option<i32>,
-    ) -> Result<crate::domain::repositories::url_repository::BatchOperationResult, ServiceError> {
+    ) -> Result<crate::domain::repositories::url_repository::BatchOperationResult, ServiceError>
+    {
         match operation {
             crate::application::dto::requests::BatchOperationType::Deactivate => {
                 self.batch_deactivate_urls(url_ids, user_id).await
@@ -244,12 +341,15 @@ where
                         "inactive" => Some(UrlStatus::Inactive),
                         _ => None,
                     })
-                    .ok_or_else(|| ServiceError::InvalidData("Invalid status provided".to_string()))?;
+                    .ok_or_else(|| {
+                        ServiceError::InvalidData("Invalid status provided".to_string())
+                    })?;
                 self.batch_update_status(url_ids, status, user_id).await
             }
             crate::application::dto::requests::BatchOperationType::UpdateExpiration => {
                 let expiration_date = data.and_then(|d| d.expiration_date);
-                self.batch_update_expiration(url_ids, expiration_date, user_id).await
+                self.batch_update_expiration(url_ids, expiration_date, user_id)
+                    .await
             }
         }
     }
@@ -261,19 +361,19 @@ where
 pub enum ServiceError {
     #[error("Repository error: {0}")]
     Repository(#[from] RepositoryError),
-    
+
     #[error("Invalid short code: {0}")]
     InvalidShortCode(String),
-    
+
     #[error("Short code already exists")]
     ShortCodeAlreadyExists,
-    
+
     #[error("Too many collisions while generating short code")]
     TooManyCollisions,
-    
+
     #[error("Permission denied: {0}")]
     PermissionDenied(String),
-    
+
     #[error("Invalid data: {0}")]
     InvalidData(String),
 }
@@ -329,22 +429,39 @@ mod tests {
             Ok(url)
         }
 
-        async fn find_by_short_code(&self, short_code: &ShortCode) -> Result<Option<Url>, RepositoryError> {
+        async fn find_by_short_code(
+            &self,
+            short_code: &ShortCode,
+        ) -> Result<Option<Url>, RepositoryError> {
             let urls = self.urls.lock().unwrap();
-            Ok(urls.iter().find(|u| u.short_code == short_code.value()).cloned())
+            Ok(urls
+                .iter()
+                .find(|u| u.short_code == short_code.value())
+                .cloned())
         }
 
         async fn find_by_user_id(&self, user_id: i32) -> Result<Vec<Url>, RepositoryError> {
             let urls = self.urls.lock().unwrap();
-            Ok(urls.iter().filter(|u| u.user_id == Some(user_id)).cloned().collect())
+            Ok(urls
+                .iter()
+                .filter(|u| u.user_id == Some(user_id))
+                .cloned()
+                .collect())
         }
 
-        async fn exists_by_short_code(&self, short_code: &ShortCode) -> Result<bool, RepositoryError> {
+        async fn exists_by_short_code(
+            &self,
+            short_code: &ShortCode,
+        ) -> Result<bool, RepositoryError> {
             let urls = self.urls.lock().unwrap();
             Ok(urls.iter().any(|u| u.short_code == short_code.value()))
         }
 
-        async fn delete_by_id(&self, id: i32, user_id: Option<i32>) -> Result<bool, RepositoryError> {
+        async fn delete_by_id(
+            &self,
+            id: i32,
+            user_id: Option<i32>,
+        ) -> Result<bool, RepositoryError> {
             let mut urls = self.urls.lock().unwrap();
             if let Some(pos) = urls.iter().position(|u| u.id == id && u.user_id == user_id) {
                 urls.remove(pos);
@@ -364,14 +481,17 @@ mod tests {
             }
         }
 
-        async fn get_stats(&self, user_id: Option<i32>) -> Result<crate::domain::repositories::UrlStats, RepositoryError> {
+        async fn get_stats(
+            &self,
+            user_id: Option<i32>,
+        ) -> Result<crate::domain::repositories::UrlStats, RepositoryError> {
             let urls = self.urls.lock().unwrap();
             let filtered_urls: Vec<_> = if let Some(uid) = user_id {
                 urls.iter().filter(|u| u.user_id == Some(uid)).collect()
             } else {
                 urls.iter().collect()
             };
-            
+
             Ok(crate::domain::repositories::UrlStats {
                 total_urls: filtered_urls.len() as i64,
                 total_clicks: 0,
@@ -379,7 +499,10 @@ mod tests {
             })
         }
 
-        async fn find_urls_expiring_soon(&self, _duration: chrono::Duration) -> Result<Vec<Url>, RepositoryError> {
+        async fn find_urls_expiring_soon(
+            &self,
+            _duration: chrono::Duration,
+        ) -> Result<Vec<Url>, RepositoryError> {
             Ok(vec![])
         }
 
@@ -391,7 +514,11 @@ mod tests {
             Ok(0)
         }
 
-        async fn soft_delete_by_id(&self, id: i32, user_id: Option<i32>) -> Result<bool, RepositoryError> {
+        async fn soft_delete_by_id(
+            &self,
+            id: i32,
+            user_id: Option<i32>,
+        ) -> Result<bool, RepositoryError> {
             let mut urls = self.urls.lock().unwrap();
             if let Some(url) = urls.iter_mut().find(|u| u.id == id && u.user_id == user_id) {
                 url.deactivate();
@@ -401,7 +528,11 @@ mod tests {
             }
         }
 
-        async fn reactivate_by_id(&self, id: i32, user_id: Option<i32>) -> Result<bool, RepositoryError> {
+        async fn reactivate_by_id(
+            &self,
+            id: i32,
+            user_id: Option<i32>,
+        ) -> Result<bool, RepositoryError> {
             let mut urls = self.urls.lock().unwrap();
             if let Some(url) = urls.iter_mut().find(|u| u.id == id && u.user_id == user_id) {
                 url.reactivate();
@@ -411,26 +542,38 @@ mod tests {
             }
         }
 
-        async fn find_by_status(&self, status: UrlStatus, user_id: Option<i32>) -> Result<Vec<Url>, RepositoryError> {
+        async fn find_by_status(
+            &self,
+            status: UrlStatus,
+            user_id: Option<i32>,
+        ) -> Result<Vec<Url>, RepositoryError> {
             let urls = self.urls.lock().unwrap();
-            let filtered_urls: Vec<Url> = urls.iter()
-                .filter(|url| {
-                    url.status == status && 
-                    (user_id.is_none() || url.user_id == user_id)
-                })
+            let filtered_urls: Vec<Url> = urls
+                .iter()
+                .filter(|url| url.status == status && (user_id.is_none() || url.user_id == user_id))
                 .cloned()
                 .collect();
             Ok(filtered_urls)
         }
 
-        async fn batch_deactivate_urls(&self, url_ids: &[i32], user_id: Option<i32>) -> Result<crate::domain::repositories::url_repository::BatchOperationResult, RepositoryError> {
+        async fn batch_deactivate_urls(
+            &self,
+            url_ids: &[i32],
+            user_id: Option<i32>,
+        ) -> Result<
+            crate::domain::repositories::url_repository::BatchOperationResult,
+            RepositoryError,
+        > {
             let mut urls = self.urls.lock().unwrap();
             let mut results = Vec::new();
             let mut successful = 0;
             let mut failed = 0;
 
             for &url_id in url_ids {
-                if let Some(url) = urls.iter_mut().find(|u| u.id == url_id && (user_id.is_none() || u.user_id == user_id)) {
+                if let Some(url) = urls
+                    .iter_mut()
+                    .find(|u| u.id == url_id && (user_id.is_none() || u.user_id == user_id))
+                {
                     url.deactivate();
                     results.push(crate::domain::repositories::BatchItemResult {
                         url_id,
@@ -448,22 +591,34 @@ mod tests {
                 }
             }
 
-            Ok(crate::domain::repositories::url_repository::BatchOperationResult {
-                total_processed: url_ids.len(),
-                successful,
-                failed,
-                results,
-            })
+            Ok(
+                crate::domain::repositories::url_repository::BatchOperationResult {
+                    total_processed: url_ids.len(),
+                    successful,
+                    failed,
+                    results,
+                },
+            )
         }
 
-        async fn batch_reactivate_urls(&self, url_ids: &[i32], user_id: Option<i32>) -> Result<crate::domain::repositories::url_repository::BatchOperationResult, RepositoryError> {
+        async fn batch_reactivate_urls(
+            &self,
+            url_ids: &[i32],
+            user_id: Option<i32>,
+        ) -> Result<
+            crate::domain::repositories::url_repository::BatchOperationResult,
+            RepositoryError,
+        > {
             let mut urls = self.urls.lock().unwrap();
             let mut results = Vec::new();
             let mut successful = 0;
             let mut failed = 0;
 
             for &url_id in url_ids {
-                if let Some(url) = urls.iter_mut().find(|u| u.id == url_id && (user_id.is_none() || u.user_id == user_id)) {
+                if let Some(url) = urls
+                    .iter_mut()
+                    .find(|u| u.id == url_id && (user_id.is_none() || u.user_id == user_id))
+                {
                     url.reactivate();
                     results.push(crate::domain::repositories::BatchItemResult {
                         url_id,
@@ -481,22 +636,34 @@ mod tests {
                 }
             }
 
-            Ok(crate::domain::repositories::url_repository::BatchOperationResult {
-                total_processed: url_ids.len(),
-                successful,
-                failed,
-                results,
-            })
+            Ok(
+                crate::domain::repositories::url_repository::BatchOperationResult {
+                    total_processed: url_ids.len(),
+                    successful,
+                    failed,
+                    results,
+                },
+            )
         }
 
-        async fn batch_delete_urls(&self, url_ids: &[i32], user_id: Option<i32>) -> Result<crate::domain::repositories::url_repository::BatchOperationResult, RepositoryError> {
+        async fn batch_delete_urls(
+            &self,
+            url_ids: &[i32],
+            user_id: Option<i32>,
+        ) -> Result<
+            crate::domain::repositories::url_repository::BatchOperationResult,
+            RepositoryError,
+        > {
             let mut urls = self.urls.lock().unwrap();
             let mut results = Vec::new();
             let mut successful = 0;
             let mut failed = 0;
 
             for &url_id in url_ids {
-                if let Some(pos) = urls.iter().position(|u| u.id == url_id && (user_id.is_none() || u.user_id == user_id)) {
+                if let Some(pos) = urls
+                    .iter()
+                    .position(|u| u.id == url_id && (user_id.is_none() || u.user_id == user_id))
+                {
                     urls.remove(pos);
                     results.push(crate::domain::repositories::BatchItemResult {
                         url_id,
@@ -514,22 +681,35 @@ mod tests {
                 }
             }
 
-            Ok(crate::domain::repositories::url_repository::BatchOperationResult {
-                total_processed: url_ids.len(),
-                successful,
-                failed,
-                results,
-            })
+            Ok(
+                crate::domain::repositories::url_repository::BatchOperationResult {
+                    total_processed: url_ids.len(),
+                    successful,
+                    failed,
+                    results,
+                },
+            )
         }
 
-        async fn batch_update_status(&self, url_ids: &[i32], status: UrlStatus, user_id: Option<i32>) -> Result<crate::domain::repositories::url_repository::BatchOperationResult, RepositoryError> {
+        async fn batch_update_status(
+            &self,
+            url_ids: &[i32],
+            status: UrlStatus,
+            user_id: Option<i32>,
+        ) -> Result<
+            crate::domain::repositories::url_repository::BatchOperationResult,
+            RepositoryError,
+        > {
             let mut urls = self.urls.lock().unwrap();
             let mut results = Vec::new();
             let mut successful = 0;
             let mut failed = 0;
 
             for &url_id in url_ids {
-                if let Some(url) = urls.iter_mut().find(|u| u.id == url_id && (user_id.is_none() || u.user_id == user_id)) {
+                if let Some(url) = urls
+                    .iter_mut()
+                    .find(|u| u.id == url_id && (user_id.is_none() || u.user_id == user_id))
+                {
                     url.status = status.clone();
                     results.push(crate::domain::repositories::BatchItemResult {
                         url_id,
@@ -547,22 +727,35 @@ mod tests {
                 }
             }
 
-            Ok(crate::domain::repositories::url_repository::BatchOperationResult {
-                total_processed: url_ids.len(),
-                successful,
-                failed,
-                results,
-            })
+            Ok(
+                crate::domain::repositories::url_repository::BatchOperationResult {
+                    total_processed: url_ids.len(),
+                    successful,
+                    failed,
+                    results,
+                },
+            )
         }
 
-        async fn batch_update_expiration(&self, url_ids: &[i32], expiration_date: Option<chrono::DateTime<chrono::Utc>>, user_id: Option<i32>) -> Result<crate::domain::repositories::url_repository::BatchOperationResult, RepositoryError> {
+        async fn batch_update_expiration(
+            &self,
+            url_ids: &[i32],
+            expiration_date: Option<chrono::DateTime<chrono::Utc>>,
+            user_id: Option<i32>,
+        ) -> Result<
+            crate::domain::repositories::url_repository::BatchOperationResult,
+            RepositoryError,
+        > {
             let mut urls = self.urls.lock().unwrap();
             let mut results = Vec::new();
             let mut successful = 0;
             let mut failed = 0;
 
             for &url_id in url_ids {
-                if let Some(url) = urls.iter_mut().find(|u| u.id == url_id && (user_id.is_none() || u.user_id == user_id)) {
+                if let Some(url) = urls
+                    .iter_mut()
+                    .find(|u| u.id == url_id && (user_id.is_none() || u.user_id == user_id))
+                {
                     url.expiration_date = expiration_date;
                     results.push(crate::domain::repositories::BatchItemResult {
                         url_id,
@@ -580,12 +773,14 @@ mod tests {
                 }
             }
 
-            Ok(crate::domain::repositories::url_repository::BatchOperationResult {
-                total_processed: url_ids.len(),
-                successful,
-                failed,
-                results,
-            })
+            Ok(
+                crate::domain::repositories::url_repository::BatchOperationResult {
+                    total_processed: url_ids.len(),
+                    successful,
+                    failed,
+                    results,
+                },
+            )
         }
     }
 
@@ -593,8 +788,11 @@ mod tests {
     async fn test_generate_short_code() {
         let repo = MockUrlRepository::new();
         let service = UrlService::new(repo);
-        
-        let short_code = service.generate_short_code("https://example.com").await.unwrap();
+
+        let short_code = service
+            .generate_short_code("https://example.com")
+            .await
+            .unwrap();
         assert!(!short_code.value().is_empty());
         assert!(short_code.value().len() >= 6);
     }
@@ -603,8 +801,11 @@ mod tests {
     async fn test_create_url_with_generated_code() {
         let repo = MockUrlRepository::new();
         let service = UrlService::new(repo);
-        
-        let url = service.create_url("https://example.com", None, None, None).await.unwrap();
+
+        let url = service
+            .create_url("https://example.com", None, None, None)
+            .await
+            .unwrap();
         assert_eq!(url.original_url, "https://example.com");
         assert!(!url.short_code.is_empty());
     }
@@ -614,8 +815,11 @@ mod tests {
         let repo = MockUrlRepository::new();
         let service = UrlService::new(repo);
         let custom_code = ShortCode::new("mycode".to_string()).unwrap();
-        
-        let url = service.create_url("https://example.com", Some(custom_code.clone()), None, None).await.unwrap();
+
+        let url = service
+            .create_url("https://example.com", Some(custom_code.clone()), None, None)
+            .await
+            .unwrap();
         assert_eq!(url.short_code, custom_code.value());
         assert_eq!(url.original_url, "https://example.com");
     }
@@ -624,20 +828,35 @@ mod tests {
     async fn test_batch_deactivate_urls() {
         let repo = MockUrlRepository::new();
         let service = UrlService::new(repo.clone());
-        
+
         // Create some test URLs
-        let url1 = service.create_url("https://example1.com", None, None, Some(1)).await.unwrap();
-        let url2 = service.create_url("https://example2.com", None, None, Some(1)).await.unwrap();
-        let url3 = service.create_url("https://example3.com", None, None, Some(2)).await.unwrap();
-        
+        let url1 = service
+            .create_url("https://example1.com", None, None, Some(1))
+            .await
+            .unwrap();
+        let url2 = service
+            .create_url("https://example2.com", None, None, Some(1))
+            .await
+            .unwrap();
+        let url3 = service
+            .create_url("https://example3.com", None, None, Some(2))
+            .await
+            .unwrap();
+
         // Batch deactivate URLs for user 1
-        let result = service.batch_deactivate_urls(&[url1.id, url2.id], Some(1)).await.unwrap();
+        let result = service
+            .batch_deactivate_urls(&[url1.id, url2.id], Some(1))
+            .await
+            .unwrap();
         assert_eq!(result.total_processed, 2);
         assert_eq!(result.successful, 2);
         assert_eq!(result.failed, 0);
-        
+
         // Try to deactivate URL owned by different user
-        let result = service.batch_deactivate_urls(&[url3.id], Some(1)).await.unwrap();
+        let result = service
+            .batch_deactivate_urls(&[url3.id], Some(1))
+            .await
+            .unwrap();
         assert_eq!(result.total_processed, 1);
         assert_eq!(result.successful, 0);
         assert_eq!(result.failed, 1);
@@ -647,20 +866,35 @@ mod tests {
     async fn test_batch_delete_urls() {
         let repo = MockUrlRepository::new();
         let service = UrlService::new(repo.clone());
-        
+
         // Create some test URLs
-        let url1 = service.create_url("https://example1.com", None, None, Some(1)).await.unwrap();
-        let url2 = service.create_url("https://example2.com", None, None, Some(1)).await.unwrap();
-        let url3 = service.create_url("https://example3.com", None, None, Some(2)).await.unwrap();
-        
+        let url1 = service
+            .create_url("https://example1.com", None, None, Some(1))
+            .await
+            .unwrap();
+        let url2 = service
+            .create_url("https://example2.com", None, None, Some(1))
+            .await
+            .unwrap();
+        let url3 = service
+            .create_url("https://example3.com", None, None, Some(2))
+            .await
+            .unwrap();
+
         // Batch delete URLs for user 1
-        let result = service.batch_delete_urls(&[url1.id, url2.id], Some(1)).await.unwrap();
+        let result = service
+            .batch_delete_urls(&[url1.id, url2.id], Some(1))
+            .await
+            .unwrap();
         assert_eq!(result.total_processed, 2);
         assert_eq!(result.successful, 2);
         assert_eq!(result.failed, 0);
-        
+
         // Try to delete URL owned by different user
-        let result = service.batch_delete_urls(&[url3.id], Some(1)).await.unwrap();
+        let result = service
+            .batch_delete_urls(&[url3.id], Some(1))
+            .await
+            .unwrap();
         assert_eq!(result.total_processed, 1);
         assert_eq!(result.successful, 0);
         assert_eq!(result.failed, 1);
@@ -670,13 +904,22 @@ mod tests {
     async fn test_batch_update_status() {
         let repo = MockUrlRepository::new();
         let service = UrlService::new(repo.clone());
-        
+
         // Create some test URLs
-        let url1 = service.create_url("https://example1.com", None, None, Some(1)).await.unwrap();
-        let url2 = service.create_url("https://example2.com", None, None, Some(1)).await.unwrap();
-        
+        let url1 = service
+            .create_url("https://example1.com", None, None, Some(1))
+            .await
+            .unwrap();
+        let url2 = service
+            .create_url("https://example2.com", None, None, Some(1))
+            .await
+            .unwrap();
+
         // Batch update status to inactive
-        let result = service.batch_update_status(&[url1.id, url2.id], UrlStatus::Inactive, Some(1)).await.unwrap();
+        let result = service
+            .batch_update_status(&[url1.id, url2.id], UrlStatus::Inactive, Some(1))
+            .await
+            .unwrap();
         assert_eq!(result.total_processed, 2);
         assert_eq!(result.successful, 2);
         assert_eq!(result.failed, 0);
@@ -686,15 +929,24 @@ mod tests {
     async fn test_batch_update_expiration() {
         let repo = MockUrlRepository::new();
         let service = UrlService::new(repo.clone());
-        
+
         // Create some test URLs
-        let url1 = service.create_url("https://example1.com", None, None, Some(1)).await.unwrap();
-        let url2 = service.create_url("https://example2.com", None, None, Some(1)).await.unwrap();
-        
+        let url1 = service
+            .create_url("https://example1.com", None, None, Some(1))
+            .await
+            .unwrap();
+        let url2 = service
+            .create_url("https://example2.com", None, None, Some(1))
+            .await
+            .unwrap();
+
         let new_expiration = chrono::Utc::now() + chrono::Duration::days(30);
-        
+
         // Batch update expiration
-        let result = service.batch_update_expiration(&[url1.id, url2.id], Some(new_expiration), Some(1)).await.unwrap();
+        let result = service
+            .batch_update_expiration(&[url1.id, url2.id], Some(new_expiration), Some(1))
+            .await
+            .unwrap();
         assert_eq!(result.total_processed, 2);
         assert_eq!(result.successful, 2);
         assert_eq!(result.failed, 0);

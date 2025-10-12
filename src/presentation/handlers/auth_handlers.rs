@@ -1,8 +1,4 @@
-use axum::{
-    extract::State,
-    http::StatusCode,
-    Json,
-};
+use axum::{extract::State, http::StatusCode, Json};
 use serde::{Deserialize, Serialize};
 use tracing::{info, warn};
 
@@ -69,14 +65,25 @@ where
     U: UserRepository + Send + Sync + Clone,
     P: crate::domain::repositories::PasswordResetRepository + Send + Sync + Clone,
 {
-    info!("Received registration request for username: {}", request.username);
+    info!(
+        "Received registration request for username: {}",
+        request.username
+    );
 
-    match app_state.auth_service.register(&request.username, &request.email, &request.password).await {
+    match app_state
+        .auth_service
+        .register(&request.username, &request.email, &request.password)
+        .await
+    {
         Ok(user) => {
             info!("Successfully registered user: {}", user.username);
-            
+
             // Generate token for the newly registered user
-            match app_state.auth_service.login(&user.username, &request.password).await {
+            match app_state
+                .auth_service
+                .login(&user.username, &request.password)
+                .await
+            {
                 Ok(token) => {
                     let response = AuthResponse {
                         token,
@@ -109,14 +116,10 @@ where
                 AuthServiceError::EmailAlreadyExists => {
                     ("EMAIL_EXISTS", "Email already exists".to_string())
                 }
-                AuthServiceError::InvalidInput(msg) => {
-                    ("INVALID_INPUT", msg)
-                }
-                _ => {
-                    ("REGISTRATION_FAILED", "Registration failed".to_string())
-                }
+                AuthServiceError::InvalidInput(msg) => ("INVALID_INPUT", msg),
+                _ => ("REGISTRATION_FAILED", "Registration failed".to_string()),
             };
-            
+
             let error_response = ErrorResponse {
                 error: error_code.to_string(),
                 message: error_message,
@@ -149,7 +152,11 @@ where
 {
     info!("Received login request for username: {}", request.username);
 
-    match app_state.auth_service.login(&request.username, &request.password).await {
+    match app_state
+        .auth_service
+        .login(&request.username, &request.password)
+        .await
+    {
         Ok(token) => {
             // Get user details for response
             match app_state.auth_service.verify_token(&token).await {

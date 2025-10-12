@@ -1,8 +1,15 @@
-use crate::application::dto::{requests::BulkShortenUrlsRequest, responses::BulkOperationProgress, ErrorResponse};
+use crate::application::dto::{
+    requests::BulkShortenUrlsRequest, responses::BulkOperationProgress, ErrorResponse,
+};
 use crate::domain::repositories::UrlRepository;
-use axum::{extract::State, http::{StatusCode, header}, Json, http::HeaderMap};
-use tracing::{info, warn};
 use crate::presentation::handlers::app_state::AppState;
+use axum::{
+    extract::State,
+    http::HeaderMap,
+    http::{header, StatusCode},
+    Json,
+};
+use tracing::{info, warn};
 
 /// Handler for async bulk URL shortening with progress tracking
 #[utoipa::path(
@@ -24,9 +31,12 @@ pub async fn async_bulk_shorten_urls_handler<R, U, P>(
 where
     R: UrlRepository + Send + Sync + Clone,
     U: crate::domain::repositories::UserRepository + Send + Sync + Clone,
-    P: crate::domain::repositories::PasswordResetRepository + Send + Sync + Clone,{
+    P: crate::domain::repositories::PasswordResetRepository + Send + Sync + Clone,
+{
     // Require Authorization: Bearer <token>
-    let auth_header = headers.get(header::AUTHORIZATION).and_then(|v| v.to_str().ok());
+    let auth_header = headers
+        .get(header::AUTHORIZATION)
+        .and_then(|v| v.to_str().ok());
     let token = match auth_header.and_then(|h| h.strip_prefix("Bearer ")) {
         Some(t) if !t.is_empty() => t,
         _ => {
@@ -55,21 +65,34 @@ where
 
     let user_id = Some(user.id);
     let total_items = request.items.len();
-    
+
     // Create operation for progress tracking
-    let operation_id = app_state.progress_service.create_operation(total_items).await;
-    
-    info!("Starting async bulk URL shortening for {} URLs (user: {}, operation: {})", total_items, user.id, operation_id);
+    let operation_id = app_state
+        .progress_service
+        .create_operation(total_items)
+        .await;
+
+    info!(
+        "Starting async bulk URL shortening for {} URLs (user: {}, operation: {})",
+        total_items, user.id, operation_id
+    );
 
     // Start background processing
-    match app_state.bulk_processor.process_bulk_url_creation(
-        operation_id.clone(),
-        request.items,
-        user_id,
-    ).await {
+    match app_state
+        .bulk_processor
+        .process_bulk_url_creation(operation_id.clone(), request.items, user_id)
+        .await
+    {
         Ok(_) => {
-            let progress = app_state.progress_service.get_progress(&operation_id).await.unwrap();
-            info!("Started async bulk URL shortening operation: {}", operation_id);
+            let progress = app_state
+                .progress_service
+                .get_progress(&operation_id)
+                .await
+                .unwrap();
+            info!(
+                "Started async bulk URL shortening operation: {}",
+                operation_id
+            );
             Ok((StatusCode::ACCEPTED, Json(progress)))
         }
         Err(error) => {

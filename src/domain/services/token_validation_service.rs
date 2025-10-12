@@ -1,6 +1,6 @@
 use crate::domain::entities::PasswordResetToken;
-use thiserror::Error;
 use chrono::Duration;
+use thiserror::Error;
 
 /// Token validation service for comprehensive token validation
 pub struct TokenValidationService {
@@ -51,11 +51,7 @@ pub struct TokenValidationResult {
 #[allow(dead_code)]
 impl TokenValidationService {
     /// Create a new token validation service
-    pub fn new(
-        min_token_length: usize,
-        max_token_age_hours: i64,
-        require_https: bool,
-    ) -> Self {
+    pub fn new(min_token_length: usize, max_token_age_hours: i64, require_https: bool) -> Self {
         Self {
             min_token_length,
             max_token_age_hours,
@@ -66,8 +62,8 @@ impl TokenValidationService {
     /// Create a default token validation service
     pub fn new_default() -> Self {
         Self::new(
-            16,  // Minimum 16 characters
-            48,  // Maximum 48 hours (2 days)
+            16,   // Minimum 16 characters
+            48,   // Maximum 48 hours (2 days)
             true, // Require HTTPS for security
         )
     }
@@ -91,7 +87,10 @@ impl TokenValidationService {
     }
 
     /// Validate token entity
-    pub fn validate_token_entity(&self, token: &PasswordResetToken) -> Result<(), TokenValidationError> {
+    pub fn validate_token_entity(
+        &self,
+        token: &PasswordResetToken,
+    ) -> Result<(), TokenValidationError> {
         // Check if token is expired
         if token.is_expired() {
             return Err(TokenValidationError::TokenExpired);
@@ -115,7 +114,11 @@ impl TokenValidationService {
     }
 
     /// Comprehensive token validation
-    pub fn validate(&self, token: &str, token_entity: &PasswordResetToken) -> Result<TokenValidationResult, TokenValidationError> {
+    pub fn validate(
+        &self,
+        token: &str,
+        token_entity: &PasswordResetToken,
+    ) -> Result<TokenValidationResult, TokenValidationError> {
         let mut validation_errors = Vec::new();
 
         // Validate token format
@@ -181,19 +184,30 @@ impl TokenValidationService {
         let has_digit = token.chars().any(|c| c.is_numeric());
         let has_special = token.chars().any(|c| !c.is_alphanumeric());
 
-        if has_uppercase { score += 7; }
-        if has_lowercase { score += 7; }
-        if has_digit { score += 8; }
-        if has_special { score += 8; }
+        if has_uppercase {
+            score += 7;
+        }
+        if has_lowercase {
+            score += 7;
+        }
+        if has_digit {
+            score += 8;
+        }
+        if has_special {
+            score += 8;
+        }
 
         // Randomness score (max 30 points)
         // Simple check: no repeated characters in sequence
-        let has_no_repeats = !token.chars()
+        let has_no_repeats = !token
+            .chars()
             .collect::<Vec<_>>()
             .windows(3)
             .any(|w| w[0] == w[1] && w[1] == w[2]);
 
-        if has_no_repeats { score += 30; }
+        if has_no_repeats {
+            score += 30;
+        }
 
         std::cmp::min(score, 100) as u8
     }
@@ -215,13 +229,17 @@ mod tests {
         let service = TokenValidationService::new_default();
 
         // Valid token
-        assert!(service.validate_token_format("abc123-def456-ghi789-jkl012").is_ok());
+        assert!(service
+            .validate_token_format("abc123-def456-ghi789-jkl012")
+            .is_ok());
 
         // Too short
         assert!(service.validate_token_format("short").is_err());
 
         // Invalid characters
-        assert!(service.validate_token_format("token@with#special!chars").is_err());
+        assert!(service
+            .validate_token_format("token@with#special!chars")
+            .is_err());
     }
 
     #[test]
@@ -229,21 +247,18 @@ mod tests {
         let service = TokenValidationService::new_default();
 
         // Valid token
-        let valid_token = PasswordResetToken::new_with_timestamp(
-            1, 1, "valid_token".to_string(), 24
-        );
+        let valid_token =
+            PasswordResetToken::new_with_timestamp(1, 1, "valid_token".to_string(), 24);
         assert!(service.validate_token_entity(&valid_token).is_ok());
 
         // Expired token
-        let expired_token = PasswordResetToken::new_with_timestamp(
-            1, 1, "expired_token".to_string(), -1
-        );
+        let expired_token =
+            PasswordResetToken::new_with_timestamp(1, 1, "expired_token".to_string(), -1);
         assert!(service.validate_token_entity(&expired_token).is_err());
 
         // Used token
-        let mut used_token = PasswordResetToken::new_with_timestamp(
-            1, 1, "used_token".to_string(), 24
-        );
+        let mut used_token =
+            PasswordResetToken::new_with_timestamp(1, 1, "used_token".to_string(), 24);
         used_token.mark_as_used();
         assert!(service.validate_token_entity(&used_token).is_err());
     }
@@ -253,13 +268,19 @@ mod tests {
         let service = TokenValidationService::new_default();
 
         // Valid HTTPS link
-        assert!(service.validate_reset_link("https://example.com/reset?token=abc123").is_ok());
+        assert!(service
+            .validate_reset_link("https://example.com/reset?token=abc123")
+            .is_ok());
 
         // Invalid HTTP link (requires HTTPS)
-        assert!(service.validate_reset_link("http://example.com/reset?token=abc123").is_err());
+        assert!(service
+            .validate_reset_link("http://example.com/reset?token=abc123")
+            .is_err());
 
         // XSS attempt
-        assert!(service.validate_reset_link("https://example.com/<script>alert(1)</script>").is_err());
+        assert!(service
+            .validate_reset_link("https://example.com/<script>alert(1)</script>")
+            .is_err());
         assert!(service.validate_reset_link("javascript:alert(1)").is_err());
     }
 
@@ -268,16 +289,12 @@ mod tests {
         let service = TokenValidationService::new_default();
 
         // Token expires in 1 hour (will expire soon)
-        let token = PasswordResetToken::new_with_timestamp(
-            1, 1, "token".to_string(), 1
-        );
+        let token = PasswordResetToken::new_with_timestamp(1, 1, "token".to_string(), 1);
         assert!(service.will_expire_soon(&token, 2));
         assert!(!service.will_expire_soon(&token, 0));
 
         // Token expires in 24 hours (won't expire soon)
-        let token = PasswordResetToken::new_with_timestamp(
-            1, 1, "token".to_string(), 24
-        );
+        let token = PasswordResetToken::new_with_timestamp(1, 1, "token".to_string(), 24);
         assert!(!service.will_expire_soon(&token, 2));
     }
 
@@ -301,9 +318,7 @@ mod tests {
         let service = TokenValidationService::new_default();
 
         let token_str = "abc123-def456-ghi789-jkl012";
-        let token_entity = PasswordResetToken::new_with_timestamp(
-            1, 1, token_str.to_string(), 24
-        );
+        let token_entity = PasswordResetToken::new_with_timestamp(1, 1, token_str.to_string(), 24);
 
         let result = service.validate(token_str, &token_entity).unwrap();
         assert!(result.is_valid);

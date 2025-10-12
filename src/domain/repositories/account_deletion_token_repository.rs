@@ -61,4 +61,3 @@ pub enum AccountDeletionTokenError {
     #[error("Internal error: {0}")]
     Internal(String),
 }
-

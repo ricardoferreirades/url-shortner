@@ -1,11 +1,15 @@
 use super::ConcreteAppState;
 use crate::application::dto::{
-    requests::{UpdateProfileRequest, ProfilePrivacyRequest, DeleteAccountRequest},
-    responses::{UserProfileResponse, PublicUserProfileResponse, ProfilePrivacyResponse, ErrorResponse},
+    requests::{DeleteAccountRequest, ProfilePrivacyRequest, UpdateProfileRequest},
+    responses::{
+        ErrorResponse, ProfilePrivacyResponse, PublicUserProfileResponse, UserProfileResponse,
+    },
 };
-use crate::domain::entities::{User, ProfilePrivacy};
+use crate::domain::entities::{ProfilePrivacy, User};
 use crate::domain::repositories::user_repository::UserRepository;
-use crate::domain::services::{ProfileValidationService, anonymization_service::AnonymizationService};
+use crate::domain::services::{
+    anonymization_service::AnonymizationService, ProfileValidationService,
+};
 use axum::{
     extract::{Path, State},
     http::StatusCode,
@@ -185,7 +189,10 @@ pub async fn update_my_profile(
     let user_id = 1; // Placeholder
 
     // Convert privacy request to domain enum
-    let privacy = request.privacy.map(convert_privacy_request).unwrap_or(ProfilePrivacy::Public);
+    let privacy = request
+        .privacy
+        .map(convert_privacy_request)
+        .unwrap_or(ProfilePrivacy::Public);
 
     // Validate and sanitize profile data
     let validation_service = ProfileValidationService::new();
@@ -258,7 +265,10 @@ pub async fn patch_my_profile(
     let user_id = 1; // Placeholder
 
     // Convert privacy request to domain enum
-    let privacy = request.privacy.map(convert_privacy_request).unwrap_or(ProfilePrivacy::Public);
+    let privacy = request
+        .privacy
+        .map(convert_privacy_request)
+        .unwrap_or(ProfilePrivacy::Public);
 
     // Validate and sanitize profile data
     let validation_service = ProfileValidationService::new();

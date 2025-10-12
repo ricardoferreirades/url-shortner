@@ -1,4 +1,4 @@
-use crate::domain::entities::{User, ProfilePrivacy};
+use crate::domain::entities::{ProfilePrivacy, User};
 use async_trait::async_trait;
 use thiserror::Error;
 

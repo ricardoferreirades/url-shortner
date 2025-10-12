@@ -1,8 +1,15 @@
-use crate::application::dto::{requests::BatchUrlOperationRequest, responses::BulkOperationProgress, ErrorResponse};
+use crate::application::dto::{
+    requests::BatchUrlOperationRequest, responses::BulkOperationProgress, ErrorResponse,
+};
 use crate::domain::repositories::UrlRepository;
-use axum::{extract::State, http::{StatusCode, header}, Json, http::HeaderMap};
-use tracing::{info, warn};
 use crate::presentation::handlers::app_state::AppState;
+use axum::{
+    extract::State,
+    http::HeaderMap,
+    http::{header, StatusCode},
+    Json,
+};
+use tracing::{info, warn};
 
 /// Handler for async batch URL operations with progress tracking
 #[utoipa::path(
@@ -24,9 +31,12 @@ pub async fn async_batch_url_operations_handler<R, U, P>(
 where
     R: UrlRepository + Send + Sync + Clone,
     U: crate::domain::repositories::UserRepository + Send + Sync + Clone,
-    P: crate::domain::repositories::PasswordResetRepository + Send + Sync + Clone,{
+    P: crate::domain::repositories::PasswordResetRepository + Send + Sync + Clone,
+{
     // Require Authorization: Bearer <token>
-    let auth_header = headers.get(header::AUTHORIZATION).and_then(|v| v.to_str().ok());
+    let auth_header = headers
+        .get(header::AUTHORIZATION)
+        .and_then(|v| v.to_str().ok());
     let token = match auth_header.and_then(|h| h.strip_prefix("Bearer ")) {
         Some(t) if !t.is_empty() => t,
         _ => {
@@ -54,22 +64,36 @@ where
     };
 
     let total_items = request.url_ids.len();
-    
+
     // Create operation for progress tracking
-    let operation_id = app_state.progress_service.create_operation(total_items).await;
-    
-    info!("Starting async batch operation {:?} for {} URLs (user: {}, operation: {})", request.operation, total_items, user.id, operation_id);
+    let operation_id = app_state
+        .progress_service
+        .create_operation(total_items)
+        .await;
+
+    info!(
+        "Starting async batch operation {:?} for {} URLs (user: {}, operation: {})",
+        request.operation, total_items, user.id, operation_id
+    );
 
     // Start background processing
-    match app_state.bulk_processor.process_bulk_operation(
-        operation_id.clone(),
-        request.operation,
-        request.url_ids,
-        request.data,
-        Some(user.id),
-    ).await {
+    match app_state
+        .bulk_processor
+        .process_bulk_operation(
+            operation_id.clone(),
+            request.operation,
+            request.url_ids,
+            request.data,
+            Some(user.id),
+        )
+        .await
+    {
         Ok(_) => {
-            let progress = app_state.progress_service.get_progress(&operation_id).await.unwrap();
+            let progress = app_state
+                .progress_service
+                .get_progress(&operation_id)
+                .await
+                .unwrap();
             info!("Started async batch operation: {}", operation_id);
             Ok((StatusCode::ACCEPTED, Json(progress)))
         }

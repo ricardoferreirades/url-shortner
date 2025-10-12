@@ -1,6 +1,6 @@
 #![allow(dead_code)]
 use crate::domain::entities::Click;
-use crate::domain::repositories::{ClickRepository, ClickStats, ClickRepositoryError};
+use crate::domain::repositories::{ClickRepository, ClickRepositoryError, ClickStats};
 use tokio::sync::{mpsc, oneshot};
 use tokio::task;
 
@@ -27,9 +27,18 @@ where
 /// Internal task for async click processing
 #[derive(Debug)]
 enum ClickTrackingTask {
-    RecordClick { url_id: i32, click_info: ClickInfo },
-    GetStats { url_id: i32, response_sender: oneshot::Sender<Result<ClickStats, ClickTrackingError>> },
-    GetUserStats { user_id: i32, response_sender: oneshot::Sender<Result<ClickStats, ClickTrackingError>> },
+    RecordClick {
+        url_id: i32,
+        click_info: ClickInfo,
+    },
+    GetStats {
+        url_id: i32,
+        response_sender: oneshot::Sender<Result<ClickStats, ClickTrackingError>>,
+    },
+    GetUserStats {
+        user_id: i32,
+        response_sender: oneshot::Sender<Result<ClickStats, ClickTrackingError>>,
+    },
 }
 
 impl<R> ClickTrackingService<R>
@@ -39,7 +48,7 @@ where
     /// Create a new click tracking service
     pub fn new(repository: R) -> Self {
         let (sender, mut receiver) = mpsc::unbounded_channel();
-        
+
         // Spawn background task for processing click events
         let repo_clone = repository.clone();
         task::spawn(async move {
@@ -53,64 +62,84 @@ where
                             click_info.referer,
                             click_info.country_code,
                         );
-                        
+
                         if let Err(e) = repo_clone.record_click(&click).await {
                             tracing::warn!("Failed to record click for URL {}: {}", url_id, e);
                         }
                     }
-                    ClickTrackingTask::GetStats { url_id, response_sender } => {
+                    ClickTrackingTask::GetStats {
+                        url_id,
+                        response_sender,
+                    } => {
                         let result = repo_clone.get_url_click_stats(url_id).await;
                         let _ = response_sender.send(result.map_err(ClickTrackingError::from));
                     }
-                    ClickTrackingTask::GetUserStats { user_id, response_sender } => {
+                    ClickTrackingTask::GetUserStats {
+                        user_id,
+                        response_sender,
+                    } => {
                         let result = repo_clone.get_user_click_stats(user_id).await;
                         let _ = response_sender.send(result.map_err(ClickTrackingError::from));
                     }
                 }
             }
         });
-        
+
         Self { repository, sender }
     }
-    
+
     /// Record a click event asynchronously (non-blocking)
-    pub fn record_click(&self, url_id: i32, click_info: ClickInfo) -> Result<(), ClickTrackingError> {
+    pub fn record_click(
+        &self,
+        url_id: i32,
+        click_info: ClickInfo,
+    ) -> Result<(), ClickTrackingError> {
         self.sender
             .send(ClickTrackingTask::RecordClick { url_id, click_info })
             .map_err(|_| ClickTrackingError::ServiceUnavailable)?;
         Ok(())
     }
-    
+
     /// Get click statistics for a URL
     pub async fn get_url_stats(&self, url_id: i32) -> Result<ClickStats, ClickTrackingError> {
         let (response_sender, response_receiver) = oneshot::channel();
-        
+
         self.sender
-            .send(ClickTrackingTask::GetStats { url_id, response_sender })
+            .send(ClickTrackingTask::GetStats {
+                url_id,
+                response_sender,
+            })
             .map_err(|_| ClickTrackingError::ServiceUnavailable)?;
-        
-        response_receiver.await
+
+        response_receiver
+            .await
             .map_err(|_| ClickTrackingError::ServiceUnavailable)?
     }
-    
+
     /// Get click statistics for a user
     pub async fn get_user_stats(&self, user_id: i32) -> Result<ClickStats, ClickTrackingError> {
         let (response_sender, response_receiver) = oneshot::channel();
-        
+
         self.sender
-            .send(ClickTrackingTask::GetUserStats { user_id, response_sender })
+            .send(ClickTrackingTask::GetUserStats {
+                user_id,
+                response_sender,
+            })
             .map_err(|_| ClickTrackingError::ServiceUnavailable)?;
-        
-        response_receiver.await
+
+        response_receiver
+            .await
             .map_err(|_| ClickTrackingError::ServiceUnavailable)?
     }
-    
+
     /// Get click count for a URL (synchronous, for response enhancement)
     pub async fn get_click_count(&self, url_id: i32) -> Result<i64, ClickTrackingError> {
-        self.repository.get_click_count(url_id).await
+        self.repository
+            .get_click_count(url_id)
+            .await
             .map_err(ClickTrackingError::from)
     }
-    
+
     /// Get clicks for a URL within a time range
     pub async fn get_clicks_for_url(
         &self,
@@ -118,10 +147,12 @@ where
         start_date: Option<chrono::DateTime<chrono::Utc>>,
         end_date: Option<chrono::DateTime<chrono::Utc>>,
     ) -> Result<Vec<Click>, ClickTrackingError> {
-        self.repository.get_clicks_for_url(url_id, start_date, end_date).await
+        self.repository
+            .get_clicks_for_url(url_id, start_date, end_date)
+            .await
             .map_err(ClickTrackingError::from)
     }
-    
+
     /// Get clicks for a user within a time range
     pub async fn get_clicks_for_user(
         &self,
@@ -129,7 +160,9 @@ where
         start_date: Option<chrono::DateTime<chrono::Utc>>,
         end_date: Option<chrono::DateTime<chrono::Utc>>,
     ) -> Result<Vec<Click>, ClickTrackingError> {
-        self.repository.get_clicks_for_user(user_id, start_date, end_date).await
+        self.repository
+            .get_clicks_for_user(user_id, start_date, end_date)
+            .await
             .map_err(ClickTrackingError::from)
     }
 }
@@ -139,10 +172,10 @@ where
 pub enum ClickTrackingError {
     #[error("Repository error: {0}")]
     Repository(#[from] ClickRepositoryError),
-    
+
     #[error("Service unavailable")]
     ServiceUnavailable,
-    
+
     #[error("Invalid data: {0}")]
     InvalidData(String),
 }
@@ -189,7 +222,11 @@ mod tests {
             _end_date: Option<chrono::DateTime<chrono::Utc>>,
         ) -> Result<Vec<Click>, ClickRepositoryError> {
             let clicks = self.clicks.lock().unwrap();
-            Ok(clicks.iter().filter(|c| c.url_id == url_id).cloned().collect())
+            Ok(clicks
+                .iter()
+                .filter(|c| c.url_id == url_id)
+                .cloned()
+                .collect())
         }
 
         async fn get_clicks_for_user(
@@ -201,10 +238,13 @@ mod tests {
             Ok(vec![])
         }
 
-        async fn get_url_click_stats(&self, url_id: i32) -> Result<ClickStats, ClickRepositoryError> {
+        async fn get_url_click_stats(
+            &self,
+            url_id: i32,
+        ) -> Result<ClickStats, ClickRepositoryError> {
             let clicks = self.clicks.lock().unwrap();
             let url_clicks: Vec<_> = clicks.iter().filter(|c| c.url_id == url_id).collect();
-            
+
             Ok(ClickStats {
                 total_clicks: url_clicks.len() as i64,
                 unique_ips: 1,
@@ -216,7 +256,10 @@ mod tests {
             })
         }
 
-        async fn get_user_click_stats(&self, _user_id: i32) -> Result<ClickStats, ClickRepositoryError> {
+        async fn get_user_click_stats(
+            &self,
+            _user_id: i32,
+        ) -> Result<ClickStats, ClickRepositoryError> {
             Ok(ClickStats {
                 total_clicks: 0,
                 unique_ips: 0,
@@ -228,7 +271,10 @@ mod tests {
             })
         }
 
-        async fn delete_old_clicks(&self, _older_than: chrono::DateTime<chrono::Utc>) -> Result<u64, ClickRepositoryError> {
+        async fn delete_old_clicks(
+            &self,
+            _older_than: chrono::DateTime<chrono::Utc>,
+        ) -> Result<u64, ClickRepositoryError> {
             Ok(0)
         }
     }
@@ -237,20 +283,20 @@ mod tests {
     async fn test_record_click() {
         let repo = MockClickRepository::new();
         let service = ClickTrackingService::new(repo);
-        
+
         let click_info = ClickInfo {
             ip_address: Some("192.168.1.1".to_string()),
             user_agent: Some("Mozilla/5.0...".to_string()),
             referer: Some("https://google.com".to_string()),
             country_code: Some("US".to_string()),
         };
-        
+
         // Record click (non-blocking)
         service.record_click(42, click_info).unwrap();
-        
+
         // Give async task time to process
         tokio::time::sleep(tokio::time::Duration::from_millis(10)).await;
-        
+
         // Check click count
         let count = service.get_click_count(42).await.unwrap();
         assert_eq!(count, 1);
@@ -260,7 +306,7 @@ mod tests {
     async fn test_get_url_stats() {
         let repo = MockClickRepository::new();
         let service = ClickTrackingService::new(repo);
-        
+
         let stats = service.get_url_stats(42).await.unwrap();
         assert_eq!(stats.total_clicks, 0);
     }

@@ -1,4 +1,4 @@
-use chrono::{DateTime, Utc, Duration};
+use chrono::{DateTime, Duration, Utc};
 use serde::{Deserialize, Serialize};
 use std::fmt;
 
@@ -36,15 +36,10 @@ impl PasswordResetToken {
     }
 
     /// Create a new Password Reset Token with current timestamp
-    pub fn new_with_timestamp(
-        id: i32,
-        user_id: i32,
-        token: String,
-        expiration_hours: i64,
-    ) -> Self {
+    pub fn new_with_timestamp(id: i32, user_id: i32, token: String, expiration_hours: i64) -> Self {
         let now = Utc::now();
         let expires_at = now + Duration::hours(expiration_hours);
-        
+
         Self::new(id, user_id, token, now, expires_at)
     }
 
@@ -106,7 +101,7 @@ mod tests {
             "test_token_123".to_string(),
             24, // 24 hours
         );
-        
+
         assert_eq!(token.id, 1);
         assert_eq!(token.user_id, 123);
         assert_eq!(token.token, "test_token_123");
@@ -122,7 +117,7 @@ mod tests {
             "test_token".to_string(),
             -1, // Expired 1 hour ago
         );
-        
+
         assert!(token.is_expired());
         assert!(!token.is_valid());
     }
@@ -135,14 +130,14 @@ mod tests {
             "test_token".to_string(),
             24, // Valid for 24 hours
         );
-        
+
         assert!(!token.is_expired());
         assert!(token.is_valid());
-        
+
         // Mark as used
         let mut used_token = token.clone();
         used_token.mark_as_used();
-        
+
         assert!(!used_token.is_valid());
         assert!(used_token.is_used);
         assert!(used_token.used_at.is_some());
@@ -156,10 +151,10 @@ mod tests {
             "test_token".to_string(),
             24, // 24 hours
         );
-        
+
         // Should have time until expiration
         assert!(token.time_until_expiration().is_some());
-        
+
         // Should have time since creation (should be very small)
         let time_since = token.time_since_creation();
         assert!(time_since.num_seconds() >= 0);

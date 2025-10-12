@@ -1,6 +1,6 @@
 use crate::domain::entities::ProfilePrivacy;
-use thiserror::Error;
 use regex::Regex;
+use thiserror::Error;
 use url::Url;
 
 /// Profile validation service for sanitizing and validating user profile data
@@ -129,17 +129,19 @@ impl ProfileValidationService {
         field_name: &str,
     ) -> Result<String, ProfileValidationError> {
         let trimmed = name.trim().to_string();
-        
+
         if trimmed.is_empty() {
-            return Err(ProfileValidationError::InvalidCharacters(
-                format!("{} cannot be empty", field_name)
-            ));
+            return Err(ProfileValidationError::InvalidCharacters(format!(
+                "{} cannot be empty",
+                field_name
+            )));
         }
 
         if trimmed.len() > 50 {
-            return Err(ProfileValidationError::DataTooLong(
-                format!("{} cannot exceed 50 characters", field_name)
-            ));
+            return Err(ProfileValidationError::DataTooLong(format!(
+                "{} cannot exceed 50 characters",
+                field_name
+            )));
         }
 
         if !self.name_regex.is_match(&trimmed) {
@@ -155,7 +157,9 @@ impl ProfileValidationService {
                 let mut chars = word.chars();
                 match chars.next() {
                     None => String::new(),
-                    Some(first) => first.to_uppercase().collect::<String>() + &chars.as_str().to_lowercase(),
+                    Some(first) => {
+                        first.to_uppercase().collect::<String>() + &chars.as_str().to_lowercase()
+                    }
                 }
             })
             .collect::<Vec<_>>()
@@ -167,16 +171,17 @@ impl ProfileValidationService {
     /// Validate and sanitize bio
     fn validate_and_sanitize_bio(&self, bio: String) -> Result<String, ProfileValidationError> {
         let trimmed = bio.trim().to_string();
-        
+
         if trimmed.len() > self.bio_max_length {
-            return Err(ProfileValidationError::DataTooLong(
-                format!("Bio cannot exceed {} characters", self.bio_max_length)
-            ));
+            return Err(ProfileValidationError::DataTooLong(format!(
+                "Bio cannot exceed {} characters",
+                self.bio_max_length
+            )));
         }
 
         // Basic HTML sanitization - remove potentially dangerous tags
         let sanitized = self.sanitize_html(&trimmed);
-        
+
         Ok(sanitized)
     }
 
@@ -187,46 +192,53 @@ impl ProfileValidationService {
         field_name: &str,
     ) -> Result<String, ProfileValidationError> {
         let trimmed = url.trim().to_string();
-        
+
         if trimmed.is_empty() {
             return Ok(trimmed);
         }
 
         if trimmed.len() > self.website_max_length {
-            return Err(ProfileValidationError::DataTooLong(
-                format!("{} URL cannot exceed {} characters", field_name, self.website_max_length)
-            ));
+            return Err(ProfileValidationError::DataTooLong(format!(
+                "{} URL cannot exceed {} characters",
+                field_name, self.website_max_length
+            )));
         }
 
         // Validate URL format
         if let Err(_) = Url::parse(&trimmed) {
-            return Err(ProfileValidationError::InvalidAvatarUrl(
-                format!("Invalid {} URL format", field_name)
-            ));
+            return Err(ProfileValidationError::InvalidAvatarUrl(format!(
+                "Invalid {} URL format",
+                field_name
+            )));
         }
 
         // Check for allowed protocols
         if !trimmed.starts_with("http://") && !trimmed.starts_with("https://") {
-            return Err(ProfileValidationError::InvalidAvatarUrl(
-                format!("{} URL must use http:// or https:// protocol", field_name)
-            ));
+            return Err(ProfileValidationError::InvalidAvatarUrl(format!(
+                "{} URL must use http:// or https:// protocol",
+                field_name
+            )));
         }
 
         Ok(trimmed)
     }
 
     /// Validate and sanitize website URL
-    fn validate_and_sanitize_website(&self, website: String) -> Result<String, ProfileValidationError> {
+    fn validate_and_sanitize_website(
+        &self,
+        website: String,
+    ) -> Result<String, ProfileValidationError> {
         let trimmed = website.trim().to_string();
-        
+
         if trimmed.is_empty() {
             return Ok(trimmed);
         }
 
         if trimmed.len() > self.website_max_length {
-            return Err(ProfileValidationError::DataTooLong(
-                format!("Website URL cannot exceed {} characters", self.website_max_length)
-            ));
+            return Err(ProfileValidationError::DataTooLong(format!(
+                "Website URL cannot exceed {} characters",
+                self.website_max_length
+            )));
         }
 
         // Add https:// if no protocol is specified
@@ -239,7 +251,7 @@ impl ProfileValidationService {
         // Validate URL format
         if let Err(_) = Url::parse(&url) {
             return Err(ProfileValidationError::InvalidWebsite(
-                "Invalid website URL format".to_string()
+                "Invalid website URL format".to_string(),
             ));
         }
 
@@ -247,13 +259,17 @@ impl ProfileValidationService {
     }
 
     /// Validate and sanitize location
-    fn validate_and_sanitize_location(&self, location: String) -> Result<String, ProfileValidationError> {
+    fn validate_and_sanitize_location(
+        &self,
+        location: String,
+    ) -> Result<String, ProfileValidationError> {
         let trimmed = location.trim().to_string();
-        
+
         if trimmed.len() > self.location_max_length {
-            return Err(ProfileValidationError::DataTooLong(
-                format!("Location cannot exceed {} characters", self.location_max_length)
-            ));
+            return Err(ProfileValidationError::DataTooLong(format!(
+                "Location cannot exceed {} characters",
+                self.location_max_length
+            )));
         }
 
         // Basic sanitization - remove potentially dangerous characters
@@ -264,7 +280,7 @@ impl ProfileValidationService {
 
         if sanitized.is_empty() && !trimmed.is_empty() {
             return Err(ProfileValidationError::InvalidCharacters(
-                "Location contains only invalid characters".to_string()
+                "Location contains only invalid characters".to_string(),
             ));
         }
 
@@ -274,9 +290,11 @@ impl ProfileValidationService {
     /// Basic HTML sanitization
     fn sanitize_html(&self, input: &str) -> String {
         // Remove potentially dangerous HTML tags and attributes
-        let dangerous_tags = ["script", "object", "embed", "iframe", "form", "input", "button"];
+        let dangerous_tags = [
+            "script", "object", "embed", "iframe", "form", "input", "button",
+        ];
         let mut result = input.to_string();
-        
+
         for tag in &dangerous_tags {
             let pattern = format!(r"<{}[^>]*>.*?</{}>", tag, tag);
             if let Ok(regex) = Regex::new(&pattern) {
@@ -292,7 +310,10 @@ impl ProfileValidationService {
     }
 
     /// Validate profile privacy setting
-    pub fn validate_privacy(&self, privacy: ProfilePrivacy) -> Result<ProfilePrivacy, ProfileValidationError> {
+    pub fn validate_privacy(
+        &self,
+        privacy: ProfilePrivacy,
+    ) -> Result<ProfilePrivacy, ProfileValidationError> {
         // Privacy enum is already validated by the type system
         Ok(privacy)
     }
@@ -307,12 +328,24 @@ impl ProfileValidationService {
         let mut score = 0;
         let total_fields = 6;
 
-        if data.first_name.is_some() { score += 1; }
-        if data.last_name.is_some() { score += 1; }
-        if data.bio.is_some() { score += 1; }
-        if data.avatar_url.is_some() { score += 1; }
-        if data.website.is_some() { score += 1; }
-        if data.location.is_some() { score += 1; }
+        if data.first_name.is_some() {
+            score += 1;
+        }
+        if data.last_name.is_some() {
+            score += 1;
+        }
+        if data.bio.is_some() {
+            score += 1;
+        }
+        if data.avatar_url.is_some() {
+            score += 1;
+        }
+        if data.website.is_some() {
+            score += 1;
+        }
+        if data.location.is_some() {
+            score += 1;
+        }
 
         (score * 100 / total_fields) as u8
     }
@@ -333,16 +366,32 @@ mod tests {
         let service = ProfileValidationService::new();
 
         // Valid names
-        assert!(service.validate_and_sanitize_name("John".to_string(), "first name").is_ok());
-        assert!(service.validate_and_sanitize_name("O'Connor".to_string(), "last name").is_ok());
-        assert!(service.validate_and_sanitize_name("Mary-Jane".to_string(), "first name").is_ok());
-        assert!(service.validate_and_sanitize_name("Dr. Smith".to_string(), "last name").is_ok());
+        assert!(service
+            .validate_and_sanitize_name("John".to_string(), "first name")
+            .is_ok());
+        assert!(service
+            .validate_and_sanitize_name("O'Connor".to_string(), "last name")
+            .is_ok());
+        assert!(service
+            .validate_and_sanitize_name("Mary-Jane".to_string(), "first name")
+            .is_ok());
+        assert!(service
+            .validate_and_sanitize_name("Dr. Smith".to_string(), "last name")
+            .is_ok());
 
         // Invalid names
-        assert!(service.validate_and_sanitize_name("John123".to_string(), "first name").is_err());
-        assert!(service.validate_and_sanitize_name("John@Doe".to_string(), "first name").is_err());
-        assert!(service.validate_and_sanitize_name("".to_string(), "first name").is_err());
-        assert!(service.validate_and_sanitize_name("   ".to_string(), "first name").is_err());
+        assert!(service
+            .validate_and_sanitize_name("John123".to_string(), "first name")
+            .is_err());
+        assert!(service
+            .validate_and_sanitize_name("John@Doe".to_string(), "first name")
+            .is_err());
+        assert!(service
+            .validate_and_sanitize_name("".to_string(), "first name")
+            .is_err());
+        assert!(service
+            .validate_and_sanitize_name("   ".to_string(), "first name")
+            .is_err());
     }
 
     #[test]
@@ -368,13 +417,23 @@ mod tests {
         let service = ProfileValidationService::new();
 
         // Valid websites
-        assert!(service.validate_and_sanitize_website("https://example.com".to_string()).is_ok());
-        assert!(service.validate_and_sanitize_website("example.com".to_string()).is_ok());
-        assert!(service.validate_and_sanitize_website("".to_string()).is_ok());
+        assert!(service
+            .validate_and_sanitize_website("https://example.com".to_string())
+            .is_ok());
+        assert!(service
+            .validate_and_sanitize_website("example.com".to_string())
+            .is_ok());
+        assert!(service
+            .validate_and_sanitize_website("".to_string())
+            .is_ok());
 
         // Invalid websites
-        assert!(service.validate_and_sanitize_website("not-a-url".to_string()).is_err());
-        assert!(service.validate_and_sanitize_website("ftp://example.com".to_string()).is_err());
+        assert!(service
+            .validate_and_sanitize_website("not-a-url".to_string())
+            .is_err());
+        assert!(service
+            .validate_and_sanitize_website("ftp://example.com".to_string())
+            .is_err());
     }
 
     #[test]
@@ -382,19 +441,27 @@ mod tests {
         let service = ProfileValidationService::new();
 
         // Valid locations
-        assert!(service.validate_and_sanitize_location("New York, NY".to_string()).is_ok());
-        assert!(service.validate_and_sanitize_location("San Francisco, CA, USA".to_string()).is_ok());
-        assert!(service.validate_and_sanitize_location("".to_string()).is_ok());
+        assert!(service
+            .validate_and_sanitize_location("New York, NY".to_string())
+            .is_ok());
+        assert!(service
+            .validate_and_sanitize_location("San Francisco, CA, USA".to_string())
+            .is_ok());
+        assert!(service
+            .validate_and_sanitize_location("".to_string())
+            .is_ok());
 
         // Invalid locations
         let long_location = "a".repeat(150);
-        assert!(service.validate_and_sanitize_location(long_location).is_err());
+        assert!(service
+            .validate_and_sanitize_location(long_location)
+            .is_err());
     }
 
     #[test]
     fn test_completeness_score() {
         let service = ProfileValidationService::new();
-        
+
         let complete_data = ValidatedProfileData {
             first_name: Some("John".to_string()),
             last_name: Some("Doe".to_string()),

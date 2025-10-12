@@ -117,11 +117,9 @@ impl AccountDeletionTokenRepository for PostgresAccountDeletionTokenRepository {
     async fn delete_expired_tokens(
         &self,
     ) -> Result<usize, Box<dyn std::error::Error + Send + Sync>> {
-        let result = sqlx::query(
-            "DELETE FROM account_deletion_tokens WHERE expires_at < NOW()"
-        )
-        .execute(&self.pool)
-        .await?;
+        let result = sqlx::query("DELETE FROM account_deletion_tokens WHERE expires_at < NOW()")
+            .execute(&self.pool)
+            .await?;
 
         Ok(result.rows_affected() as usize)
     }
@@ -133,7 +131,7 @@ impl AccountDeletionTokenRepository for PostgresAccountDeletionTokenRepository {
         let result = sqlx::query(
             "UPDATE account_deletion_tokens 
              SET is_cancelled = true 
-             WHERE user_id = $1 AND is_confirmed = false AND is_cancelled = false"
+             WHERE user_id = $1 AND is_confirmed = false AND is_cancelled = false",
         )
         .bind(user_id)
         .execute(&self.pool)
@@ -142,4 +140,3 @@ impl AccountDeletionTokenRepository for PostgresAccountDeletionTokenRepository {
         Ok(result.rows_affected() as usize)
     }
 }
-

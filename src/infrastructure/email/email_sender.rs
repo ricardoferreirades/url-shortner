@@ -35,7 +35,7 @@ impl EmailMessage {
     /// Create a password reset email
     pub fn password_reset(to: String, reset_link: String, expires_in_hours: i64) -> Self {
         let subject = "Password Reset Request".to_string();
-        
+
         let body = format!(
             "You have requested to reset your password.\n\n\
              Click the link below to reset your password:\n\
@@ -190,7 +190,7 @@ mod tests {
         assert!(message.body.contains("reset your password"));
         assert!(message.body.contains("24 hours"));
         assert!(message.html_body.is_some());
-        
+
         let html = message.html_body.unwrap();
         assert!(html.contains("Reset Password"));
         assert!(html.contains("24 hours"));

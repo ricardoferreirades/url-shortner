@@ -1,8 +1,15 @@
-use crate::application::dto::{requests::ShortenUrlRequest, responses::ShortenUrlResponse, ErrorResponse};
+use crate::application::dto::{
+    requests::ShortenUrlRequest, responses::ShortenUrlResponse, ErrorResponse,
+};
 use crate::domain::repositories::UrlRepository;
-use axum::{extract::State, http::{StatusCode, header}, Json, http::HeaderMap};
-use tracing::{info, warn};
 use crate::presentation::handlers::app_state::AppState;
+use axum::{
+    extract::State,
+    http::HeaderMap,
+    http::{header, StatusCode},
+    Json,
+};
+use tracing::{info, warn};
 
 /// Handler for shortening URLs
 #[utoipa::path(
@@ -23,9 +30,12 @@ pub async fn shorten_url_handler<R, U, P>(
 where
     R: UrlRepository + Send + Sync + Clone,
     U: crate::domain::repositories::UserRepository + Send + Sync + Clone,
-    P: crate::domain::repositories::PasswordResetRepository + Send + Sync + Clone,{
+    P: crate::domain::repositories::PasswordResetRepository + Send + Sync + Clone,
+{
     // Require Authorization: Bearer <token>
-    let auth_header = headers.get(header::AUTHORIZATION).and_then(|v| v.to_str().ok());
+    let auth_header = headers
+        .get(header::AUTHORIZATION)
+        .and_then(|v| v.to_str().ok());
     let token = match auth_header.and_then(|h| h.strip_prefix("Bearer ")) {
         Some(t) if !t.is_empty() => t,
         _ => {
@@ -53,11 +63,21 @@ where
     };
 
     let user_id = Some(user.id);
-    info!("Received shorten URL request for: {} (user: {:?})", request.url, user_id);
+    info!(
+        "Received shorten URL request for: {} (user: {:?})",
+        request.url, user_id
+    );
 
-    match app_state.shorten_url_use_case.execute(request, user_id).await {
+    match app_state
+        .shorten_url_use_case
+        .execute(request, user_id)
+        .await
+    {
         Ok(response) => {
-            info!("Successfully shortened URL: {} -> {}", response.original_url, response.short_url);
+            info!(
+                "Successfully shortened URL: {} -> {}",
+                response.original_url, response.short_url
+            );
             Ok((StatusCode::CREATED, Json(response)))
         }
         Err(error) => {

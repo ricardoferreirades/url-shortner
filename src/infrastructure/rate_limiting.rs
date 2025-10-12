@@ -1,20 +1,11 @@
-use axum::{
-    extract::Request,
-    http::StatusCode,
-    middleware::Next,
-    response::Response,
-};
+use axum::{extract::Request, http::StatusCode, middleware::Next, response::Response};
 use governor::{
     clock::{Clock, DefaultClock},
     state::keyed::DefaultKeyedStateStore,
     Quota, RateLimiter,
 };
 use std::num::NonZeroU32;
-use tower_http::{
-    limit::RequestBodyLimitLayer,
-    trace::TraceLayer,
-    compression::CompressionLayer,
-};
+use tower_http::{compression::CompressionLayer, limit::RequestBodyLimitLayer, trace::TraceLayer};
 use tracing::warn;
 
 /// Rate limiting configuration
@@ -28,8 +19,8 @@ pub struct RateLimitConfig {
 impl Default for RateLimitConfig {
     fn default() -> Self {
         Self {
-            requests_per_minute: 60, // 60 requests per minute per IP
-            burst_size: 10,          // Allow bursts of up to 10 requests
+            requests_per_minute: 60,       // 60 requests per minute per IP
+            burst_size: 10,                // Allow bursts of up to 10 requests
             max_request_size: 1024 * 1024, // 1MB max request size
         }
     }
@@ -42,10 +33,10 @@ pub type AppRateLimiter = RateLimiter<String, DefaultKeyedStateStore<String>, De
 pub fn create_rate_limiter(config: &RateLimitConfig) -> AppRateLimiter {
     let quota = Quota::per_minute(NonZeroU32::new(config.requests_per_minute).unwrap())
         .allow_burst(NonZeroU32::new(config.burst_size).unwrap());
-    
+
     let state = DefaultKeyedStateStore::new();
     let clock = DefaultClock::default();
-    
+
     RateLimiter::new(quota, state, &clock)
 }
 
@@ -56,7 +47,7 @@ pub async fn rate_limit_middleware(
 ) -> Result<Response, (StatusCode, axum::Json<RateLimitError>)> {
     // For now, we'll implement a simple per-IP rate limiter
     // In a real implementation, you'd extract the client IP from headers or connection info
-    
+
     // Extract IP from request (simplified - in production use proper IP extraction)
     let client_ip = request
         .headers()
@@ -65,11 +56,11 @@ pub async fn rate_limit_middleware(
         .and_then(|header| header.to_str().ok())
         .unwrap_or("unknown")
         .to_string();
-    
+
     // Get rate limiter from application state (we'll add this to the app state)
     // For now, we'll create a temporary one
     let rate_limiter = create_rate_limiter(&RateLimitConfig::default());
-    
+
     match rate_limiter.check_key(&client_ip) {
         Ok(_) => {
             // Rate limit OK, continue
@@ -77,9 +68,14 @@ pub async fn rate_limit_middleware(
         }
         Err(negative) => {
             // Rate limit exceeded
-            let retry_after = negative.wait_time_from(DefaultClock::default().now()).as_secs();
-            warn!("Rate limit exceeded for IP: {}, retry after {} seconds", client_ip, retry_after);
-            
+            let retry_after = negative
+                .wait_time_from(DefaultClock::default().now())
+                .as_secs();
+            warn!(
+                "Rate limit exceeded for IP: {}, retry after {} seconds",
+                client_ip, retry_after
+            );
+
             Err(handle_rate_limit_error(retry_after))
         }
     }
@@ -92,14 +88,13 @@ pub fn create_request_size_limiter(max_size: usize) -> RequestBodyLimitLayer {
 
 /// Create compression middleware
 pub fn create_compression_layer() -> CompressionLayer {
-    CompressionLayer::new()
-        .br(true)
-        .gzip(true)
-        .deflate(true)
+    CompressionLayer::new().br(true).gzip(true).deflate(true)
 }
 
 /// Create tracing middleware
-pub fn create_tracing_layer() -> TraceLayer<tower_http::classify::SharedClassifier<tower_http::classify::ServerErrorsAsFailures>> {
+pub fn create_tracing_layer(
+) -> TraceLayer<tower_http::classify::SharedClassifier<tower_http::classify::ServerErrorsAsFailures>>
+{
     TraceLayer::new_for_http()
 }
 
@@ -109,22 +104,13 @@ pub async fn security_headers_middleware(
     next: Next,
 ) -> Result<Response, StatusCode> {
     let mut response = next.run(request).await;
-    
+
     let headers = response.headers_mut();
-    
+
     // Add security headers
-    headers.insert(
-        "X-Content-Type-Options",
-        "nosniff".parse().unwrap(),
-    );
-    headers.insert(
-        "X-Frame-Options",
-        "DENY".parse().unwrap(),
-    );
-    headers.insert(
-        "X-XSS-Protection",
-        "1; mode=block".parse().unwrap(),
-    );
+    headers.insert("X-Content-Type-Options", "nosniff".parse().unwrap());
+    headers.insert("X-Frame-Options", "DENY".parse().unwrap());
+    headers.insert("X-XSS-Protection", "1; mode=block".parse().unwrap());
     headers.insert(
         "Referrer-Policy",
         "strict-origin-when-cross-origin".parse().unwrap(),
@@ -133,19 +119,19 @@ pub async fn security_headers_middleware(
         "Permissions-Policy",
         "geolocation=(), microphone=(), camera=()".parse().unwrap(),
     );
-    
+
     // Add HSTS header for HTTPS
     headers.insert(
         "Strict-Transport-Security",
         "max-age=31536000; includeSubDomains".parse().unwrap(),
     );
-    
+
     // Add Content Security Policy
     headers.insert(
         "Content-Security-Policy",
         "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'".parse().unwrap(),
     );
-    
+
     Ok(response)
 }
 
@@ -160,7 +146,7 @@ pub struct RateLimitError {
 /// Handle rate limiting errors
 pub fn handle_rate_limit_error(retry_after: u64) -> (StatusCode, axum::Json<RateLimitError>) {
     warn!("Rate limit exceeded, retry after {} seconds", retry_after);
-    
+
     (
         StatusCode::TOO_MANY_REQUESTS,
         axum::Json(RateLimitError {
@@ -176,7 +162,9 @@ pub fn create_request_size_layer(config: &RateLimitConfig) -> RequestBodyLimitLa
     create_request_size_limiter(config.max_request_size)
 }
 
-pub fn create_tracing_layer_simple() -> TraceLayer<tower_http::classify::SharedClassifier<tower_http::classify::ServerErrorsAsFailures>> {
+pub fn create_tracing_layer_simple(
+) -> TraceLayer<tower_http::classify::SharedClassifier<tower_http::classify::ServerErrorsAsFailures>>
+{
     create_tracing_layer()
 }
 
@@ -210,16 +198,13 @@ mod tests {
             .route("/", get(|| async { "test" }))
             .layer(axum::middleware::from_fn(security_headers_middleware));
 
-        let request = Request::builder()
-            .uri("/")
-            .body(Body::empty())
-            .unwrap();
+        let request = Request::builder().uri("/").body(Body::empty()).unwrap();
 
         let response = app.oneshot(request).await.unwrap();
-        
+
         assert_eq!(response.status(), StatusCode::OK);
         let headers = response.headers();
-        
+
         // Check security headers are present
         assert!(headers.contains_key("X-Content-Type-Options"));
         assert!(headers.contains_key("X-Frame-Options"));

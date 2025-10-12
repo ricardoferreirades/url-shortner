@@ -1,6 +1,6 @@
+use image::ImageFormat;
 use std::path::Path;
 use thiserror::Error;
-use image::ImageFormat;
 
 /// File upload service for handling profile pictures
 pub struct FileUploadService {
@@ -178,7 +178,10 @@ impl FileUploadService {
     }
 
     /// Process image (resize, optimize, etc.)
-    fn process_image(&self, data: Vec<u8>) -> Result<(Vec<u8>, Option<u32>, Option<u32>), FileUploadError> {
+    fn process_image(
+        &self,
+        data: Vec<u8>,
+    ) -> Result<(Vec<u8>, Option<u32>, Option<u32>), FileUploadError> {
         let img = image::load_from_memory(&data)?;
         let (width, height) = (img.width(), img.height());
 
@@ -197,10 +200,13 @@ impl FileUploadService {
 
         // Convert to JPEG format for consistency
         let mut output = Vec::new();
-        processed_img
-            .write_to(&mut std::io::Cursor::new(&mut output), ImageFormat::Jpeg)?;
+        processed_img.write_to(&mut std::io::Cursor::new(&mut output), ImageFormat::Jpeg)?;
 
-        Ok((output, Some(processed_img.width()), Some(processed_img.height())))
+        Ok((
+            output,
+            Some(processed_img.width()),
+            Some(processed_img.height()),
+        ))
     }
 
     /// Delete file
@@ -228,23 +234,35 @@ mod tests {
         let service = FileUploadService::new_profile_picture_service("/tmp".to_string());
 
         // Valid file
-        assert!(service.validate_file("test.jpg", "image/jpeg", 1024).is_ok());
+        assert!(service
+            .validate_file("test.jpg", "image/jpeg", 1024)
+            .is_ok());
 
         // File too large
-        assert!(service.validate_file("test.jpg", "image/jpeg", 10 * 1024 * 1024).is_err());
+        assert!(service
+            .validate_file("test.jpg", "image/jpeg", 10 * 1024 * 1024)
+            .is_err());
 
         // Invalid extension
-        assert!(service.validate_file("test.txt", "text/plain", 1024).is_err());
+        assert!(service
+            .validate_file("test.txt", "text/plain", 1024)
+            .is_err());
 
         // Invalid MIME type
-        assert!(service.validate_file("test.jpg", "text/plain", 1024).is_err());
+        assert!(service
+            .validate_file("test.jpg", "text/plain", 1024)
+            .is_err());
 
         // Filename too long
         let long_name = "a".repeat(300);
-        assert!(service.validate_file(&long_name, "image/jpeg", 1024).is_err());
+        assert!(service
+            .validate_file(&long_name, "image/jpeg", 1024)
+            .is_err());
 
         // Invalid filename
-        assert!(service.validate_file("../../../etc/passwd", "image/jpeg", 1024).is_err());
+        assert!(service
+            .validate_file("../../../etc/passwd", "image/jpeg", 1024)
+            .is_err());
     }
 
     #[tokio::test]
@@ -267,7 +285,8 @@ mod tests {
             0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
             0x00, 0x00, 0x00, 0x08, 0xFF, 0xC4, 0x00, 0x14, 0x10, 0x01, 0x00, 0x00, 0x00, 0x00,
             0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF, 0xDA,
-            0x00, 0x0C, 0x03, 0x01, 0x00, 0x02, 0x11, 0x03, 0x11, 0x00, 0x3F, 0x00, 0x00, 0xFF, 0xD9,
+            0x00, 0x0C, 0x03, 0x01, 0x00, 0x02, 0x11, 0x03, 0x11, 0x00, 0x3F, 0x00, 0x00, 0xFF,
+            0xD9,
         ];
 
         let result = service

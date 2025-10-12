@@ -42,7 +42,7 @@ pub struct Url {
     pub created_at: DateTime<Utc>,
     pub expiration_date: Option<DateTime<Utc>>,
     pub user_id: Option<i32>, // For future user association
-    pub status: UrlStatus, // URL status (active/inactive)
+    pub status: UrlStatus,    // URL status (active/inactive)
 }
 
 #[allow(dead_code)]
@@ -77,7 +77,15 @@ impl Url {
         user_id: Option<i32>,
         status: UrlStatus,
     ) -> Self {
-        Self::new(id, short_code, original_url, Utc::now(), expiration_date, user_id, status)
+        Self::new(
+            id,
+            short_code,
+            original_url,
+            Utc::now(),
+            expiration_date,
+            user_id,
+            status,
+        )
     }
 
     /// Check if this URL belongs to a specific user
@@ -155,7 +163,7 @@ mod tests {
             None,
             UrlStatus::Active,
         );
-        
+
         assert_eq!(url.id, 1);
         assert_eq!(url.short_code, "abc123");
         assert_eq!(url.original_url, "https://example.com");
@@ -174,10 +182,10 @@ mod tests {
             Some(42),
             UrlStatus::Active,
         );
-        
+
         assert!(url.belongs_to_user(42));
         assert!(!url.belongs_to_user(43));
-        
+
         let anonymous_url = Url::new_with_timestamp(
             2,
             "def456".to_string(),
@@ -186,7 +194,7 @@ mod tests {
             None,
             UrlStatus::Active,
         );
-        
+
         assert!(anonymous_url.belongs_to_user(42)); // Anonymous URLs belong to everyone
     }
 
@@ -200,9 +208,12 @@ mod tests {
             None,
             UrlStatus::Active,
         );
-        
+
         assert_eq!(url.short_url("https://short.ly"), "https://short.ly/abc123");
-        assert_eq!(url.short_url("https://short.ly/"), "https://short.ly/abc123");
+        assert_eq!(
+            url.short_url("https://short.ly/"),
+            "https://short.ly/abc123"
+        );
     }
 
     #[test]

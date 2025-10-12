@@ -1,9 +1,9 @@
-use crate::infrastructure::email::{EmailSender, EmailMessage, EmailError};
+use crate::infrastructure::email::{EmailError, EmailMessage, EmailSender};
 use async_trait::async_trait;
 use lettre::{
-    Message, SmtpTransport, Transport,
     message::{header::ContentType, Mailbox},
     transport::smtp::authentication::Credentials,
+    Message, SmtpTransport, Transport,
 };
 use std::str::FromStr;
 
@@ -42,16 +42,14 @@ impl SmtpConfig {
     /// Create SMTP config from environment variables
     pub fn from_env() -> Result<Self, EmailError> {
         Ok(Self {
-            host: std::env::var("SMTP_HOST")
-                .unwrap_or_else(|_| "localhost".to_string()),
+            host: std::env::var("SMTP_HOST").unwrap_or_else(|_| "localhost".to_string()),
             port: std::env::var("SMTP_PORT")
                 .unwrap_or_else(|_| "587".to_string())
                 .parse()
                 .map_err(|e| EmailError::ConfigError(format!("Invalid SMTP_PORT: {}", e)))?,
             username: std::env::var("SMTP_USERNAME")
                 .unwrap_or_else(|_| "user@example.com".to_string()),
-            password: std::env::var("SMTP_PASSWORD")
-                .unwrap_or_else(|_| "password".to_string()),
+            password: std::env::var("SMTP_PASSWORD").unwrap_or_else(|_| "password".to_string()),
             from_email: std::env::var("SMTP_FROM_EMAIL")
                 .unwrap_or_else(|_| "noreply@example.com".to_string()),
             from_name: std::env::var("SMTP_FROM_NAME")
@@ -79,10 +77,7 @@ impl SmtpEmailSender {
 
     /// Build the SMTP transport
     fn build_transport(&self) -> Result<SmtpTransport, EmailError> {
-        let creds = Credentials::new(
-            self.config.username.clone(),
-            self.config.password.clone(),
-        );
+        let creds = Credentials::new(self.config.username.clone(), self.config.password.clone());
 
         let transport = SmtpTransport::relay(&self.config.host)
             .map_err(|e| EmailError::SmtpError(format!("Failed to create SMTP transport: {}", e)))?
@@ -116,9 +111,7 @@ impl EmailSender for SmtpEmailSender {
 
         // Add body (HTML if available, otherwise plain text)
         let email = if let Some(html_body) = message.html_body {
-            email_builder
-                .header(ContentType::TEXT_HTML)
-                .body(html_body)
+            email_builder.header(ContentType::TEXT_HTML).body(html_body)
         } else {
             email_builder
                 .header(ContentType::TEXT_PLAIN)
@@ -128,7 +121,7 @@ impl EmailSender for SmtpEmailSender {
 
         // Build transport and send
         let transport = self.build_transport()?;
-        
+
         transport
             .send(&email)
             .map_err(|e| EmailError::SendingFailed(format!("Failed to send email: {}", e)))?;

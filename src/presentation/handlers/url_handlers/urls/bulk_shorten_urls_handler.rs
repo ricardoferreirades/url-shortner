@@ -1,8 +1,17 @@
-use crate::application::dto::{requests::{ShortenUrlRequest, BulkShortenUrlsRequest}, responses::ShortenUrlResponse, ErrorResponse};
+use crate::application::dto::{
+    requests::{BulkShortenUrlsRequest, ShortenUrlRequest},
+    responses::ShortenUrlResponse,
+    ErrorResponse,
+};
 use crate::domain::repositories::UrlRepository;
-use axum::{extract::State, http::{StatusCode, header}, Json, http::HeaderMap};
-use tracing::warn;
 use crate::presentation::handlers::app_state::AppState;
+use axum::{
+    extract::State,
+    http::HeaderMap,
+    http::{header, StatusCode},
+    Json,
+};
+use tracing::warn;
 
 /// Handler for bulk shortening URLs
 #[utoipa::path(
@@ -24,9 +33,12 @@ pub async fn bulk_shorten_urls_handler<R, U, P>(
 where
     R: UrlRepository + Send + Sync + Clone,
     U: crate::domain::repositories::UserRepository + Send + Sync + Clone,
-    P: crate::domain::repositories::PasswordResetRepository + Send + Sync + Clone,{
+    P: crate::domain::repositories::PasswordResetRepository + Send + Sync + Clone,
+{
     // Require Authorization: Bearer <token>
-    let auth_header = headers.get(header::AUTHORIZATION).and_then(|v| v.to_str().ok());
+    let auth_header = headers
+        .get(header::AUTHORIZATION)
+        .and_then(|v| v.to_str().ok());
     let token = match auth_header.and_then(|h| h.strip_prefix("Bearer ")) {
         Some(t) if !t.is_empty() => t,
         _ => {
@@ -57,7 +69,11 @@ where
     let mut responses: Vec<ShortenUrlResponse> = Vec::with_capacity(request.items.len());
 
     for item in request.items {
-        let req = ShortenUrlRequest { url: item.url, custom_short_code: item.custom_short_code, expiration_date: item.expiration_date };
+        let req = ShortenUrlRequest {
+            url: item.url,
+            custom_short_code: item.custom_short_code,
+            expiration_date: item.expiration_date,
+        };
         match app_state.shorten_url_use_case.execute(req, user_id).await {
             Ok(resp) => responses.push(resp),
             Err(err) => {

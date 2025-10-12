@@ -153,7 +153,9 @@ where
         password: &str,
     ) -> Result<(), ServiceError> {
         if username.trim().is_empty() {
-            return Err(ServiceError::InvalidInput("Username cannot be empty".to_string()));
+            return Err(ServiceError::InvalidInput(
+                "Username cannot be empty".to_string(),
+            ));
         }
 
         if username.len() < 3 || username.len() > 50 {
@@ -163,11 +165,15 @@ where
         }
 
         if email.trim().is_empty() {
-            return Err(ServiceError::InvalidInput("Email cannot be empty".to_string()));
+            return Err(ServiceError::InvalidInput(
+                "Email cannot be empty".to_string(),
+            ));
         }
 
         if !email.contains('@') {
-            return Err(ServiceError::InvalidInput("Invalid email format".to_string()));
+            return Err(ServiceError::InvalidInput(
+                "Invalid email format".to_string(),
+            ));
         }
 
         if password.len() < 6 {

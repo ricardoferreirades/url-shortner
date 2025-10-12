@@ -1,8 +1,17 @@
-use crate::application::dto::{requests::BulkDeleteRequest, responses::{BatchOperationResponse, BatchOperationResult}, ErrorResponse};
+use crate::application::dto::{
+    requests::BulkDeleteRequest,
+    responses::{BatchOperationResponse, BatchOperationResult},
+    ErrorResponse,
+};
 use crate::domain::repositories::UrlRepository;
-use axum::{extract::State, http::{StatusCode, header}, Json, http::HeaderMap};
-use tracing::{info, warn};
 use crate::presentation::handlers::app_state::AppState;
+use axum::{
+    extract::State,
+    http::HeaderMap,
+    http::{header, StatusCode},
+    Json,
+};
+use tracing::{info, warn};
 
 /// Handler for bulk URL deletion
 #[utoipa::path(
@@ -24,9 +33,12 @@ pub async fn bulk_delete_handler<R, U, P>(
 where
     R: UrlRepository + Send + Sync + Clone,
     U: crate::domain::repositories::UserRepository + Send + Sync + Clone,
-    P: crate::domain::repositories::PasswordResetRepository + Send + Sync + Clone,{
+    P: crate::domain::repositories::PasswordResetRepository + Send + Sync + Clone,
+{
     // Require Authorization: Bearer <token>
-    let auth_header = headers.get(header::AUTHORIZATION).and_then(|v| v.to_str().ok());
+    let auth_header = headers
+        .get(header::AUTHORIZATION)
+        .and_then(|v| v.to_str().ok());
     let token = match auth_header.and_then(|h| h.strip_prefix("Bearer ")) {
         Some(t) if !t.is_empty() => t,
         _ => {
@@ -53,7 +65,12 @@ where
         }
     };
 
-    info!("Received bulk delete request for {} URLs (user: {}, force: {:?})", request.url_ids.len(), user.id, request.force);
+    info!(
+        "Received bulk delete request for {} URLs (user: {}, force: {:?})",
+        request.url_ids.len(),
+        user.id,
+        request.force
+    );
 
     // Add safety check for bulk deletion
     if request.url_ids.len() > 100 && request.force != Some(true) {
@@ -65,20 +82,31 @@ where
         return Err((StatusCode::BAD_REQUEST, Json(error_response)));
     }
 
-    match app_state.url_service.batch_delete_urls(&request.url_ids, Some(user.id)).await {
+    match app_state
+        .url_service
+        .batch_delete_urls(&request.url_ids, Some(user.id))
+        .await
+    {
         Ok(result) => {
             let response = BatchOperationResponse {
                 operation: "delete".to_string(),
                 total_processed: result.total_processed,
                 successful: result.successful,
                 failed: result.failed,
-                results: result.results.into_iter().map(|r| BatchOperationResult {
-                    url_id: r.url_id,
-                    success: r.success,
-                    error: r.error,
-                }).collect(),
+                results: result
+                    .results
+                    .into_iter()
+                    .map(|r| BatchOperationResult {
+                        url_id: r.url_id,
+                        success: r.success,
+                        error: r.error,
+                    })
+                    .collect(),
             };
-            info!("Bulk delete completed: {} successful, {} failed", result.successful, result.failed);
+            info!(
+                "Bulk delete completed: {} successful, {} failed",
+                result.successful, result.failed
+            );
             Ok((StatusCode::OK, Json(response)))
         }
         Err(error) => {

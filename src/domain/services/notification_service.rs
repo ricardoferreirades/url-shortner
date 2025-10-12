@@ -12,12 +12,14 @@ impl NotificationService {
     }
 
     /// Send expiration warning for a URL
-    pub async fn send_expiration_warning(&self, url: &Url, days_until_expiry: i64) -> Result<(), NotificationError> {
+    pub async fn send_expiration_warning(
+        &self,
+        url: &Url,
+        days_until_expiry: i64,
+    ) -> Result<(), NotificationError> {
         info!(
             "URL expiration warning: {} expires in {} days (expires at: {:?})",
-            url.short_code,
-            days_until_expiry,
-            url.expiration_date
+            url.short_code, days_until_expiry, url.expiration_date
         );
 
         // TODO: In a real implementation, this would:
@@ -33,8 +35,7 @@ impl NotificationService {
     pub async fn send_expiration_notification(&self, url: &Url) -> Result<(), NotificationError> {
         warn!(
             "URL has expired: {} (expired at: {:?})",
-            url.short_code,
-            url.expiration_date
+            url.short_code, url.expiration_date
         );
 
         // TODO: In a real implementation, this would:
@@ -47,7 +48,11 @@ impl NotificationService {
     }
 
     /// Send bulk expiration warnings for multiple URLs
-    pub async fn send_bulk_expiration_warnings(&self, urls: &[Url], days_until_expiry: i64) -> Result<(), NotificationError> {
+    pub async fn send_bulk_expiration_warnings(
+        &self,
+        urls: &[Url],
+        days_until_expiry: i64,
+    ) -> Result<(), NotificationError> {
         for url in urls {
             self.send_expiration_warning(url, days_until_expiry).await?;
         }
@@ -60,13 +65,13 @@ impl NotificationService {
 pub enum NotificationError {
     #[error("Email service error: {0}")]
     EmailService(String),
-    
+
     #[error("Push notification error: {0}")]
     PushNotification(String),
-    
+
     #[error("Webhook error: {0}")]
     Webhook(String),
-    
+
     #[error("Internal notification error: {0}")]
     Internal(String),
 }

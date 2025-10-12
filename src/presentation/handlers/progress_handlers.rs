@@ -1,7 +1,11 @@
 use crate::application::dto::responses::{BulkOperationProgress, ErrorResponse};
 use crate::domain::services::ProgressServiceError;
 use crate::presentation::handlers::app_state::AppState;
-use axum::{extract::{Path, State}, http::StatusCode, Json};
+use axum::{
+    extract::{Path, State},
+    http::StatusCode,
+    Json,
+};
 use tracing::{info, warn};
 
 /// Handler for getting bulk operation progress
@@ -32,7 +36,10 @@ where
 
     match progress_service.get_progress(&operation_id).await {
         Ok(progress) => {
-            info!("Retrieved progress for operation {}: {}% complete", operation_id, progress.progress_percentage);
+            info!(
+                "Retrieved progress for operation {}: {}% complete",
+                operation_id, progress.progress_percentage
+            );
             Ok((StatusCode::OK, Json(progress)))
         }
         Err(ProgressServiceError::OperationNotFound) => {
@@ -45,7 +52,10 @@ where
             Err((StatusCode::NOT_FOUND, Json(error_response)))
         }
         Err(error) => {
-            warn!("Error retrieving progress for operation {}: {}", operation_id, error);
+            warn!(
+                "Error retrieving progress for operation {}: {}",
+                operation_id, error
+            );
             let error_response = ErrorResponse {
                 error: "INTERNAL_ERROR".to_string(),
                 message: "Failed to retrieve operation progress".to_string(),
@@ -135,11 +145,18 @@ where
 
     match progress_service.get_user_operations(user_id).await {
         Ok(operations) => {
-            info!("Retrieved {} operations for user {}", operations.len(), user_id);
+            info!(
+                "Retrieved {} operations for user {}",
+                operations.len(),
+                user_id
+            );
             Ok((StatusCode::OK, Json(operations)))
         }
         Err(error) => {
-            warn!("Error retrieving operations for user {}: {}", user_id, error);
+            warn!(
+                "Error retrieving operations for user {}: {}",
+                user_id, error
+            );
             let error_response = ErrorResponse {
                 error: "INTERNAL_ERROR".to_string(),
                 message: "Failed to retrieve user operations".to_string(),
