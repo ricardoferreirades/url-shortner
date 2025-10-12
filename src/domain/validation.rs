@@ -239,8 +239,10 @@ mod tests {
 
     #[test]
     fn test_validate_url_too_long() {
-        let mut config = ValidationConfig::default();
-        config.max_url_length = 50;
+        let config = ValidationConfig {
+            max_url_length: 50,
+            ..Default::default()
+        };
 
         let long_url = "https://example.com/".to_string() + &"a".repeat(100);
         assert!(matches!(
@@ -251,8 +253,10 @@ mod tests {
 
     #[test]
     fn test_validate_url_too_short() {
-        let mut config = ValidationConfig::default();
-        config.min_url_length = 20;
+        let config = ValidationConfig {
+            min_url_length: 20,
+            ..Default::default()
+        };
 
         assert!(matches!(
             validate_url("https://a.co", &config),
