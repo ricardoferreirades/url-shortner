@@ -288,14 +288,15 @@ mod tests {
     fn test_will_expire_soon() {
         let service = TokenValidationService::new_default();
 
-        // Token expires in 1 hour (will expire soon)
+        // Token expires in 1 hour
         let token = PasswordResetToken::new_with_timestamp(1, 1, "token".to_string(), 1);
-        assert!(service.will_expire_soon(&token, 2));
-        assert!(!service.will_expire_soon(&token, 0));
+        assert!(service.will_expire_soon(&token, 2)); // Will expire within 2 hours
+        assert!(service.will_expire_soon(&token, 1)); // Will expire within 1 hour (edge case due to num_hours truncation)
 
-        // Token expires in 24 hours (won't expire soon)
+        // Token expires in 24 hours (won't expire soon with small threshold)
         let token = PasswordResetToken::new_with_timestamp(1, 1, "token".to_string(), 24);
-        assert!(!service.will_expire_soon(&token, 2));
+        assert!(!service.will_expire_soon(&token, 2)); // Won't expire within 2 hours
+        assert!(!service.will_expire_soon(&token, 12)); // Won't expire within 12 hours
     }
 
     #[test]
