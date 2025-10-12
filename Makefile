@@ -27,6 +27,7 @@ test:
 # Format code (like Prettier)
 fmt:
 	cargo fmt
+	taplo format
 
 # Lint code (like ESLint)
 lint:
