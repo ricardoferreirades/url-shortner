@@ -1,4 +1,4 @@
-.PHONY: up down logs db-shell test fmt lint check
+.PHONY: up down logs db-shell test fmt lint check spell spell-fix quality setup-hooks
 
 # Start the database
 up:
@@ -44,6 +44,10 @@ spell:
 # Fix spelling issues automatically
 spell-fix:
 	typos --write-changes
+
+# Setup git hooks
+setup-hooks:
+	./.githooks/setup.sh
 
 # Run all code quality checks
 quality: fmt lint check spell
