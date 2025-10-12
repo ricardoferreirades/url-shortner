@@ -296,8 +296,10 @@ mod tests {
             &self,
             url_ids: &[i32],
             user_id: Option<i32>,
-        ) -> Result<crate::domain::repositories::url_repository::BatchOperationResult, RepositoryError>
-        {
+        ) -> Result<
+            crate::domain::repositories::url_repository::BatchOperationResult,
+            RepositoryError,
+        > {
             self.batch_update_status(url_ids, UrlStatus::Inactive, user_id)
                 .await
         }
@@ -306,8 +308,10 @@ mod tests {
             &self,
             url_ids: &[i32],
             user_id: Option<i32>,
-        ) -> Result<crate::domain::repositories::url_repository::BatchOperationResult, RepositoryError>
-        {
+        ) -> Result<
+            crate::domain::repositories::url_repository::BatchOperationResult,
+            RepositoryError,
+        > {
             self.batch_update_status(url_ids, UrlStatus::Active, user_id)
                 .await
         }
@@ -316,8 +320,10 @@ mod tests {
             &self,
             url_ids: &[i32],
             user_id: Option<i32>,
-        ) -> Result<crate::domain::repositories::url_repository::BatchOperationResult, RepositoryError>
-        {
+        ) -> Result<
+            crate::domain::repositories::url_repository::BatchOperationResult,
+            RepositoryError,
+        > {
             use crate::domain::repositories::url_repository::{
                 BatchItemResult, BatchOperationResult,
             };
@@ -361,8 +367,10 @@ mod tests {
             url_ids: &[i32],
             status: UrlStatus,
             user_id: Option<i32>,
-        ) -> Result<crate::domain::repositories::url_repository::BatchOperationResult, RepositoryError>
-        {
+        ) -> Result<
+            crate::domain::repositories::url_repository::BatchOperationResult,
+            RepositoryError,
+        > {
             use crate::domain::repositories::url_repository::{
                 BatchItemResult, BatchOperationResult,
             };
@@ -406,8 +414,10 @@ mod tests {
             url_ids: &[i32],
             expiration_date: Option<chrono::DateTime<chrono::Utc>>,
             user_id: Option<i32>,
-        ) -> Result<crate::domain::repositories::url_repository::BatchOperationResult, RepositoryError>
-        {
+        ) -> Result<
+            crate::domain::repositories::url_repository::BatchOperationResult,
+            RepositoryError,
+        > {
             use crate::domain::repositories::url_repository::{
                 BatchItemResult, BatchOperationResult,
             };

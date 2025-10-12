@@ -276,8 +276,9 @@ mod tests {
         );
 
         // Create a valid 10x10 pixel RGB image
-        let img: ImageBuffer<Rgb<u8>, Vec<u8>> = ImageBuffer::from_fn(10, 10, |_, _| Rgb([255, 0, 0]));
-        
+        let img: ImageBuffer<Rgb<u8>, Vec<u8>> =
+            ImageBuffer::from_fn(10, 10, |_, _| Rgb([255, 0, 0]));
+
         // Encode to JPEG format
         let mut buffer = Cursor::new(Vec::new());
         img.write_to(&mut buffer, image::ImageFormat::Jpeg).unwrap();

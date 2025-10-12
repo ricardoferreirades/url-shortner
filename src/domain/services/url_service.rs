@@ -575,18 +575,22 @@ mod tests {
                     .find(|u| u.id == url_id && (user_id.is_none() || u.user_id == user_id))
                 {
                     url.deactivate();
-                    results.push(crate::domain::repositories::url_repository::BatchItemResult {
-                        url_id,
-                        success: true,
-                        error: None,
-                    });
+                    results.push(
+                        crate::domain::repositories::url_repository::BatchItemResult {
+                            url_id,
+                            success: true,
+                            error: None,
+                        },
+                    );
                     successful += 1;
                 } else {
-                    results.push(crate::domain::repositories::url_repository::BatchItemResult {
-                        url_id,
-                        success: false,
-                        error: Some("URL not found or permission denied".to_string()),
-                    });
+                    results.push(
+                        crate::domain::repositories::url_repository::BatchItemResult {
+                            url_id,
+                            success: false,
+                            error: Some("URL not found or permission denied".to_string()),
+                        },
+                    );
                     failed += 1;
                 }
             }
@@ -620,18 +624,22 @@ mod tests {
                     .find(|u| u.id == url_id && (user_id.is_none() || u.user_id == user_id))
                 {
                     url.reactivate();
-                    results.push(crate::domain::repositories::url_repository::BatchItemResult {
-                        url_id,
-                        success: true,
-                        error: None,
-                    });
+                    results.push(
+                        crate::domain::repositories::url_repository::BatchItemResult {
+                            url_id,
+                            success: true,
+                            error: None,
+                        },
+                    );
                     successful += 1;
                 } else {
-                    results.push(crate::domain::repositories::url_repository::BatchItemResult {
-                        url_id,
-                        success: false,
-                        error: Some("URL not found or permission denied".to_string()),
-                    });
+                    results.push(
+                        crate::domain::repositories::url_repository::BatchItemResult {
+                            url_id,
+                            success: false,
+                            error: Some("URL not found or permission denied".to_string()),
+                        },
+                    );
                     failed += 1;
                 }
             }
@@ -665,18 +673,22 @@ mod tests {
                     .position(|u| u.id == url_id && (user_id.is_none() || u.user_id == user_id))
                 {
                     urls.remove(pos);
-                    results.push(crate::domain::repositories::url_repository::BatchItemResult {
-                        url_id,
-                        success: true,
-                        error: None,
-                    });
+                    results.push(
+                        crate::domain::repositories::url_repository::BatchItemResult {
+                            url_id,
+                            success: true,
+                            error: None,
+                        },
+                    );
                     successful += 1;
                 } else {
-                    results.push(crate::domain::repositories::url_repository::BatchItemResult {
-                        url_id,
-                        success: false,
-                        error: Some("URL not found or permission denied".to_string()),
-                    });
+                    results.push(
+                        crate::domain::repositories::url_repository::BatchItemResult {
+                            url_id,
+                            success: false,
+                            error: Some("URL not found or permission denied".to_string()),
+                        },
+                    );
                     failed += 1;
                 }
             }
@@ -711,18 +723,22 @@ mod tests {
                     .find(|u| u.id == url_id && (user_id.is_none() || u.user_id == user_id))
                 {
                     url.status = status.clone();
-                    results.push(crate::domain::repositories::url_repository::BatchItemResult {
-                        url_id,
-                        success: true,
-                        error: None,
-                    });
+                    results.push(
+                        crate::domain::repositories::url_repository::BatchItemResult {
+                            url_id,
+                            success: true,
+                            error: None,
+                        },
+                    );
                     successful += 1;
                 } else {
-                    results.push(crate::domain::repositories::url_repository::BatchItemResult {
-                        url_id,
-                        success: false,
-                        error: Some("URL not found or permission denied".to_string()),
-                    });
+                    results.push(
+                        crate::domain::repositories::url_repository::BatchItemResult {
+                            url_id,
+                            success: false,
+                            error: Some("URL not found or permission denied".to_string()),
+                        },
+                    );
                     failed += 1;
                 }
             }
@@ -757,18 +773,22 @@ mod tests {
                     .find(|u| u.id == url_id && (user_id.is_none() || u.user_id == user_id))
                 {
                     url.expiration_date = expiration_date;
-                    results.push(crate::domain::repositories::url_repository::BatchItemResult {
-                        url_id,
-                        success: true,
-                        error: None,
-                    });
+                    results.push(
+                        crate::domain::repositories::url_repository::BatchItemResult {
+                            url_id,
+                            success: true,
+                            error: None,
+                        },
+                    );
                     successful += 1;
                 } else {
-                    results.push(crate::domain::repositories::url_repository::BatchItemResult {
-                        url_id,
-                        success: false,
-                        error: Some("URL not found or permission denied".to_string()),
-                    });
+                    results.push(
+                        crate::domain::repositories::url_repository::BatchItemResult {
+                            url_id,
+                            success: false,
+                            error: Some("URL not found or permission denied".to_string()),
+                        },
+                    );
                     failed += 1;
                 }
             }

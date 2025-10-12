@@ -247,7 +247,7 @@ impl ProfileValidationService {
             let parsed = Url::parse(&trimmed).map_err(|_| {
                 ProfileValidationError::InvalidWebsite("Invalid website URL format".to_string())
             })?;
-            
+
             let scheme = parsed.scheme();
             if scheme != "http" && scheme != "https" {
                 return Err(ProfileValidationError::InvalidWebsite(
