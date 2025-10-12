@@ -1,10 +1,8 @@
-use url_shortner;
-
 #[test]
 fn test_main_module_compilation() {
     // Test that the main module compiles and can be imported
     // This is a basic smoke test to ensure the module structure is correct
-    assert!(true);
+    // No assertion needed - if this compiles, the test passes
 }
 
 #[test]
@@ -18,7 +16,7 @@ fn test_module_imports() {
     use url_shortner::infrastructure::server;
 
     // If we get here, all modules imported successfully
-    assert!(true);
+    // No assertion needed - successful import means test passes
 }
 
 #[test]
@@ -34,7 +32,7 @@ fn test_error_handling() {
 fn test_async_main_function() {
     // Test that the main function is properly marked as async
     // This is a compile-time check
-    assert!(true); // If we get here, the async main function compiles correctly
+    // If we get here, the async main function compiles correctly
 }
 
 #[test]
@@ -43,8 +41,10 @@ fn test_tokio_runtime() {
     // This is more of an integration test, but we can test basic tokio functionality
     let rt = tokio::runtime::Runtime::new().unwrap();
     rt.block_on(async {
-        assert!(true); // If we get here, tokio runtime works
+        // If we get here, tokio runtime works
+        42 // Return value to verify async execution
     });
+    assert_eq!(rt.block_on(async { 42 }), 42);
 }
 
 #[test]
@@ -118,7 +118,7 @@ fn test_lib_module_structure() {
 
     // Test that we can access the main functions from each module
     // (We can't call them directly, but we can verify they exist)
-    assert!(true);
+    // No assertion needed - successful module access means test passes
 }
 
 #[test]
