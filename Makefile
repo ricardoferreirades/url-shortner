@@ -36,5 +36,13 @@ lint:
 check:
 	cargo check
 
+# Check spelling
+spell:
+	typos
+
+# Fix spelling issues automatically
+spell-fix:
+	typos --write-changes
+
 # Run all code quality checks
-quality: fmt lint check
+quality: fmt lint check spell
