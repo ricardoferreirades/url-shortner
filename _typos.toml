@@ -1,8 +1,8 @@
 [default]
 extend-ignore-re = [
   # Technical terms and identifiers
-  "([A-Z][a-z]*){2,}",  # CamelCase
-  "[a-z]+_[a-z]+",      # snake_case variables
+  "([A-Z][a-z]*){2,}", # CamelCase
+  "[a-z]+_[a-z]+",     # snake_case variables
 ]
 
 [default.extend-words]
@@ -25,10 +25,4 @@ reactivate = "reactivate"
 cascading = "cascading"
 
 [files]
-extend-exclude = [
-  "target/",
-  "Cargo.lock",
-  "*.log",
-  ".git/",
-]
-
+extend-exclude = ["target/", "Cargo.lock", "*.log", ".git/"]
