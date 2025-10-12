@@ -122,7 +122,7 @@ impl UrlRepository for PostgresUrlRepository {
         )
         .bind(&url.short_code)
         .bind(&url.original_url)
-        .bind(&url.expiration_date)
+        .bind(url.expiration_date)
         .bind(url.status.to_string())
         .bind(url.id)
         .fetch_one(&self.pool)

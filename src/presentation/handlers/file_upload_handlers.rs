@@ -216,7 +216,7 @@ pub async fn delete_profile_picture(
     };
 
     // Extract filename from URL
-    let filename = avatar_url.split('/').last().ok_or_else(|| {
+    let filename = avatar_url.split('/').next_back().ok_or_else(|| {
         (
             StatusCode::BAD_REQUEST,
             Json(ErrorResponse {
