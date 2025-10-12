@@ -3,9 +3,10 @@ use serde::{Deserialize, Serialize};
 use std::fmt;
 
 /// Status of a URL - active or inactive (soft deleted)
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Default)]
 pub enum UrlStatus {
     /// URL is active and can be accessed
+    #[default]
     Active,
     /// URL is inactive (soft deleted) and should not redirect
     Inactive,
@@ -15,12 +16,6 @@ impl UrlStatus {
     /// Check if the URL status allows access
     pub fn is_active(&self) -> bool {
         matches!(self, UrlStatus::Active)
-    }
-}
-
-impl Default for UrlStatus {
-    fn default() -> Self {
-        UrlStatus::Active
     }
 }
 
@@ -90,7 +85,7 @@ impl Url {
 
     /// Check if this URL belongs to a specific user
     pub fn belongs_to_user(&self, user_id: i32) -> bool {
-        self.user_id.map_or(true, |uid| uid == user_id)
+        self.user_id.is_none_or(|uid| uid == user_id)
     }
 
     /// Get the short URL format
