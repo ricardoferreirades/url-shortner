@@ -10,8 +10,11 @@ fn test_main_module_compilation() {
 #[test]
 fn test_module_imports() {
     // Test that all modules can be imported successfully
+    #[allow(unused_imports)]
     use url_shortner::application;
+    #[allow(unused_imports)]
     use url_shortner::domain;
+    #[allow(unused_imports)]
     use url_shortner::infrastructure::server;
 
     // If we get here, all modules imported successfully
@@ -106,8 +109,11 @@ fn test_error_propagation() {
 fn test_lib_module_structure() {
     // Test that the lib module structure is correct
     // This ensures that all modules are properly exposed
+    #[allow(unused_imports)]
     use url_shortner::application;
+    #[allow(unused_imports)]
     use url_shortner::domain;
+    #[allow(unused_imports)]
     use url_shortner::infrastructure::server;
 
     // Test that we can access the main functions from each module
