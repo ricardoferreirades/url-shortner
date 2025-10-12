@@ -11,7 +11,11 @@ serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 tracing = "0.1"
 tracing-subscriber = "0.3"
-sqlx = { version = "0.8", features = ["runtime-tokio-rustls", "postgres", "chrono"] }
+sqlx = { version = "0.8", features = [
+  "runtime-tokio-rustls",
+  "postgres",
+  "chrono",
+] }
 chrono = { version = "0.4", features = ["serde"] }
 dotenv = "0.15"
 utoipa = { version = "4", features = ["axum_extras"] }
@@ -21,7 +25,14 @@ url = "2.5"
 validator = { version = "0.18", features = ["derive"] }
 thiserror = "1.0"
 governor = "0.6"
-tower-http = { version = "0.5", features = ["cors", "limit", "trace", "compression-br", "compression-gzip", "compression-deflate"] }
+tower-http = { version = "0.5", features = [
+  "cors",
+  "limit",
+  "trace",
+  "compression-br",
+  "compression-gzip",
+  "compression-deflate",
+] }
 tower = { version = "0.4", features = ["full"] }
 async-trait = "0.1"
 jsonwebtoken = "9.2"
@@ -31,5 +42,10 @@ axum-extra = { version = "0.9", features = ["multipart"] }
 image = "0.24"
 mime_guess = "2.0"
 regex = "1.10"
-lettre = { version = "0.11", default-features = false, features = ["tokio1-rustls-tls", "smtp-transport", "builder", "hostname"] }
+lettre = { version = "0.11", default-features = false, features = [
+  "tokio1-rustls-tls",
+  "smtp-transport",
+  "builder",
+  "hostname",
+] }
 rand = "0.8"
