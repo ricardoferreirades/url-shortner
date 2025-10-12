@@ -178,6 +178,7 @@ impl FileUploadService {
     }
 
     /// Process image (resize, optimize, etc.)
+    #[allow(clippy::type_complexity)]
     fn process_image(
         &self,
         data: Vec<u8>,
