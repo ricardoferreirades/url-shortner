@@ -68,6 +68,8 @@ The pre-push hook automatically runs:
 - Type checking
 - All tests
 
+After running all checks, a summary table displays the status of each check, making it easy to see what passed or failed at a glance.
+
 ## Technologies Used
 
 ### Core Technologies
