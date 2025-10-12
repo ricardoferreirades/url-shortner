@@ -241,19 +241,29 @@ impl ProfileValidationService {
             )));
         }
 
-        // Add https:// if no protocol is specified
-        let url = if trimmed.starts_with("http://") || trimmed.starts_with("https://") {
+        // Check if URL has a protocol
+        let url = if trimmed.contains("://") {
+            // Has protocol - validate it's http or https
+            let parsed = Url::parse(&trimmed).map_err(|_| {
+                ProfileValidationError::InvalidWebsite("Invalid website URL format".to_string())
+            })?;
+            
+            let scheme = parsed.scheme();
+            if scheme != "http" && scheme != "https" {
+                return Err(ProfileValidationError::InvalidWebsite(
+                    "Website URL must use http or https protocol".to_string(),
+                ));
+            }
             trimmed
         } else {
-            format!("https://{}", trimmed)
+            // No protocol - add https://
+            let with_https = format!("https://{}", trimmed);
+            // Validate the constructed URL
+            Url::parse(&with_https).map_err(|_| {
+                ProfileValidationError::InvalidWebsite("Invalid website URL format".to_string())
+            })?;
+            with_https
         };
-
-        // Validate URL format
-        if let Err(_) = Url::parse(&url) {
-            return Err(ProfileValidationError::InvalidWebsite(
-                "Invalid website URL format".to_string(),
-            ));
-        }
 
         Ok(url)
     }
@@ -429,7 +439,7 @@ mod tests {
 
         // Invalid websites
         assert!(service
-            .validate_and_sanitize_website("not-a-url".to_string())
+            .validate_and_sanitize_website("not a valid url with spaces".to_string())
             .is_err());
         assert!(service
             .validate_and_sanitize_website("ftp://example.com".to_string())
