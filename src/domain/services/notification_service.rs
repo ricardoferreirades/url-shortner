@@ -3,7 +3,7 @@ use crate::domain::entities::Url;
 use tracing::{info, warn};
 
 /// Service for handling notifications and warnings
-#[derive(Clone)]
+#[derive(Clone, Default)]
 pub struct NotificationService;
 
 impl NotificationService {

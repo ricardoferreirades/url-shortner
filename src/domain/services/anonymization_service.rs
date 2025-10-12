@@ -3,7 +3,7 @@ use chrono::Utc;
 use thiserror::Error;
 
 /// Service for anonymizing user data upon account deletion
-#[derive(Clone)]
+#[derive(Clone, Default)]
 pub struct AnonymizationService;
 
 impl AnonymizationService {
