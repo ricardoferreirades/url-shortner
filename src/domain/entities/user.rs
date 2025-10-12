@@ -3,17 +3,12 @@ use serde::{Deserialize, Serialize};
 use std::fmt;
 
 /// Privacy settings for user profile
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Default)]
 pub enum ProfilePrivacy {
+    #[default]
     Public,
     Private,
     FriendsOnly,
-}
-
-impl Default for ProfilePrivacy {
-    fn default() -> Self {
-        ProfilePrivacy::Public
-    }
 }
 
 /// Domain entity representing a User
@@ -74,6 +69,7 @@ impl User {
     }
 
     /// Create a new User with profile fields
+    #[allow(clippy::too_many_arguments)]
     pub fn new_with_profile(
         id: i32,
         username: String,
@@ -106,6 +102,7 @@ impl User {
     }
 
     /// Update profile fields
+    #[allow(clippy::too_many_arguments)]
     pub fn update_profile(
         &mut self,
         first_name: Option<String>,

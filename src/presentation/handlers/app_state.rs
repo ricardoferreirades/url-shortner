@@ -31,6 +31,7 @@ where
     U: UserRepository + Send + Sync + Clone + 'static,
     P: PasswordResetRepository + Send + Sync + Clone,
 {
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         shorten_url_use_case: ShortenUrlUseCase<R>,
         url_repository: R,

@@ -65,6 +65,7 @@ impl ProfileValidationService {
     }
 
     /// Validate and sanitize profile data
+    #[allow(clippy::too_many_arguments)]
     pub fn validate_profile_data(
         &self,
         first_name: Option<String>,
@@ -205,7 +206,7 @@ impl ProfileValidationService {
         }
 
         // Validate URL format
-        if let Err(_) = Url::parse(&trimmed) {
+        if Url::parse(&trimmed).is_err() {
             return Err(ProfileValidationError::InvalidAvatarUrl(format!(
                 "Invalid {} URL format",
                 field_name

@@ -29,6 +29,7 @@ pub trait UserRepository: Send + Sync {
     async fn exists_by_email(&self, email: &str) -> Result<bool, RepositoryError>;
 
     /// Update user profile
+    #[allow(clippy::too_many_arguments)]
     async fn update_profile(
         &self,
         user_id: i32,

@@ -18,6 +18,7 @@ pub struct Click {
 #[allow(dead_code)]
 impl Click {
     /// Create a new Click entity
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         id: i32,
         url_id: i32,
