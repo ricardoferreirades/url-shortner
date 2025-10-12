@@ -1,0 +1,61 @@
+#!/bin/sh
+# Git pre-push hook
+# Runs code quality checks before allowing push
+
+set -e
+
+echo "🔍 Running pre-push checks..."
+echo ""
+
+# 1. Format check
+echo "📝 Checking code formatting..."
+if ! cargo fmt --check; then
+    echo "❌ Code is not formatted. Run 'make fmt' to fix."
+    exit 1
+fi
+if ! taplo format --check; then
+    echo "❌ TOML files are not formatted. Run 'taplo format' to fix."
+    exit 1
+fi
+echo "✅ Formatting check passed"
+echo ""
+
+# 2. Linting
+echo "🔎 Running linter..."
+if ! cargo clippy --all-targets --all-features -- -D warnings; then
+    echo "❌ Clippy found issues. Fix them before pushing."
+    exit 1
+fi
+echo "✅ Linting passed"
+echo ""
+
+# 3. Spell check
+echo "📖 Checking spelling..."
+if ! typos; then
+    echo "❌ Typos found. Run 'make spell-fix' to fix automatically."
+    exit 1
+fi
+echo "✅ Spell check passed"
+echo ""
+
+# 4. Type check
+echo "🔧 Type checking..."
+if ! cargo check --all-targets; then
+    echo "❌ Type check failed. Fix errors before pushing."
+    exit 1
+fi
+echo "✅ Type check passed"
+echo ""
+
+# 5. Tests
+echo "🧪 Running tests..."
+if ! cargo test --all-targets; then
+    echo "❌ Tests failed. Fix failing tests before pushing."
+    exit 1
+fi
+echo "✅ Tests passed"
+echo ""
+
+echo "🎉 All pre-push checks passed! Proceeding with push..."
+exit 0
+
