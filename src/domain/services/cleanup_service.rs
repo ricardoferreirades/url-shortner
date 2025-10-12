@@ -383,7 +383,7 @@ mod tests {
                     .iter_mut()
                     .find(|u| u.id == url_id && (user_id.is_none() || u.user_id == user_id))
                 {
-                    url.status = status.clone();
+                    url.status = status;
                     results.push(BatchItemResult {
                         url_id,
                         success: true,

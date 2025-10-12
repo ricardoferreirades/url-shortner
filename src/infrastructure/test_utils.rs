@@ -12,11 +12,17 @@ pub struct MockUrlRepository {
     urls: Arc<Mutex<Vec<Url>>>,
 }
 
-impl MockUrlRepository {
-    pub fn new() -> Self {
+impl Default for MockUrlRepository {
+    fn default() -> Self {
         Self {
             urls: Arc::new(Mutex::new(Vec::new())),
         }
+    }
+}
+
+impl MockUrlRepository {
+    pub fn new() -> Self {
+        Self::default()
     }
 }
 
@@ -219,7 +225,7 @@ impl UrlRepository for MockUrlRepository {
                 .iter_mut()
                 .find(|u| u.id == url_id && (user_id.is_none() || u.user_id == user_id))
             {
-                url.status = status.clone();
+                url.status = status;
                 results.push(BatchItemResult {
                     url_id,
                     success: true,
