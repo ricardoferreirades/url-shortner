@@ -1,0 +1,34 @@
+[default]
+extend-ignore-re = [
+  # Technical terms and identifiers
+  "([A-Z][a-z]*){2,}",  # CamelCase
+  "[a-z]+_[a-z]+",      # snake_case variables
+]
+
+[default.extend-words]
+# Project-specific terms
+utoipa = "utoipa"
+axum = "axum"
+sqlx = "sqlx"
+chrono = "chrono"
+tokio = "tokio"
+rustls = "rustls"
+PostgreSQL = "PostgreSQL"
+GDPR = "GDPR"
+
+# Technical terms
+anonymization = "anonymization"
+anonymize = "anonymize"
+anonymized = "anonymized"
+deactivate = "deactivate"
+reactivate = "reactivate"
+cascading = "cascading"
+
+[files]
+extend-exclude = [
+  "target/",
+  "Cargo.lock",
+  "*.log",
+  ".git/",
+]
+
