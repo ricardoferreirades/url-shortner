@@ -1,4 +1,4 @@
-.PHONY: up down logs db-shell test fmt lint check spell spell-fix quality setup-hooks
+.PHONY: up down logs db-shell test fmt lint lint-fix check spell spell-fix quality setup-hooks
 
 # Start the database
 up:
@@ -32,6 +32,10 @@ fmt:
 # Lint code (like ESLint)
 lint:
 	cargo clippy
+
+# Fix linting issues automatically
+lint-fix:
+	cargo clippy --fix --allow-dirty --allow-staged
 
 # Check code without building (faster)
 check:
