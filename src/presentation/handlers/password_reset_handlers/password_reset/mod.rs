@@ -1,6 +1,6 @@
 // Re-export all password reset handler functions and DTOs
 
-pub mod dtos;
+mod dtos;
 pub mod request_handler;
 pub mod reset_handler;
 pub mod validate_handler;

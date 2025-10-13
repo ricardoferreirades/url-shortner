@@ -1,6 +1,6 @@
 // Re-export all authentication handler functions and DTOs
 
-pub mod dtos;
+mod dtos;
 pub mod login_handler;
 pub mod register_handler;
 
