@@ -27,4 +27,3 @@ pub struct ResetPasswordResponse {
     pub message: String,
     pub success: bool,
 }
-

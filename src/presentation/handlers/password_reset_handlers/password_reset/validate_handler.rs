@@ -101,4 +101,3 @@ pub async fn validate_reset_token(
         "token_strength_score": validation_service.get_token_strength_score(&token),
     })))
 }
-

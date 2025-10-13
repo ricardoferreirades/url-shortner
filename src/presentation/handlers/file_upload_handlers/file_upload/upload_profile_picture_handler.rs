@@ -154,4 +154,3 @@ pub async fn upload_profile_picture(
         }),
     ))
 }
-

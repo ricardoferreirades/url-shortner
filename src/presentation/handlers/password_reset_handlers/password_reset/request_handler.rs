@@ -123,4 +123,3 @@ pub async fn request_password_reset(
         email: request.email,
     }))
 }
-

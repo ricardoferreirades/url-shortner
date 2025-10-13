@@ -74,4 +74,3 @@ pub async fn reset_password(
         success: true,
     }))
 }
-

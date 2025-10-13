@@ -115,4 +115,3 @@ pub async fn delete_profile_picture(
         )),
     }
 }
-
