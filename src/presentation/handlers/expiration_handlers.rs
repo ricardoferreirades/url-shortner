@@ -1,4 +1,3 @@
-use super::app_state::AppState;
 use crate::application::dto::{
     requests::{ExtendExpirationRequest, SetExpirationRequest},
     responses::{
@@ -7,6 +6,7 @@ use crate::application::dto::{
     },
 };
 use crate::domain::repositories::UrlRepository;
+use crate::presentation::handlers::ConcreteAppState;
 use axum::{extract::Path, extract::State, http::StatusCode, Json};
 use tracing::{info, warn};
 
@@ -23,15 +23,10 @@ use tracing::{info, warn};
     ),
     tag = "expiration"
 )]
-pub async fn get_expiration_info_handler<R, U, P>(
-    State(app_state): State<AppState<R, U, P>>,
+pub async fn get_expiration_info_handler(
+    State(app_state): State<ConcreteAppState>,
     Path(short_code_str): Path<String>,
-) -> Result<(StatusCode, Json<ExpirationInfoResponse>), (StatusCode, Json<ErrorResponse>)>
-where
-    R: UrlRepository + Send + Sync + Clone,
-    U: crate::domain::repositories::UserRepository + Send + Sync + Clone,
-    P: crate::domain::repositories::PasswordResetRepository + Send + Sync + Clone,
-{
+) -> Result<(StatusCode, Json<ExpirationInfoResponse>), (StatusCode, Json<ErrorResponse>)> {
     info!("Getting expiration info for short code: {}", short_code_str);
 
     let short_code = match crate::domain::entities::ShortCode::new(short_code_str) {
@@ -102,16 +97,11 @@ where
     ),
     tag = "expiration"
 )]
-pub async fn set_expiration_handler<R, U, P>(
-    State(app_state): State<AppState<R, U, P>>,
+pub async fn set_expiration_handler(
+    State(app_state): State<ConcreteAppState>,
     Path(short_code_str): Path<String>,
     Json(request): Json<SetExpirationRequest>,
-) -> Result<(StatusCode, Json<SuccessResponse>), (StatusCode, Json<ErrorResponse>)>
-where
-    R: UrlRepository + Send + Sync + Clone,
-    U: crate::domain::repositories::UserRepository + Send + Sync + Clone,
-    P: crate::domain::repositories::PasswordResetRepository + Send + Sync + Clone,
-{
+) -> Result<(StatusCode, Json<SuccessResponse>), (StatusCode, Json<ErrorResponse>)> {
     info!("Setting expiration for short code: {}", short_code_str);
 
     let short_code = match crate::domain::entities::ShortCode::new(short_code_str) {
@@ -190,16 +180,11 @@ where
     ),
     tag = "expiration"
 )]
-pub async fn extend_expiration_handler<R, U, P>(
-    State(app_state): State<AppState<R, U, P>>,
+pub async fn extend_expiration_handler(
+    State(app_state): State<ConcreteAppState>,
     Path(short_code_str): Path<String>,
     Json(request): Json<ExtendExpirationRequest>,
-) -> Result<(StatusCode, Json<SuccessResponse>), (StatusCode, Json<ErrorResponse>)>
-where
-    R: UrlRepository + Send + Sync + Clone,
-    U: crate::domain::repositories::UserRepository + Send + Sync + Clone,
-    P: crate::domain::repositories::PasswordResetRepository + Send + Sync + Clone,
-{
+) -> Result<(StatusCode, Json<SuccessResponse>), (StatusCode, Json<ErrorResponse>)> {
     info!("Extending expiration for short code: {}", short_code_str);
 
     let short_code = match crate::domain::entities::ShortCode::new(short_code_str) {
@@ -283,15 +268,10 @@ where
     ),
     tag = "expiration"
 )]
-pub async fn get_expiring_urls_handler<R, U, P>(
-    State(app_state): State<AppState<R, U, P>>,
+pub async fn get_expiring_urls_handler(
+    State(app_state): State<ConcreteAppState>,
     axum::extract::Query(params): axum::extract::Query<std::collections::HashMap<String, u32>>,
-) -> Result<(StatusCode, Json<ExpiringUrlsResponse>), (StatusCode, Json<ErrorResponse>)>
-where
-    R: UrlRepository + Send + Sync + Clone,
-    U: crate::domain::repositories::UserRepository + Send + Sync + Clone,
-    P: crate::domain::repositories::PasswordResetRepository + Send + Sync + Clone,
-{
+) -> Result<(StatusCode, Json<ExpiringUrlsResponse>), (StatusCode, Json<ErrorResponse>)> {
     let days = params.get("days").copied().unwrap_or(7); // Default to 7 days
     info!("Getting URLs expiring within {} days", days);
 

@@ -1,6 +1,6 @@
 use crate::application::dto::responses::{BulkOperationProgress, ErrorResponse};
 use crate::domain::services::ProgressServiceError;
-use crate::presentation::handlers::app_state::AppState;
+use crate::presentation::handlers::ConcreteAppState;
 use axum::{
     extract::{Path, State},
     http::StatusCode,
@@ -22,15 +22,10 @@ use tracing::{info, warn};
     ),
     tag = "bulk-operations"
 )]
-pub async fn get_bulk_operation_progress_handler<R, U, P>(
-    State(app_state): State<AppState<R, U, P>>,
+pub async fn get_bulk_operation_progress_handler(
+    State(app_state): State<ConcreteAppState>,
     Path(operation_id): Path<String>,
-) -> Result<(StatusCode, Json<BulkOperationProgress>), (StatusCode, Json<ErrorResponse>)>
-where
-    R: crate::domain::repositories::UrlRepository + Send + Sync + Clone,
-    U: crate::domain::repositories::UserRepository + Send + Sync + Clone,
-    P: crate::domain::repositories::PasswordResetRepository + Send + Sync + Clone,
-{
+) -> Result<(StatusCode, Json<BulkOperationProgress>), (StatusCode, Json<ErrorResponse>)> {
     let progress_service = &app_state.progress_service;
     info!("Getting progress for operation: {}", operation_id);
 
@@ -81,15 +76,10 @@ where
     ),
     tag = "bulk-operations"
 )]
-pub async fn cancel_bulk_operation_handler<R, U, P>(
-    State(app_state): State<AppState<R, U, P>>,
+pub async fn cancel_bulk_operation_handler(
+    State(app_state): State<ConcreteAppState>,
     Path(operation_id): Path<String>,
-) -> Result<StatusCode, (StatusCode, Json<ErrorResponse>)>
-where
-    R: crate::domain::repositories::UrlRepository + Send + Sync + Clone,
-    U: crate::domain::repositories::UserRepository + Send + Sync + Clone,
-    P: crate::domain::repositories::PasswordResetRepository + Send + Sync + Clone,
-{
+) -> Result<StatusCode, (StatusCode, Json<ErrorResponse>)> {
     let progress_service = &app_state.progress_service;
     info!("Cancelling operation: {}", operation_id);
 
@@ -129,16 +119,11 @@ where
     ),
     tag = "bulk-operations"
 )]
-pub async fn get_user_operations_handler<R, U, P>(
-    State(app_state): State<AppState<R, U, P>>,
+pub async fn get_user_operations_handler(
+    State(app_state): State<ConcreteAppState>,
     // In a real implementation, you'd extract user_id from the auth token
     // For now, we'll use a placeholder user_id
-) -> Result<(StatusCode, Json<Vec<BulkOperationProgress>>), (StatusCode, Json<ErrorResponse>)>
-where
-    R: crate::domain::repositories::UrlRepository + Send + Sync + Clone,
-    U: crate::domain::repositories::UserRepository + Send + Sync + Clone,
-    P: crate::domain::repositories::PasswordResetRepository + Send + Sync + Clone,
-{
+) -> Result<(StatusCode, Json<Vec<BulkOperationProgress>>), (StatusCode, Json<ErrorResponse>)> {
     let progress_service = &app_state.progress_service;
     let user_id = 1; // This should come from authentication
     info!("Getting operations for user: {}", user_id);

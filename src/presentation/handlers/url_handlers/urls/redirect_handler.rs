@@ -1,6 +1,5 @@
 use crate::application::dto::ErrorResponse;
-use crate::domain::repositories::UrlRepository;
-use crate::presentation::handlers::app_state::AppState;
+use crate::presentation::handlers::ConcreteAppState;
 use axum::{extract::State, http::StatusCode, response::Redirect, Json};
 use tracing::{info, warn};
 
@@ -18,15 +17,10 @@ use tracing::{info, warn};
     ),
     tag = "url-shortener"
 )]
-pub async fn redirect_handler<R, U, P>(
-    State(app_state): State<AppState<R, U, P>>,
+pub async fn redirect_handler(
+    State(app_state): State<ConcreteAppState>,
     axum::extract::Path(short_code_str): axum::extract::Path<String>,
-) -> Result<Redirect, (StatusCode, Json<ErrorResponse>)>
-where
-    R: UrlRepository + Send + Sync + Clone,
-    U: crate::domain::repositories::UserRepository + Send + Sync + Clone,
-    P: crate::domain::repositories::PasswordResetRepository + Send + Sync + Clone,
-{
+) -> Result<Redirect, (StatusCode, Json<ErrorResponse>)> {
     info!(
         "Received redirect request for short code: {}",
         short_code_str

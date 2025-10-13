@@ -2,9 +2,8 @@ use axum::{extract::State, http::StatusCode, Json};
 use serde::{Deserialize, Serialize};
 use tracing::{info, warn};
 
-use crate::domain::repositories::user_repository::UserRepository;
 use crate::domain::services::AuthServiceError;
-use crate::presentation::handlers::app_state::AppState;
+use crate::presentation::handlers::ConcreteAppState;
 
 /// Request DTO for user registration
 #[derive(Debug, Deserialize, utoipa::ToSchema)]
@@ -56,15 +55,10 @@ pub struct ErrorResponse {
     ),
     tag = "authentication"
 )]
-pub async fn register_handler<R, U, P>(
-    State(app_state): State<AppState<R, U, P>>,
+pub async fn register_handler(
+    State(app_state): State<ConcreteAppState>,
     Json(request): Json<RegisterRequest>,
-) -> Result<(StatusCode, Json<AuthResponse>), (StatusCode, Json<ErrorResponse>)>
-where
-    R: crate::domain::repositories::UrlRepository + Send + Sync + Clone,
-    U: UserRepository + Send + Sync + Clone,
-    P: crate::domain::repositories::PasswordResetRepository + Send + Sync + Clone,
-{
+) -> Result<(StatusCode, Json<AuthResponse>), (StatusCode, Json<ErrorResponse>)> {
     info!(
         "Received registration request for username: {}",
         request.username
@@ -141,15 +135,10 @@ where
     ),
     tag = "authentication"
 )]
-pub async fn login_handler<R, U, P>(
-    State(app_state): State<AppState<R, U, P>>,
+pub async fn login_handler(
+    State(app_state): State<ConcreteAppState>,
     Json(request): Json<LoginRequest>,
-) -> Result<(StatusCode, Json<AuthResponse>), (StatusCode, Json<ErrorResponse>)>
-where
-    R: crate::domain::repositories::UrlRepository + Send + Sync + Clone,
-    U: UserRepository + Send + Sync + Clone,
-    P: crate::domain::repositories::PasswordResetRepository + Send + Sync + Clone,
-{
+) -> Result<(StatusCode, Json<AuthResponse>), (StatusCode, Json<ErrorResponse>)> {
     info!("Received login request for username: {}", request.username);
 
     match app_state

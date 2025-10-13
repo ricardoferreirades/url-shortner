@@ -1,8 +1,7 @@
 use crate::application::dto::{
     requests::BatchUrlOperationRequest, responses::BulkOperationProgress, ErrorResponse,
 };
-use crate::domain::repositories::UrlRepository;
-use crate::presentation::handlers::app_state::AppState;
+use crate::presentation::handlers::ConcreteAppState;
 use axum::{
     extract::State,
     http::HeaderMap,
@@ -23,16 +22,11 @@ use tracing::{info, warn};
     ),
     tag = "bulk-operations"
 )]
-pub async fn async_batch_url_operations_handler<R, U, P>(
-    State(app_state): State<AppState<R, U, P>>,
+pub async fn async_batch_url_operations_handler(
+    State(app_state): State<ConcreteAppState>,
     headers: HeaderMap,
     Json(request): Json<BatchUrlOperationRequest>,
-) -> Result<(StatusCode, Json<BulkOperationProgress>), (StatusCode, Json<ErrorResponse>)>
-where
-    R: UrlRepository + Send + Sync + Clone,
-    U: crate::domain::repositories::UserRepository + Send + Sync + Clone,
-    P: crate::domain::repositories::PasswordResetRepository + Send + Sync + Clone,
-{
+) -> Result<(StatusCode, Json<BulkOperationProgress>), (StatusCode, Json<ErrorResponse>)> {
     // Require Authorization: Bearer <token>
     let auth_header = headers
         .get(header::AUTHORIZATION)
