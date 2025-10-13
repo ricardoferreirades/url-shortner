@@ -1,3 +1,4 @@
+pub mod account_deletion_handlers;
 pub mod app_state;
 pub mod auth_handlers;
 pub mod expiration_handlers;
@@ -8,6 +9,7 @@ pub mod profile_handlers;
 pub mod progress_handlers;
 pub mod url_handlers;
 
+pub use account_deletion_handlers::*;
 pub use app_state::*;
 pub use auth_handlers::*;
 pub use expiration_handlers::*;
@@ -23,4 +25,5 @@ pub type ConcreteAppState = app_state::AppState<
     crate::infrastructure::database::PostgresUrlRepository,
     crate::infrastructure::database::PostgresUserRepository,
     crate::infrastructure::database::PostgresPasswordResetRepository,
+    crate::infrastructure::database::PostgresAccountDeletionTokenRepository,
 >;
