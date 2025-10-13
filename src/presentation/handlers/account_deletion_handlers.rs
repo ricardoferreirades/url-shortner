@@ -377,13 +377,13 @@ fn generate_secure_token() -> String {
     let token: String = (0..64)
         .map(|_| {
             let idx = rng.gen_range(0..62);
-            let c = match idx {
+            
+            match idx {
                 0..=9 => (b'0' + idx) as char,
                 10..=35 => (b'a' + idx - 10) as char,
                 36..=61 => (b'A' + idx - 36) as char,
                 _ => unreachable!(),
-            };
-            c
+            }
         })
         .collect();
     token
