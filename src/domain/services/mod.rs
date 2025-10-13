@@ -12,6 +12,7 @@ pub mod progress_service;
 pub mod token_validation_service;
 pub mod url_service;
 
+pub use anonymization_service::AnonymizationService;
 pub use auth_service::{AuthService, ServiceError as AuthServiceError};
 pub use bulk_processor::BulkProcessor;
 pub use file_upload_service::{FileUploadError, FileUploadService};
