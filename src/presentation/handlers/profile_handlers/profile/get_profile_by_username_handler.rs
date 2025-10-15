@@ -57,3 +57,28 @@ pub async fn get_profile_by_username(
         )),
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_profile_private_error() {
+        let error = ErrorResponse {
+            error: "Profile private".to_string(),
+            message: "This profile is private".to_string(),
+            status_code: 403,
+        };
+        assert_eq!(error.status_code, 403);
+    }
+
+    #[test]
+    fn test_user_not_found_error() {
+        let error = ErrorResponse {
+            error: "User not found".to_string(),
+            message: "User profile not found".to_string(),
+            status_code: 404,
+        };
+        assert_eq!(error.status_code, 404);
+    }
+}
