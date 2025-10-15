@@ -147,3 +147,28 @@ pub async fn request_account_deletion(
         expires_at: created_token.expires_at.to_rfc3339(),
     }))
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_invalid_password_error() {
+        let error = ErrorResponse {
+            error: "Invalid password".to_string(),
+            message: "The password provided is incorrect".to_string(),
+            status_code: StatusCode::UNAUTHORIZED.as_u16(),
+        };
+        assert_eq!(error.status_code, 401);
+    }
+
+    #[test]
+    fn test_user_not_found_error() {
+        let error = ErrorResponse {
+            error: "User not found".to_string(),
+            message: "User account does not exist".to_string(),
+            status_code: StatusCode::NOT_FOUND.as_u16(),
+        };
+        assert_eq!(error.status_code, 404);
+    }
+}
