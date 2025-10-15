@@ -47,10 +47,32 @@ pub async fn get_privacy_recommendations(// In a real implementation, you would 
 
 #[cfg(test)]
 mod tests {
+    use super::super::dtos::{
+        DataPrivacyLevelResponse, FieldPrivacySettingsResponse, PrivacySettingsResponse,
+        ProfilePrivacyResponse,
+    };
+
     #[test]
-    fn test_privacy_recommendations_structure() {
-        // Test that the function signature is correct
-        // Actual testing would require tokio runtime
-        assert!(true);
+    fn test_privacy_recommendations_response_structure() {
+        // Test the response structure by creating a sample
+        let response = PrivacySettingsResponse {
+            profile_privacy: ProfilePrivacyResponse::Public,
+            field_settings: FieldPrivacySettingsResponse {
+                first_name: DataPrivacyLevelResponse::Public,
+                last_name: DataPrivacyLevelResponse::Public,
+                bio: DataPrivacyLevelResponse::Public,
+                avatar_url: DataPrivacyLevelResponse::Public,
+                website: DataPrivacyLevelResponse::Public,
+                location: DataPrivacyLevelResponse::Public,
+                email: DataPrivacyLevelResponse::Private,
+            },
+            is_searchable: true,
+            privacy_description: "Recommended settings for business accounts".to_string(),
+        };
+        assert!(response.is_searchable);
+        assert_eq!(
+            response.privacy_description,
+            "Recommended settings for business accounts"
+        );
     }
 }
