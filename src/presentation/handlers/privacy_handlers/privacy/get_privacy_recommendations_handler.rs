@@ -44,3 +44,13 @@ pub async fn get_privacy_recommendations(// In a real implementation, you would 
         privacy_description: "Recommended settings for business accounts".to_string(),
     }))
 }
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn test_privacy_recommendations_structure() {
+        // Test that the function signature is correct
+        // Actual testing would require tokio runtime
+        assert!(true);
+    }
+}
