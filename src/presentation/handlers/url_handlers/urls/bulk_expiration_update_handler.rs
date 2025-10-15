@@ -107,3 +107,35 @@ pub async fn bulk_expiration_update_handler(
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_bulk_expiration_update_request_deserialize() {
+        let json = r#"{"url_ids":[1,2,3],"expiration_date":"2024-12-31T23:59:59Z"}"#;
+        let request: Result<BulkExpirationUpdateRequest, _> = serde_json::from_str(json);
+        assert!(request.is_ok());
+    }
+
+    #[test]
+    fn test_unauthorized_error() {
+        let error = ErrorResponse {
+            error: "UNAUTHORIZED".to_string(),
+            message: "Missing or invalid Authorization header".to_string(),
+            status_code: StatusCode::UNAUTHORIZED.as_u16(),
+        };
+        assert_eq!(error.status_code, 401);
+    }
+
+    #[test]
+    fn test_bulk_update_failed_error() {
+        let error = ErrorResponse {
+            error: "BULK_UPDATE_FAILED".to_string(),
+            message: "Failed to update expiration".to_string(),
+            status_code: StatusCode::BAD_REQUEST.as_u16(),
+        };
+        assert_eq!(error.error, "BULK_UPDATE_FAILED");
+    }
+}
