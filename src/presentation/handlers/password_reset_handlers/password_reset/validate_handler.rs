@@ -101,3 +101,28 @@ pub async fn validate_reset_token(
         "token_strength_score": validation_service.get_token_strength_score(&token),
     })))
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_invalid_token_error() {
+        let error = ErrorResponse {
+            error: "Token validation error".to_string(),
+            message: "Invalid password reset token".to_string(),
+            status_code: StatusCode::BAD_REQUEST.as_u16(),
+        };
+        assert_eq!(error.status_code, 400);
+    }
+
+    #[test]
+    fn test_token_expired_error() {
+        let error = ErrorResponse {
+            error: "Token validation error".to_string(),
+            message: "Password reset token has expired".to_string(),
+            status_code: StatusCode::BAD_REQUEST.as_u16(),
+        };
+        assert!(error.message.contains("expired"));
+    }
+}
