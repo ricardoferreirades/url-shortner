@@ -102,3 +102,28 @@ pub async fn async_batch_url_operations_handler(
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_unauthorized_error() {
+        let error = ErrorResponse {
+            error: "UNAUTHORIZED".to_string(),
+            message: "Missing or invalid Authorization header".to_string(),
+            status_code: StatusCode::UNAUTHORIZED.as_u16(),
+        };
+        assert_eq!(error.status_code, 401);
+    }
+
+    #[test]
+    fn test_batch_operation_failed_error() {
+        let error = ErrorResponse {
+            error: "BATCH_OPERATION_FAILED".to_string(),
+            message: "Failed to start async batch operation".to_string(),
+            status_code: StatusCode::BAD_REQUEST.as_u16(),
+        };
+        assert_eq!(error.error, "BATCH_OPERATION_FAILED");
+    }
+}
