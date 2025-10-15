@@ -76,3 +76,28 @@ pub async fn get_expiration_info_handler(
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_not_found_error() {
+        let error = ErrorResponse {
+            error: "NOT_FOUND".to_string(),
+            message: "URL not found".to_string(),
+            status_code: StatusCode::NOT_FOUND.as_u16(),
+        };
+        assert_eq!(error.status_code, 404);
+    }
+
+    #[test]
+    fn test_invalid_short_code_error() {
+        let error = ErrorResponse {
+            error: "INVALID_SHORT_CODE".to_string(),
+            message: "Short code is invalid".to_string(),
+            status_code: StatusCode::BAD_REQUEST.as_u16(),
+        };
+        assert_eq!(error.error, "INVALID_SHORT_CODE");
+    }
+}
