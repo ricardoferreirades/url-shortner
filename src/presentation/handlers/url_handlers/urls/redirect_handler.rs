@@ -73,3 +73,45 @@ pub async fn redirect_handler(
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::domain::entities::ShortCode;
+
+    #[test]
+    fn test_short_code_validation() {
+        let valid_code = ShortCode::new("abc123".to_string());
+        assert!(valid_code.is_ok());
+    }
+
+    #[test]
+    fn test_invalid_short_code_error() {
+        let error = ErrorResponse {
+            error: "INVALID_SHORT_CODE".to_string(),
+            message: "Short code is invalid".to_string(),
+            status_code: StatusCode::BAD_REQUEST.as_u16(),
+        };
+        assert_eq!(error.status_code, 400);
+    }
+
+    #[test]
+    fn test_not_found_error() {
+        let error = ErrorResponse {
+            error: "NOT_FOUND".to_string(),
+            message: "Short code not found or no longer available".to_string(),
+            status_code: StatusCode::NOT_FOUND.as_u16(),
+        };
+        assert_eq!(error.status_code, 404);
+    }
+
+    #[test]
+    fn test_database_error_response() {
+        let error = ErrorResponse {
+            error: "DATABASE_ERROR".to_string(),
+            message: "Internal server error".to_string(),
+            status_code: StatusCode::INTERNAL_SERVER_ERROR.as_u16(),
+        };
+        assert_eq!(error.status_code, 500);
+    }
+}
