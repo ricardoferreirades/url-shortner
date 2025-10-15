@@ -121,3 +121,28 @@ pub async fn update_privacy_settings(
             .to_string(),
     }))
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_validation_error() {
+        let error = ErrorResponse {
+            error: "Validation error".to_string(),
+            message: "Invalid privacy setting".to_string(),
+            status_code: 400,
+        };
+        assert_eq!(error.status_code, 400);
+    }
+
+    #[test]
+    fn test_database_error() {
+        let error = ErrorResponse {
+            error: "Database error".to_string(),
+            message: "Failed to update privacy settings".to_string(),
+            status_code: 500,
+        };
+        assert_eq!(error.status_code, 500);
+    }
+}
