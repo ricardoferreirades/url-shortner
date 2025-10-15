@@ -45,3 +45,18 @@ pub async fn get_user_operations_handler(
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_internal_error() {
+        let error = ErrorResponse {
+            error: "INTERNAL_ERROR".to_string(),
+            message: "Failed to retrieve user operations".to_string(),
+            status_code: StatusCode::INTERNAL_SERVER_ERROR.as_u16(),
+        };
+        assert_eq!(error.status_code, 500);
+    }
+}
