@@ -123,3 +123,28 @@ pub async fn request_password_reset(
         email: request.email,
     }))
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_rate_limit_error() {
+        let error = ErrorResponse {
+            error: "Rate limit exceeded".to_string(),
+            message: "Too many requests".to_string(),
+            status_code: StatusCode::TOO_MANY_REQUESTS.as_u16(),
+        };
+        assert_eq!(error.status_code, 429);
+    }
+
+    #[test]
+    fn test_password_reset_error() {
+        let error = ErrorResponse {
+            error: "Password reset error".to_string(),
+            message: "Too many password reset requests. Please try again later.".to_string(),
+            status_code: StatusCode::TOO_MANY_REQUESTS.as_u16(),
+        };
+        assert_eq!(error.error, "Password reset error");
+    }
+}
