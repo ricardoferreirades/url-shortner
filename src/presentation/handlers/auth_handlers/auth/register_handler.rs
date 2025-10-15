@@ -83,3 +83,79 @@ pub async fn register_handler(
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_register_request_deserialize() {
+        let json =
+            r#"{"username":"newuser","email":"test@example.com","password":"securepass123"}"#;
+        let request: Result<RegisterRequest, _> = serde_json::from_str(json);
+        assert!(request.is_ok());
+        let request = request.unwrap();
+        assert_eq!(request.username, "newuser");
+        assert_eq!(request.email, "test@example.com");
+        assert_eq!(request.password, "securepass123");
+    }
+
+    #[test]
+    fn test_username_exists_error() {
+        let error_response = ErrorResponse {
+            error: "USERNAME_EXISTS".to_string(),
+            message: "Username already exists".to_string(),
+            status_code: StatusCode::BAD_REQUEST.as_u16(),
+        };
+        assert_eq!(error_response.error, "USERNAME_EXISTS");
+        assert_eq!(error_response.status_code, 400);
+    }
+
+    #[test]
+    fn test_email_exists_error() {
+        let error_response = ErrorResponse {
+            error: "EMAIL_EXISTS".to_string(),
+            message: "Email already exists".to_string(),
+            status_code: StatusCode::BAD_REQUEST.as_u16(),
+        };
+        assert_eq!(error_response.error, "EMAIL_EXISTS");
+        assert_eq!(error_response.status_code, 400);
+    }
+
+    #[test]
+    fn test_invalid_input_error() {
+        let error_response = ErrorResponse {
+            error: "INVALID_INPUT".to_string(),
+            message: "Invalid email format".to_string(),
+            status_code: StatusCode::BAD_REQUEST.as_u16(),
+        };
+        assert_eq!(error_response.error, "INVALID_INPUT");
+    }
+
+    #[test]
+    fn test_token_generation_failed_error() {
+        let error_response = ErrorResponse {
+            error: "TOKEN_GENERATION_FAILED".to_string(),
+            message: "User registered but failed to generate token".to_string(),
+            status_code: StatusCode::INTERNAL_SERVER_ERROR.as_u16(),
+        };
+        assert_eq!(error_response.status_code, 500);
+    }
+
+    #[test]
+    fn test_auth_response_serialization() {
+        use chrono::Utc;
+        let auth_response = AuthResponse {
+            token: "jwt_token_here".to_string(),
+            user: UserResponse {
+                id: 1,
+                username: "newuser".to_string(),
+                email: "test@example.com".to_string(),
+                created_at: Utc::now().to_rfc3339(),
+            },
+        };
+        let json = serde_json::to_string(&auth_response);
+        assert!(json.is_ok());
+        assert!(json.unwrap().contains("newuser"));
+    }
+}
