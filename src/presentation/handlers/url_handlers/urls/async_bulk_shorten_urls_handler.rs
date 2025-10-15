@@ -100,3 +100,28 @@ pub async fn async_bulk_shorten_urls_handler(
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_unauthorized_error() {
+        let error = ErrorResponse {
+            error: "UNAUTHORIZED".to_string(),
+            message: "Missing or invalid Authorization header".to_string(),
+            status_code: StatusCode::UNAUTHORIZED.as_u16(),
+        };
+        assert_eq!(error.status_code, 401);
+    }
+
+    #[test]
+    fn test_bulk_operation_failed_error() {
+        let error = ErrorResponse {
+            error: "BULK_OPERATION_FAILED".to_string(),
+            message: "Failed to process bulk operation".to_string(),
+            status_code: StatusCode::BAD_REQUEST.as_u16(),
+        };
+        assert_eq!(error.error, "BULK_OPERATION_FAILED");
+    }
+}
