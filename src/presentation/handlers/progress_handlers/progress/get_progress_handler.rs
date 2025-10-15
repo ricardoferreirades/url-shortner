@@ -60,3 +60,28 @@ pub async fn get_bulk_operation_progress_handler(
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_operation_not_found_error() {
+        let error = ErrorResponse {
+            error: "OPERATION_NOT_FOUND".to_string(),
+            message: "Operation not found or may have expired".to_string(),
+            status_code: StatusCode::NOT_FOUND.as_u16(),
+        };
+        assert_eq!(error.status_code, 404);
+    }
+
+    #[test]
+    fn test_internal_error() {
+        let error = ErrorResponse {
+            error: "INTERNAL_ERROR".to_string(),
+            message: "Failed to retrieve operation progress".to_string(),
+            status_code: StatusCode::INTERNAL_SERVER_ERROR.as_u16(),
+        };
+        assert_eq!(error.error, "INTERNAL_ERROR");
+    }
+}
