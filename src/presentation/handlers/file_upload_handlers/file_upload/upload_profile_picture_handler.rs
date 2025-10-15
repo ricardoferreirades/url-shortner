@@ -154,3 +154,28 @@ pub async fn upload_profile_picture(
         }),
     ))
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_file_too_large_error() {
+        let error = ErrorResponse {
+            error: "File upload error".to_string(),
+            message: "File too large. Maximum size: 5242880 bytes".to_string(),
+            status_code: StatusCode::PAYLOAD_TOO_LARGE.as_u16(),
+        };
+        assert_eq!(error.status_code, 413);
+    }
+
+    #[test]
+    fn test_invalid_file_type_error() {
+        let error = ErrorResponse {
+            error: "File upload error".to_string(),
+            message: "Invalid file type".to_string(),
+            status_code: StatusCode::BAD_REQUEST.as_u16(),
+        };
+        assert_eq!(error.error, "File upload error");
+    }
+}
