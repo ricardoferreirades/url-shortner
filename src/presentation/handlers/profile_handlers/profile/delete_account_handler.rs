@@ -103,3 +103,45 @@ pub async fn delete_account(
         )),
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_delete_account_request_deserialize() {
+        let json = r#"{"password":"testpassword"}"#;
+        let request: Result<DeleteAccountRequest, _> = serde_json::from_str(json);
+        assert!(request.is_ok());
+    }
+
+    #[test]
+    fn test_invalid_password_error() {
+        let error = ErrorResponse {
+            error: "Invalid password".to_string(),
+            message: "The password provided is incorrect".to_string(),
+            status_code: 401,
+        };
+        assert_eq!(error.status_code, 401);
+    }
+
+    #[test]
+    fn test_user_not_found_error() {
+        let error = ErrorResponse {
+            error: "User not found".to_string(),
+            message: "User account not found".to_string(),
+            status_code: 404,
+        };
+        assert_eq!(error.status_code, 404);
+    }
+
+    #[test]
+    fn test_anonymization_failed_error() {
+        let error = ErrorResponse {
+            error: "Account anonymization failed".to_string(),
+            message: "Failed to anonymize account data".to_string(),
+            status_code: 500,
+        };
+        assert_eq!(error.error, "Account anonymization failed");
+    }
+}
