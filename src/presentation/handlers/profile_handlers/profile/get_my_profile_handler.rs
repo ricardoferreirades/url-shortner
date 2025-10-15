@@ -44,3 +44,28 @@ pub async fn get_my_profile(
         )),
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_user_not_found_error() {
+        let error = ErrorResponse {
+            error: "User not found".to_string(),
+            message: "User profile not found".to_string(),
+            status_code: 404,
+        };
+        assert_eq!(error.status_code, 404);
+    }
+
+    #[test]
+    fn test_database_error_response() {
+        let error = ErrorResponse {
+            error: "Database error".to_string(),
+            message: "Connection failed".to_string(),
+            status_code: 500,
+        };
+        assert_eq!(error.status_code, 500);
+    }
+}
