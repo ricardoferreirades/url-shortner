@@ -91,3 +91,38 @@ pub async fn reactivate_url_handler(
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_unauthorized_error() {
+        let error = ErrorResponse {
+            error: "UNAUTHORIZED".to_string(),
+            message: "Missing or invalid Authorization header".to_string(),
+            status_code: StatusCode::UNAUTHORIZED.as_u16(),
+        };
+        assert_eq!(error.status_code, 401);
+    }
+
+    #[test]
+    fn test_not_found_error() {
+        let error = ErrorResponse {
+            error: "NOT_FOUND".to_string(),
+            message: "URL not found or you don't have permission to reactivate it".to_string(),
+            status_code: StatusCode::NOT_FOUND.as_u16(),
+        };
+        assert_eq!(error.status_code, 404);
+    }
+
+    #[test]
+    fn test_reactivate_failed_error() {
+        let error = ErrorResponse {
+            error: "REACTIVATE_FAILED".to_string(),
+            message: "Failed to reactivate URL".to_string(),
+            status_code: StatusCode::INTERNAL_SERVER_ERROR.as_u16(),
+        };
+        assert_eq!(error.error, "REACTIVATE_FAILED");
+    }
+}
