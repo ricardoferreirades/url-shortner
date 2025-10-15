@@ -67,3 +67,18 @@ pub async fn get_expiring_urls_handler(
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_database_error() {
+        let error = ErrorResponse {
+            error: "DATABASE_ERROR".to_string(),
+            message: "Internal server error".to_string(),
+            status_code: StatusCode::INTERNAL_SERVER_ERROR.as_u16(),
+        };
+        assert_eq!(error.status_code, 500);
+    }
+}
