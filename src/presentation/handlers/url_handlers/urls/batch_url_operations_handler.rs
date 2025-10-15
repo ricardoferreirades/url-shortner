@@ -109,3 +109,25 @@ pub async fn batch_url_operations_handler(
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_batch_operation_request_deserialize() {
+        let json = r#"{"operation":"deactivate","url_ids":[1,2,3]}"#;
+        let request: Result<BatchUrlOperationRequest, _> = serde_json::from_str(json);
+        assert!(request.is_ok());
+    }
+
+    #[test]
+    fn test_batch_operation_failed_error() {
+        let error = ErrorResponse {
+            error: "BATCH_OPERATION_FAILED".to_string(),
+            message: "Failed to execute batch operation".to_string(),
+            status_code: StatusCode::BAD_REQUEST.as_u16(),
+        };
+        assert_eq!(error.error, "BATCH_OPERATION_FAILED");
+    }
+}
