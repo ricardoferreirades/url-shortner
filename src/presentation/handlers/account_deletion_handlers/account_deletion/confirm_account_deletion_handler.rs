@@ -150,3 +150,28 @@ pub async fn confirm_account_deletion(
         deleted: true,
     }))
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_token_not_found_error() {
+        let error = ErrorResponse {
+            error: "Token not found".to_string(),
+            message: "Invalid account deletion token".to_string(),
+            status_code: StatusCode::NOT_FOUND.as_u16(),
+        };
+        assert_eq!(error.status_code, 404);
+    }
+
+    #[test]
+    fn test_invalid_token_error() {
+        let error = ErrorResponse {
+            error: "Invalid token".to_string(),
+            message: "Account deletion token has expired".to_string(),
+            status_code: StatusCode::BAD_REQUEST.as_u16(),
+        };
+        assert_eq!(error.error, "Invalid token");
+    }
+}
