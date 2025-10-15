@@ -83,3 +83,37 @@ pub async fn bulk_shorten_urls_handler(
 
     Ok((StatusCode::CREATED, Json(responses)))
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_bulk_shorten_request_deserialize() {
+        let json = r#"{"items":[{"url":"https://example1.com"},{"url":"https://example2.com"}]}"#;
+        let request: Result<BulkShortenUrlsRequest, _> = serde_json::from_str(json);
+        assert!(request.is_ok());
+        let request = request.unwrap();
+        assert_eq!(request.items.len(), 2);
+    }
+
+    #[test]
+    fn test_unauthorized_error() {
+        let error = ErrorResponse {
+            error: "UNAUTHORIZED".to_string(),
+            message: "Missing or invalid Authorization header".to_string(),
+            status_code: StatusCode::UNAUTHORIZED.as_u16(),
+        };
+        assert_eq!(error.status_code, 401);
+    }
+
+    #[test]
+    fn test_shorten_failed_error() {
+        let error = ErrorResponse {
+            error: "SHORTEN_FAILED".to_string(),
+            message: "Failed to shorten URL".to_string(),
+            status_code: StatusCode::BAD_REQUEST.as_u16(),
+        };
+        assert_eq!(error.error, "SHORTEN_FAILED");
+    }
+}
