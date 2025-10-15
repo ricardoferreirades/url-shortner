@@ -114,3 +114,50 @@ pub async fn bulk_delete_handler(
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_bulk_delete_request_deserialize() {
+        let json = r#"{"url_ids":[1,2,3]}"#;
+        let request: Result<BulkDeleteRequest, _> = serde_json::from_str(json);
+        assert!(request.is_ok());
+        let request = request.unwrap();
+        assert_eq!(request.url_ids.len(), 3);
+    }
+
+    #[test]
+    fn test_bulk_delete_limit_error() {
+        let error = ErrorResponse {
+            error: "BULK_DELETE_LIMIT_EXCEEDED".to_string(),
+            message: "Bulk deletion of more than 100 URLs requires force=true".to_string(),
+            status_code: StatusCode::BAD_REQUEST.as_u16(),
+        };
+        assert_eq!(error.error, "BULK_DELETE_LIMIT_EXCEEDED");
+    }
+
+    #[test]
+    fn test_bulk_delete_failed_error() {
+        let error = ErrorResponse {
+            error: "BULK_DELETE_FAILED".to_string(),
+            message: "Failed to delete URLs".to_string(),
+            status_code: StatusCode::BAD_REQUEST.as_u16(),
+        };
+        assert_eq!(error.error, "BULK_DELETE_FAILED");
+    }
+
+    #[test]
+    fn test_batch_operation_response_structure() {
+        let response = BatchOperationResponse {
+            operation: "delete".to_string(),
+            total_processed: 3,
+            successful: 2,
+            failed: 1,
+            results: vec![],
+        };
+        assert_eq!(response.operation, "delete");
+        assert_eq!(response.total_processed, 3);
+    }
+}
