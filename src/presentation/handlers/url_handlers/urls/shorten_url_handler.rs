@@ -85,3 +85,71 @@ pub async fn shorten_url_handler(
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_shorten_request_deserialize() {
+        let json = r#"{"url":"https://example.com"}"#;
+        let request: Result<ShortenUrlRequest, _> = serde_json::from_str(json);
+        assert!(request.is_ok());
+        let request = request.unwrap();
+        assert_eq!(request.url, "https://example.com");
+    }
+
+    #[test]
+    fn test_shorten_request_with_custom_code() {
+        let json = r#"{"url":"https://example.com","custom_short_code":"mycustom"}"#;
+        let request: Result<ShortenUrlRequest, _> = serde_json::from_str(json);
+        assert!(request.is_ok());
+        let request = request.unwrap();
+        assert_eq!(request.custom_short_code, Some("mycustom".to_string()));
+    }
+
+    #[test]
+    fn test_unauthorized_error_response() {
+        let error = ErrorResponse {
+            error: "UNAUTHORIZED".to_string(),
+            message: "Missing or invalid Authorization header".to_string(),
+            status_code: StatusCode::UNAUTHORIZED.as_u16(),
+        };
+        assert_eq!(error.status_code, 401);
+    }
+
+    #[test]
+    fn test_invalid_token_error_response() {
+        let error = ErrorResponse {
+            error: "INVALID_TOKEN".to_string(),
+            message: "Invalid or expired token".to_string(),
+            status_code: StatusCode::UNAUTHORIZED.as_u16(),
+        };
+        assert_eq!(error.error, "INVALID_TOKEN");
+    }
+
+    #[test]
+    fn test_shorten_failed_error_response() {
+        let error = ErrorResponse {
+            error: "SHORTEN_FAILED".to_string(),
+            message: "Invalid URL".to_string(),
+            status_code: StatusCode::BAD_REQUEST.as_u16(),
+        };
+        assert_eq!(error.status_code, 400);
+    }
+
+    #[test]
+    fn test_shorten_response_serialization() {
+        use chrono::Utc;
+        let response = ShortenUrlResponse {
+            short_url: "http://short.url/abc123".to_string(),
+            original_url: "https://example.com".to_string(),
+            short_code: "abc123".to_string(),
+            created_at: Utc::now().to_rfc3339(),
+            expiration_date: None,
+        };
+        let json = serde_json::to_string(&response);
+        assert!(json.is_ok());
+        assert!(json.unwrap().contains("abc123"));
+    }
+}
