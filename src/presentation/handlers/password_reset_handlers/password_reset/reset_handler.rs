@@ -74,3 +74,28 @@ pub async fn reset_password(
         success: true,
     }))
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_password_too_short_error() {
+        let error = ErrorResponse {
+            error: "Validation error".to_string(),
+            message: "Password must be at least 8 characters long".to_string(),
+            status_code: 400,
+        };
+        assert_eq!(error.status_code, 400);
+    }
+
+    #[test]
+    fn test_password_reset_error() {
+        let error = ErrorResponse {
+            error: "Password reset error".to_string(),
+            message: "Invalid password reset token".to_string(),
+            status_code: StatusCode::BAD_REQUEST.as_u16(),
+        };
+        assert_eq!(error.error, "Password reset error");
+    }
+}
