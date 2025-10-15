@@ -115,3 +115,28 @@ pub async fn delete_profile_picture(
         )),
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_no_avatar_error() {
+        let error = ErrorResponse {
+            error: "No avatar".to_string(),
+            message: "User has no avatar to delete".to_string(),
+            status_code: 404,
+        };
+        assert_eq!(error.status_code, 404);
+    }
+
+    #[test]
+    fn test_database_error() {
+        let error = ErrorResponse {
+            error: "Database error".to_string(),
+            message: "Failed to update profile".to_string(),
+            status_code: 500,
+        };
+        assert_eq!(error.status_code, 500);
+    }
+}
