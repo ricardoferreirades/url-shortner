@@ -89,3 +89,28 @@ pub async fn set_expiration_handler(
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_update_failed_error() {
+        let error = ErrorResponse {
+            error: "UPDATE_FAILED".to_string(),
+            message: "Failed to update expiration".to_string(),
+            status_code: StatusCode::INTERNAL_SERVER_ERROR.as_u16(),
+        };
+        assert_eq!(error.error, "UPDATE_FAILED");
+    }
+
+    #[test]
+    fn test_not_found_error() {
+        let error = ErrorResponse {
+            error: "NOT_FOUND".to_string(),
+            message: "URL not found".to_string(),
+            status_code: StatusCode::NOT_FOUND.as_u16(),
+        };
+        assert_eq!(error.status_code, 404);
+    }
+}
