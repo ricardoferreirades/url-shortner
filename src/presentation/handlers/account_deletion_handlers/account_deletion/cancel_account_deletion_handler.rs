@@ -76,3 +76,28 @@ pub async fn cancel_account_deletion(
         cancelled: true,
     }))
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_no_active_deletion_request_error() {
+        let error = ErrorResponse {
+            error: "No active deletion request".to_string(),
+            message: "No active account deletion request found".to_string(),
+            status_code: StatusCode::NOT_FOUND.as_u16(),
+        };
+        assert_eq!(error.status_code, 404);
+    }
+
+    #[test]
+    fn test_database_error() {
+        let error = ErrorResponse {
+            error: "Database error".to_string(),
+            message: "Connection failed".to_string(),
+            status_code: StatusCode::INTERNAL_SERVER_ERROR.as_u16(),
+        };
+        assert_eq!(error.status_code, 500);
+    }
+}
