@@ -117,3 +117,35 @@ pub async fn bulk_status_update_handler(
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_bulk_status_update_request_deserialize() {
+        let json = r#"{"url_ids":[1,2,3],"status":"active"}"#;
+        let request: Result<BulkStatusUpdateRequest, _> = serde_json::from_str(json);
+        assert!(request.is_ok());
+    }
+
+    #[test]
+    fn test_invalid_status_error() {
+        let error = ErrorResponse {
+            error: "INVALID_STATUS".to_string(),
+            message: "Invalid status. Must be 'active' or 'inactive'".to_string(),
+            status_code: StatusCode::BAD_REQUEST.as_u16(),
+        };
+        assert_eq!(error.error, "INVALID_STATUS");
+    }
+
+    #[test]
+    fn test_bulk_update_failed_error() {
+        let error = ErrorResponse {
+            error: "BULK_UPDATE_FAILED".to_string(),
+            message: "Failed to update status".to_string(),
+            status_code: StatusCode::BAD_REQUEST.as_u16(),
+        };
+        assert_eq!(error.error, "BULK_UPDATE_FAILED");
+    }
+}
