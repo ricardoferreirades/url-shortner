@@ -32,6 +32,7 @@ pub struct UserUrlsResponse {
 }
 
 /// Response DTO for authentication
+#[allow(dead_code)]
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
 pub struct AuthResponse {
     pub token: String,
@@ -39,6 +40,7 @@ pub struct AuthResponse {
 }
 
 /// Response DTO for user information
+#[allow(dead_code)]
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
 pub struct UserResponse {
     pub id: i32,
