@@ -59,6 +59,7 @@ impl Default for ValidationConfig {
 }
 
 /// Validates and sanitizes a URL
+#[allow(dead_code)]
 pub fn validate_url(url: &str, config: &ValidationConfig) -> Result<String, ValidationErrorType> {
     // Check if URL is empty
     if url.trim().is_empty() {
@@ -164,6 +165,7 @@ pub fn validate_short_code(short_code: &str) -> Result<String, ValidationErrorTy
 }
 
 /// Enhanced request validation with validator crate
+#[allow(dead_code)]
 #[derive(Debug, Validate, serde::Deserialize)]
 pub struct ShortenUrlRequest {
     #[validate(length(
@@ -176,6 +178,7 @@ pub struct ShortenUrlRequest {
 }
 
 /// Custom validator for URL format using our validation logic
+#[allow(dead_code)]
 fn validate_url_format(url: &str) -> Result<(), ValidationError> {
     let config = ValidationConfig::default();
     match validate_url(url, &config) {
