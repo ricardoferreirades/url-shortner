@@ -1,0 +1,103 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  quality-checks:
+    name: Quality Checks
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - name: Cache cargo registry
+        uses: actions/cache@v3
+        with:
+          path: ~/.cargo/registry
+          key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Cache cargo index
+        uses: actions/cache@v3
+        with:
+          path: ~/.cargo/git
+          key: ${{ runner.os }}-cargo-git-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Cache cargo build
+        uses: actions/cache@v3
+        with:
+          path: target
+          key: ${{ runner.os }}-cargo-build-target-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Install taplo
+        run: cargo install taplo-cli --locked
+
+      - name: Install typos
+        run: cargo install typos-cli --locked
+
+      - name: Check code formatting
+        run: |
+          echo "📝 Checking Rust formatting..."
+          cargo fmt --check
+          echo "📝 Checking TOML formatting..."
+          taplo format --check
+
+      - name: Run linter
+        run: |
+          echo "🔎 Running clippy..."
+          cargo clippy --all-targets --all-features -- -D warnings
+
+      - name: Check spelling
+        run: |
+          echo "📖 Checking spelling..."
+          typos
+
+      - name: Type check
+        run: |
+          echo "🔧 Running type check..."
+          cargo check --all-targets
+
+      - name: Run tests
+        run: |
+          echo "🧪 Running tests..."
+          cargo test --all-targets
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    needs: quality-checks
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo build
+        uses: actions/cache@v3
+        with:
+          path: target
+          key: ${{ runner.os }}-cargo-build-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Build release
+        run: cargo build --release
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: url-shortner-binary
+          path: target/release/url-shortner
+
