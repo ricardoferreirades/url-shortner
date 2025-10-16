@@ -18,6 +18,7 @@ pub struct UpdateUrlRequest {
 }
 
 /// Request DTO for user authentication
+#[allow(dead_code)]
 #[derive(Debug, Deserialize, Serialize, ToSchema)]
 pub struct LoginRequest {
     pub email: String,
@@ -25,6 +26,7 @@ pub struct LoginRequest {
 }
 
 /// Request DTO for user registration
+#[allow(dead_code)]
 #[derive(Debug, Deserialize, Serialize, ToSchema)]
 pub struct RegisterRequest {
     pub email: String,
